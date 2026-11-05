@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 4: อีเมลส่วนลดคอร์สติวปลอมใน Outlook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #0b3d66; --th-mid: #1f6fb2; --paper: #eef2f6; --ink: #1a1d22; --ink-soft: #5a6270;
+    --bubble: #ffffff; --bubble-border: #dde3ea; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #c0392b; --ok: #2f6b3a; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #cfd6dd; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .device-frame { width: 390px; max-width: 100%; margin: 0 auto; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
+  .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
+  .device-screen { background: var(--paper); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; }
+  .content-wide { width: 100%; max-width: 760px; margin: 28px auto 0; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  .mail-header { background: var(--th-deep); color: #fff; display: flex; align-items: center; gap: 10px; padding: 14px 16px; position: sticky; top: 0; z-index: 5; }
+  .mail-header__back { font-size: 20px; opacity: .85; text-decoration: none; color: #fff; }
+  .mail-header__title { font-weight: 600; font-size: 14.5px; }
+  .mail-header__icons { margin-left: auto; display: flex; gap: 14px; font-size: 15px; opacity: .85; }
+
+  .mail-body { padding: 16px 14px 20px; }
+  .mail-meta { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 14px; }
+  .mail-meta__avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--th-mid); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .mail-meta__sender { font-size: 13.5px; font-weight: 600; }
+  .mail-meta__addr { font-size: 11px; color: var(--ink-soft); }
+  .mail-meta__time { margin-left: auto; font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
+
+  .mail-card { background: var(--bubble); border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; }
+  .mail-subject { font-size: 15px; font-weight: 700; line-height: 1.5; margin-bottom: 10px; }
+  .mail-text { font-size: 13px; line-height: 1.7; color: var(--ink); margin-bottom: 14px; }
+  .mail-cta { display: block; width: 100%; text-align: center; background: var(--danger); color: #fff; font-weight: 700; font-size: 13.5px; padding: 13px; border-radius: 10px; margin-bottom: 12px; }
+  .mail-timer { text-align: center; font-size: 12.5px; color: var(--danger); font-weight: 600; margin-bottom: 14px; }
+  .mail-timer b { font-size: 17px; }
+  .mail-field { font-size: 11.5px; color: var(--ink-soft); margin-bottom: 6px; }
+  .mail-input { width: 100%; padding: 9px 10px; border: 1px solid var(--bubble-border); border-radius: 8px; background: #f7f8fa; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 10px; }
+  .mail-note { font-size: 11px; color: var(--danger); text-align: center; margin-top: 4px; }
+
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 12px; }
+
+  .option { display: block; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13.5px; line-height: 1.55; }
+  .option input { margin-right: 8px; }
+  .option.selected { border-color: var(--th-mid); background: #eaf2fa; }
+
+  .quiz__status { text-align: center; font-size: 13px; color: var(--ink-soft); min-height: 18px; margin-top: 10px; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+</style>
+</head>
+<body>
+
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+ <div class="device-frame">
+  <div class="device-frame__notch"></div>
+  <div class="device-screen">
+
+  <header class="mail-header">
+    <a class="mail-header__back" href="index.html">‹</a>
+    <span class="mail-header__title">📧 Outlook</span>
+    <span class="mail-header__icons">↩️ 🗑️ ⋮</span>
+  </header>
+
+  <div class="mail-body">
+    <div class="mail-meta">
+      <div class="mail-meta__avatar">AI</div>
+      <div>
+        <div class="mail-meta__sender">ทีมแนะนำ AI การเรียนรู้</div>
+        <div class="mail-meta__addr">ai.recommend@learning-system.info</div>
+      </div>
+      <div class="mail-meta__time">10:38 PM</div>
+    </div>
+
+    <div class="mail-card">
+      <div class="mail-subject">ระบบแนะนำอัตโนมัติเลือกคุณแล้ว! ส่วนลดคอร์สติวคณิตศาสตร์ 70%</div>
+      <div class="mail-text">
+        เรียน ผู้ปกครองและนักเรียน,<br />
+        คุณได้รับคัดเลือกจากระบบ AI อัจฉริยะของเราให้รับสิทธิ์พิเศษนี้! โปรโมชั่นนี้มีเวลาจำกัด
+      </div>
+      <div class="mail-cta">กดรับสิทธิ์ทันที ก่อนหมดเวลา!</div>
+      <div class="mail-timer">เวลาเหลือ: <b>15:00</b> นาที</div>
+      <div class="mail-text" style="margin-bottom:8px;">รายละเอียดคอร์ส: คอร์สติวเข้มคณิตศาสตร์ ม.ต้น และ ม.ปลาย (Online)</div>
+      <div class="mail-field">กรุณากรอกข้อมูลเพื่อยืนยันสิทธิ์:</div>
+      <div class="mail-input">เลขบัตรประชาชน (13 หลัก)</div>
+      <div class="mail-input">เบอร์โทรศัพท์ผู้ปกครอง</div>
+      <div class="mail-note">*สิทธิ์มีจำนวนจำกัด ด่วน!*</div>
+    </div>
+  </div>
+
+  </div>
+ </div>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 4: อีเมลส่วนลดคอร์สติวปลอมใน Outlook</h1>
+      <p>ปุณณ์เปิดอีเมลนี้ตอนเช้า และไม่แน่ใจว่าควรทำอย่างไรต่อ</p>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 1 — ข้อใดคือสัญญาณที่ควรทำให้ระมัดระวัง?</h2>
+      <p class="quiz__desc">เลือกได้มากกว่า 1 ข้อ — ข้อใดคือสัญญาณที่ควรทำให้ปุณณ์ระมัดระวังก่อนกดปุ่มรับสิทธิ์ในอีเมลนี้</p>
+      <div id="q1List"></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — เหตุผลที่ดีที่สุดคือข้อใด?</h2>
+      <p class="quiz__desc">เหตุผลใดอธิบายได้ดีที่สุดว่าทำไมปุณณ์ไม่ควรเชื่อว่าอีเมลนี้มาจากระบบแนะนำอัตโนมัติที่วิเคราะห์ผลการเรียนของตัวเองจริง</p>
+      <div id="q2List"></div>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-04";
+  const SCENARIO_NAME = "อีเมลส่วนลดคอร์สติวปลอมใน Outlook";
+  const MAX_SCORE = 4; // q1(2) + q2(2)
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    document.getElementById("guardScreen").hidden = false;
+    document.getElementById("mainScreen").style.display = "none";
+  }
+
+  // ---------- ข้อ 1: เลือกได้หลายข้อ (checkbox) ----------
+  const Q1_STATEMENTS = [
+    "อีเมลมาจากผู้ส่งชื่อ \"ทีมแนะนำ AI การเรียนรู้\" ซึ่งเป็นชื่อทั่วไปที่ตรวจสอบตัวตนจริงไม่ได้",
+    "อีเมลมีตัวนับถอยหลังเวลาเพียง 15 นาทีเพื่อเร่งให้รีบตัดสินใจโดยไม่ทันคิด",
+    "หัวเรื่องอีเมลใช้ตัวอักษรภาษาไทยที่อ่านออกชัดเจนทุกคำ",
+    "อีเมลขอให้กรอกเลขบัตรประชาชนและเบอร์โทรผู้ปกครองเพื่อรับส่วนลด",
+    "อีเมลมีปุ่มสีแดงขนาดใหญ่ให้กดที่ตรงกลางข้อความ",
+    "อีเมลอ้างว่าเป็นคอร์สเรียนวิชาคณิตศาสตร์ซึ่งเป็นวิชาที่ปุณณ์เรียนอยู่จริง",
+  ];
+  const Q1_CORRECT = [0, 1, 3]; // index ของข้อ 1, 2, 4 ในเอกสารต้นฉบับ
+  const q1Checked = new Set();
+
+  function renderQ1() {
+    const container = document.getElementById("q1List");
+    container.innerHTML = "";
+    Q1_STATEMENTS.forEach((text, i) => {
+      const label = document.createElement("label");
+      label.className = "option";
+      label.innerHTML = `<input type="checkbox" value="${i}" /> ${text}`;
+      label.querySelector("input").addEventListener("change", (e) => {
+        if (e.target.checked) q1Checked.add(i); else q1Checked.delete(i);
+        label.classList.toggle("selected", e.target.checked);
+      });
+      container.appendChild(label);
+    });
+  }
+
+  function gradeQ1() {
+    const selected = Array.from(q1Checked);
+    const correctSelected = selected.filter((i) => Q1_CORRECT.includes(i)).length;
+    const wrongSelected = selected.filter((i) => !Q1_CORRECT.includes(i)).length;
+    let score = 0;
+    if (correctSelected === 3 && wrongSelected === 0) score = 2;
+    else if (correctSelected >= 2 && wrongSelected <= 1) score = 1;
+    return { score, correctSelected, wrongSelected };
+  }
+
+  // ---------- ข้อ 2: ปรนัยเลือก 1 ข้อ ----------
+  const Q2_OPTIONS = [
+    "เพราะอีเมลที่วิเคราะห์ผลการเรียนจริงจะไม่มีการเสนอส่วนลดหรือโปรโมชันใดๆ เลย",
+    "เพราะอีเมลไม่บอกแหล่งที่มาของข้อมูลผลการเรียน และเร่งให้กรอกข้อมูลก่อนตรวจสอบ",
+    "เพราะคอร์สติวคณิตศาสตร์ไม่ใช่วิชาที่ปุณณ์สนใจเรียนเพิ่มเติมอยู่แล้ว",
+    "เพราะอีเมลจากบัญชีอีเมลของโรงเรียนจะไม่ส่งข้อความเกี่ยวกับคอร์สเรียนพิเศษเด็ดขาด",
+  ];
+  const Q2_CORRECT = 1;
+  let q2Selected = null;
+
+  function renderQ2() {
+    const container = document.getElementById("q2List");
+    container.innerHTML = "";
+    Q2_OPTIONS.forEach((text, i) => {
+      const label = document.createElement("label");
+      label.className = "option";
+      label.innerHTML = `<input type="radio" name="q2" value="${i}" /> ${text}`;
+      label.querySelector("input").addEventListener("change", () => {
+        q2Selected = i;
+        container.querySelectorAll(".option").forEach((el) => el.classList.remove("selected"));
+        label.classList.add("selected");
+      });
+      container.appendChild(label);
+    });
+  }
+
+  function gradeQ2() {
+    const score = q2Selected === Q2_CORRECT ? 2 : 0;
+    return { score };
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+    }
+  }
+
+  async function handleSubmit() {
+    const statusEl = document.getElementById("quizStatus");
+    const submitBtn = document.getElementById("submitBtn");
+
+    if (q1Checked.size === 0) { statusEl.textContent = "กรุณาเลือกคำตอบข้อ 1 อย่างน้อย 1 ข้อ"; return; }
+    if (q2Selected === null) { statusEl.textContent = "กรุณาเลือกคำตอบข้อ 2"; return; }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "กำลังตรวจคะแนน...";
+
+    const q1Result = gradeQ1();
+    const q2Result = gradeQ2();
+    const total_score = q1Result.score + q2Result.score;
+
+    await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name,
+      grade: profile.grade,
+      school: profile.school,
+      scenario_id: SCENARIO_ID,
+      scenario_name: SCENARIO_NAME,
+      score: total_score,
+      max_score: MAX_SCORE,
+      details: { q1: { ...q1Result, selected: Array.from(q1Checked) }, q2: { ...q2Result, selected: q2Selected } },
+    });
+
+    showResult({ q1: q1Result, q2: q2Result, total_score });
+  }
+
+  function showResult(data) {
+    document.getElementById("quizSection").hidden = true;
+    const resultSection = document.getElementById("resultSection");
+    resultSection.hidden = false;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultBreakdown").innerHTML = `
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 1 — สังเกตสัญญาณหลอกลวง</span><span>${data.q1.score} / 2</span></div>
+        <div class="result__item-reason">เลือกถูก ${data.q1.correctSelected} จาก 3 ข้อ, เลือกข้อที่ไม่ใช่สัญญาณไป ${data.q1.wrongSelected} ข้อ</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 2 — ให้เหตุผลที่ถูกต้อง</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.score === 2 ? "เลือกเหตุผลที่ตรงประเด็นที่สุด" : "เหตุผลที่เลือกยังไม่ตรงประเด็นหลักของอีเมลหลอกลวงนี้"}</div>
+      </div>`;
+    resultSection.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  if (profile) { renderQ1(); renderQ2(); }
+</script>
+</body>
+</html>
