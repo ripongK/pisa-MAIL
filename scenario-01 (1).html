@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 1: คลิปสัมภาษณ์การลงทุน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --teal-deep: #134e4a; --teal-mid: #1f6f64; --paper: #f3efe7; --ink: #1c1a17; --ink-soft: #5b564c;
+    --bubble: #ffffff; --bubble-border: #e4ded0; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #9b2c2c; --ok: #2f6b3a; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d9d4c7; color: var(--ink); display: flex; justify-content: center; padding: 24px 0 64px; }
+  .phone { width: 100%; max-width: 480px; background: var(--paper); min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.18); }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--teal-deep); font-weight: 600; }
+  .chat-header { background: var(--teal-deep); color: #fff; display: flex; align-items: center; gap: 12px; padding: 14px 16px; position: sticky; top: 0; z-index: 5; }
+  .chat-header__back { font-size: 22px; opacity: .85; text-decoration: none; color: #fff; }
+  .chat-header__title { display: flex; flex-direction: column; line-height: 1.3; }
+  .chat-header__name { font-weight: 600; font-size: 15px; }
+  .chat-header__count { font-size: 12px; opacity: .75; }
+  .chat-thread { padding: 16px 14px 8px; }
+  .chat-date { text-align: center; font-size: 12px; color: var(--ink-soft); background: rgba(0,0,0,.05); width: fit-content; margin: 0 auto 16px; padding: 3px 12px; border-radius: 999px; }
+  .msg { display: flex; gap: 8px; margin-bottom: 14px; }
+  .msg__avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--teal-mid); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .msg__body { max-width: 82%; }
+  .msg__name { font-size: 12px; color: var(--ink-soft); margin-bottom: 3px; }
+  .msg__bubble { background: var(--bubble); border: 1px solid var(--bubble-border); padding: 10px 13px; border-radius: 4px var(--radius) var(--radius) var(--radius); font-size: 14.5px; line-height: 1.55; }
+  .msg__meta { font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+  .video-card { display: block; width: 100%; text-align: left; background: var(--bubble); border: 1px solid var(--bubble-border); border-radius: 4px var(--radius) var(--radius) var(--radius); padding: 0; overflow: hidden; cursor: pointer; font-family: inherit; }
+  .video-card__thumb { background: linear-gradient(135deg, #2b2b2b, #0e0e0e); aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; position: relative; }
+  .video-card__play { width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,.92); color: #111; display: flex; align-items: center; justify-content: center; font-size: 18px; padding-left: 3px; }
+  .video-card__badge { position: absolute; left: 10px; bottom: 10px; background: rgba(0,0,0,.55); color: #fff; font-size: 10.5px; padding: 3px 8px; border-radius: 4px; }
+  .video-card__caption { padding: 10px 13px; font-size: 13.5px; line-height: 1.5; }
+  .chat-nudge { background: var(--accent-soft); border: 1px solid #e3c196; border-radius: var(--radius); padding: 14px; margin: 18px 0 24px; text-align: center; }
+  .chat-nudge p { margin: 0 0 10px; font-size: 13.5px; color: #5c3d17; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn--primary { background: var(--accent); color: #fff; }
+  .btn--submit { display: block; width: 100%; background: var(--teal-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .video-player__frame { aspect-ratio: 16/9; background: linear-gradient(135deg, #2b2b2b, #0e0e0e); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 18px 0 16px; }
+  .video-player__play { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,.92); color: #111; display: flex; align-items: center; justify-content: center; font-size: 22px; padding-left: 4px; }
+  .video-player__desc, .video-player__note { font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+  .video-player__note { color: var(--ink-soft); font-style: italic; margin-top: 10px; }
+  .search-engine__bar { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--bubble-border); border-radius: 999px; padding: 10px 16px; margin-top: 16px; }
+  .search-engine__bar input { border: none; outline: none; flex: 1; font-family: inherit; font-size: 13.5px; background: transparent; color: var(--ink); }
+  .search-engine__hint { font-size: 12px; color: var(--ink-soft); margin: 10px 2px 14px; }
+  .result-card { background: #fff; border: 1px solid var(--bubble-border); border-left: 3px solid var(--teal-mid); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result-card__source { font-size: 11.5px; color: var(--teal-mid); font-weight: 600; margin-bottom: 4px; }
+  .result-card__title { font-size: 13.5px; font-weight: 600; line-height: 1.45; }
+  .result-card__desc { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; line-height: 1.5; }
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--teal-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 12px; }
+  .q1-item { border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .q1-item__text { font-size: 13.5px; line-height: 1.5; margin-bottom: 8px; }
+  .q1-item__toggle { display: flex; gap: 8px; }
+  .q1-item__toggle button { flex: 1; padding: 7px; border-radius: 8px; border: 1px solid var(--bubble-border); background: #fafafa; font-family: inherit; font-size: 12.5px; cursor: pointer; }
+  .q1-item__toggle button.active-strong { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .q1-item__toggle button.active-weak { background: var(--danger); border-color: var(--danger); color: #fff; }
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+  .mcq-option { display: block; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13.5px; line-height: 1.55; }
+  .mcq-option input { margin-right: 8px; }
+  .mcq-option.selected { border-color: var(--teal-mid); background: #eef6f4; }
+  .quiz__status { text-align: center; font-size: 13px; color: var(--ink-soft); min-height: 18px; margin-top: 10px; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--teal-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--teal-deep); color: var(--teal-deep); }
+</style>
+</head>
+<body>
+
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div class="phone" id="mainScreen">
+
+  <header class="chat-header">
+    <a class="chat-header__back" href="index.html">‹</a>
+    <div class="chat-header__title">
+      <span class="chat-header__name">ครอบครัวบ้านเรา 👨‍👩‍👧‍👦</span>
+      <span class="chat-header__count">สมาชิก 6 คน</span>
+    </div>
+  </header>
+
+  <main class="chat-thread">
+    <div class="chat-date">เช้าวันเสาร์</div>
+
+    <div class="msg msg--other">
+      <div class="msg__avatar">ป</div>
+      <div class="msg__body">
+        <div class="msg__name">ป้าหนู</div>
+        <div class="msg__bubble">
+          ป้าเจอในเฟซ ดูน่าเชื่อถือมาก เป็นข่าวช่องดังสัมภาษณ์นักธุรกิจใหญ่เลย
+          ป้าคิดจะลองลงเงินแปดพันดูนะ ได้คืนห้าเท่าเชียว ใครสนใจบอกป้า จะได้ลงพร้อมกัน
+        </div>
+      </div>
+    </div>
+
+    <div class="msg msg--other">
+      <div class="msg__avatar">ป</div>
+      <div class="msg__body">
+        <button class="video-card" id="openVideoBtn" type="button">
+          <div class="video-card__thumb" style="background:linear-gradient(to top, rgba(0,0,0,.6), rgba(0,0,0,.05) 55%), url('videos/scenario-01-poster.jpg'); background-size:cover; background-position:center top;">
+            <span class="video-card__play">▶</span>
+            <span class="video-card__badge">ข่าวภาษาอังกฤษ · สถานีโทรทัศน์สาธารณะ</span>
+          </div>
+          <div class="video-card__caption">
+            "CRYSTALLUM AI" แพลตฟอร์มลงทุนใหม่ รับประกันกำไรคืน 5 เท่า — สัมภาษณ์นักธุรกิจชื่อดัง 2 คน
+          </div>
+        </button>
+        <div class="msg__meta">จากเพจ "ข่าวเศรษฐกิจรายวัน" · 👍 1,247</div>
+      </div>
+    </div>
+
+    <div class="msg msg--other">
+      <div class="msg__avatar">ล</div>
+      <div class="msg__body">
+        <div class="msg__name">ลุงสมชาย</div>
+        <div class="msg__bubble">ดูจากยอดคนกดไลก์ก็เยอะนะ พันกว่าคน คงไม่หลอกหรอก</div>
+      </div>
+    </div>
+
+    <div class="chat-nudge">
+      <p>ต้นข้าวรู้สึกว่ามีบางอย่างไม่ถูกต้อง ก่อนจะตอบคุณป้า ลองตรวจสอบข้อมูลจากแหล่งอื่นดูก่อนไหม?</p>
+      <button class="btn btn--primary" id="openSearchBtn" type="button">🔍 ตรวจสอบย้อนกลับ</button>
+    </div>
+  </main>
+
+  <div class="modal" id="videoModal" hidden>
+    <div class="modal__sheet">
+      <button class="modal__close" data-close="videoModal" type="button">✕</button>
+      <video
+        controls
+        preload="metadata"
+        poster="videos/scenario-01-poster.jpg"
+        style="width:100%; border-radius:10px; margin:18px 0 12px; display:block; background:#000;"
+      >
+        <source src="videos/scenario-01.mp4" type="video/mp4" />
+        เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ
+      </video>
+      <p class="video-player__note">คลิปถูกโพสต์จากเพจที่ไม่เคยเผยแพร่ข่าวมาก่อน และมีผู้กดถูกใจ 1,200 กว่าคน</p>
+    </div>
+  </div>
+
+  <div class="modal" id="searchModal" hidden>
+    <div class="modal__sheet">
+      <button class="modal__close" data-close="searchModal" type="button">✕</button>
+      <div class="search-engine__bar">
+        <span>🔍</span>
+        <input type="text" value="ผู้ประกาศข่าวหญิง CRYSTALLUM AI investment clip" readonly />
+      </div>
+      <p class="search-engine__hint">ผลการค้นหา 4 รายการ ที่ต้นข้าวพบระหว่างตรวจสอบ</p>
+
+      <div class="result-card">
+        <div class="result-card__source">🎬 NHK World Archive</div>
+        <div class="result-card__title">ภาพเคลื่อนไหวชุดเดียวกันนี้มาจากรายงานข่าวของสถานี NHK World เมื่อวันที่ 28 กุมภาพันธ์ 2556</div>
+        <div class="result-card__desc">เป็นข่าวเรื่องการสร้างที่อยู่อาศัยช่วยผู้ประสบภัยน้ำท่วม ไม่มีเนื้อหาเรื่องการลงทุนเลย</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card__source">🎤 บทสัมภาษณ์ผู้ประกาศข่าว</div>
+        <div class="result-card__title">ผู้ประกาศข่าวหญิงให้สัมภาษณ์ยืนยันด้วยตนเอง</div>
+        <div class="result-card__desc">เธอไม่เคยทำงานเป็นผู้ประกาศข่าวให้สถานีที่ปรากฏโลโก้ในคลิป และเพิ่งถูกนำภาพกับเสียงไปทำคลิปปลอมเป็นครั้งแรก</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card__source">🤖 เครื่องมือตรวจจับสื่อสังเคราะห์</div>
+        <div class="result-card__title">ผลตรวจ: มีความเป็นไปได้ร้อยละ 72.3 ที่คลิปนี้สร้างด้วย AI Deepfake</div>
+        <div class="result-card__desc">ผลเป็นค่าความน่าจะเป็นจากระบบอัตโนมัติ ไม่ใช่การยืนยันเด็ดขาด</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card__source">✅ ศูนย์ตรวจสอบข้อเท็จจริง (สถานีที่ถูกแอบอ้าง)</div>
+        <div class="result-card__title">รายงานยืนยันว่าคลิปนี้เป็นของปลอม</div>
+        <div class="result-card__desc">สถานีไม่เคยผลิตรายการดังกล่าว และไม่มีความเกี่ยวข้องกับแพลตฟอร์มลงทุนนี้</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 1: คลิปสัมภาษณ์การลงทุน</h1>
+      <p>ตอบคำถาม 3 ข้อต่อไปนี้ โดยอ้างอิงจากสถานการณ์และหลักฐานที่ต้นข้าวพบ</p>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 1 — หลักฐานใดยืนยันได้หนักแน่น?</h2>
+      <p class="quiz__desc">พิจารณาข้อความแต่ละข้อว่าเป็นหลักฐานที่ "หนักแน่น" หรือ "ไม่หนักแน่น" ที่ยืนยันว่าคลิปนี้เป็นของปลอม</p>
+      <div id="q1List"></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — ทำไมแค่ผลเครื่องมือตรวจจับไม่พอ?</h2>
+      <p class="quiz__desc">คุณลุงบอกว่า "ร้อยละ 72.3 ก็ยังไม่ถึงร้อย แสดงว่าอาจจะเป็นคลิปจริงก็ได้" จงอธิบายว่าทำไมผลจากเครื่องมือตรวจจับเพียงอย่างเดียวจึงไม่พอ และหลักฐานจากการค้นต้นตอภาพให้ข้อสรุปที่หนักแน่นกว่าอย่างไร</p>
+      <textarea id="q2Text" rows="5" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 3 — ต้นข้าวควรพิมพ์ตอบในกลุ่มว่าอย่างไร?</h2>
+      <p class="quiz__desc">เลือกข้อความที่เหมาะสมที่สุดที่ต้นข้าวควรส่งในกลุ่มไลน์ครอบครัว</p>
+      <div id="q3List"></div>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+
+</div>
+
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-01";
+  const SCENARIO_NAME = "คลิปสัมภาษณ์การลงทุน";
+  const MAX_SCORE = 7; // q1(2) + q2(2) + q3(3)
+
+  // ---------- ตรวจสอบว่ามีการเข้าสู่ระบบจากหน้าหลักหรือยัง ----------
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    document.getElementById("guardScreen").hidden = false;
+    document.getElementById("mainScreen").style.display = "none";
+  }
+
+  // ---------- ข้อ 1 ----------
+  const Q1_STATEMENTS = [
+    "ภาพเคลื่อนไหวชุดเดียวกันนี้มาจากรายงานข่าวของ NHK World ปี 2556 ที่เป็นข่าวเรื่องที่อยู่อาศัยผู้ประสบภัยน้ำท่วม",
+    "ผู้ประกาศข่าวในคลิปยืนยันเองว่าไม่เคยทำงานให้สถานีที่ปรากฏโลโก้ในคลิป",
+    "ศูนย์ตรวจสอบข้อเท็จจริงของสถานีที่ถูกแอบอ้างเผยแพร่รายงานยืนยันว่าคลิปเป็นของปลอม",
+    "เครื่องมือตรวจจับสื่อสังเคราะห์ระบุความเป็นไปได้ร้อยละ 72.3 ว่าคลิปสร้างด้วย AI",
+    "เพจที่โพสต์คลิปไม่เคยเผยแพร่ข่าวมาก่อน และคลิปมีผู้กดถูกใจ 1,200 กว่าคน",
+  ];
+  const Q1_ANSWER_KEY = [true, true, true, false, false];
+  const q1State = new Array(Q1_STATEMENTS.length).fill(null);
+
+  function renderQ1() {
+    const container = document.getElementById("q1List");
+    container.innerHTML = "";
+    Q1_STATEMENTS.forEach((text, i) => {
+      const item = document.createElement("div");
+      item.className = "q1-item";
+      item.innerHTML = `
+        <div class="q1-item__text">${i + 1}. ${text}</div>
+        <div class="q1-item__toggle">
+          <button type="button" data-i="${i}" data-val="true">หนักแน่น</button>
+          <button type="button" data-i="${i}" data-val="false">ไม่หนักแน่น</button>
+        </div>`;
+      container.appendChild(item);
+    });
+    container.querySelectorAll("button[data-i]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.i);
+        const val = btn.dataset.val === "true";
+        q1State[i] = val;
+        const group = btn.parentElement;
+        group.querySelectorAll("button").forEach((b) => b.classList.remove("active-strong", "active-weak"));
+        btn.classList.add(val ? "active-strong" : "active-weak");
+      });
+    });
+  }
+
+  function gradeQ1() {
+    const correctCount = q1State.filter((a, i) => a === Q1_ANSWER_KEY[i]).length;
+    let score = 0;
+    if (correctCount === 5) score = 2;
+    else if (correctCount === 4) score = 1;
+    return { score, correctCount };
+  }
+
+  // ---------- ข้อ 2: ตรวจด้วย keyword/pattern checklist (ไม่ใช้ AI) ----------
+  // ส่วน ก: ชี้ว่าเครื่องมือให้แค่ความน่าจะเป็น/คาดการณ์ ไม่ใช่ข้อยืนยันเด็ดขาด
+  const Q2_PART_A_KEYWORDS = [
+    "ความน่าจะเป็น", "คาดการณ์", "อาจจะผิด", "ผิดพลาดได้", "ไม่ชัวร์", "ไม่แน่นอน",
+    "ไม่ยืนยัน", "ไม่ 100", "ไม่ถึงร้อย", "ไม่ใช่ข้อยืนยัน", "อาจผิด",
+  ];
+  // ส่วน ข: ชี้ว่าการพบภาพต้นฉบับ/ต้นตอ เป็นหลักฐานยืนยันโดยตรง
+  const Q2_PART_B_KEYWORDS = [
+    "ต้นตอ", "ต้นฉบับ", "nhk", "NHK", "ปี 2556", "2556", "แหล่งที่มา", "แหล่งข่าวเดิม",
+    "น้ำท่วม", "หลักฐานตรง", "ยืนยันได้ชัดเจน", "พิสูจน์ได้",
+  ];
+
+  function containsAny(text, keywords) {
+    const lower = text.toLowerCase();
+    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
+  }
+
+  function gradeQ2(text) {
+    const hasA = containsAny(text, Q2_PART_A_KEYWORDS);
+    const hasB = containsAny(text, Q2_PART_B_KEYWORDS);
+    let score = 0;
+    let reasoning;
+    if (hasA && hasB) { score = 2; reasoning = "กล่าวถึงทั้งข้อจำกัดของเครื่องมือตรวจจับ และหลักฐานจากการพบต้นตอภาพ"; }
+    else if (hasA || hasB) { score = 1; reasoning = hasA ? "กล่าวถึงข้อจำกัดของเครื่องมือตรวจจับ แต่ยังไม่ได้อธิบายหลักฐานจากการพบต้นตอภาพ" : "กล่าวถึงหลักฐานจากการพบต้นตอภาพ แต่ยังไม่ได้อธิบายข้อจำกัดของเครื่องมือตรวจจับ"; }
+    else { score = 0; reasoning = "ยังไม่พบคำอธิบายทั้งสองส่วนที่เกณฑ์กำหนด (ข้อจำกัดของเครื่องมือตรวจจับ และหลักฐานจากการพบต้นตอภาพ)"; }
+    return { score, reasoning };
+  }
+
+  // ---------- ข้อ 3: ปรนัย 4 ตัวเลือก (แทนข้ออัตนัยเดิม) ----------
+  const Q3_OPTIONS = [
+    { id: "a", score: 3, text: "ป้าครับ/ค่ะ ผมลองค้นดูแล้วเจอว่าคลิปนี้จริงๆ มาจากข่าวเก่าของ NHK ปี 2556 เรื่องผู้ประสบภัยน้ำท่วมครับ ไม่ใช่ข่าวการลงทุนเลย อาจมีคนเอาคลิปเก่ามาตัดต่อหลอกลวง ป้ายังไม่ควรโอนเงินไปก่อนนะครับ เดี๋ยวผมลองหารายละเอียดเพิ่มแล้วจะมาเล่าให้ฟังอีกทีครับ" },
+    { id: "b", score: 2, text: "ป้าก็เชื่อง่ายจัง คลิปนี้ปลอมชัดๆ เอามาจากข่าวน้ำท่วมเก่าปี 2556 ของ NHK ไม่เกี่ยวกับการลงทุนเลย อย่าเพิ่งโอนเงินเด็ดขาดนะ" },
+    { id: "c", score: 2, text: "ป้าครับ ผมว่าคลิปนี้น่าจะไม่จริงนะครับ ป้ายังไม่ควรโอนเงินไปก่อนนะครับ เดี๋ยวลองถามคนอื่นดูอีกทีครับ" },
+    { id: "d", score: 0, text: "ป้าครับ ถ้าป้าอยากลองก็ลองดูน้อยๆ ก่อนก็ได้ครับ เผื่อได้กำไรจริงๆ" },
+  ];
+  const Q3_REASONING = {
+    a: "มีหลักฐานชัดเจน น้ำเสียงสุภาพ และเสนอสิ่งที่ควรทำต่อไปครบทั้ง 3 องค์ประกอบ",
+    b: "มีหลักฐานและข้อเสนอแนะที่ชัดเจน แต่น้ำเสียงต่อผู้ใหญ่ไม่สุภาพ ('ป้าก็เชื่อง่ายจัง') ทำให้เสียคะแนนด้านมารยาท",
+    c: "น้ำเสียงสุภาพและมีข้อเสนอแนะ แต่ไม่ได้อ้างหลักฐานที่หนักแน่นมายืนยัน",
+    d: "ข้อความสนับสนุนให้ลองลงทุนต่อ ซึ่งอาจทำให้ครอบครัวเสี่ยงสูญเสียเงิน จึงไม่ได้คะแนน",
+  };
+  let q3Selected = null;
+
+  function renderQ3() {
+    const container = document.getElementById("q3List");
+    container.innerHTML = "";
+    Q3_OPTIONS.forEach((opt) => {
+      const label = document.createElement("label");
+      label.className = "mcq-option";
+      label.innerHTML = `<input type="radio" name="q3" value="${opt.id}" /> ${opt.text}`;
+      label.querySelector("input").addEventListener("change", () => {
+        q3Selected = opt.id;
+        container.querySelectorAll(".mcq-option").forEach((el) => el.classList.remove("selected"));
+        label.classList.add("selected");
+      });
+      container.appendChild(label);
+    });
+  }
+
+  function gradeQ3() {
+    const opt = Q3_OPTIONS.find((o) => o.id === q3Selected);
+    return { score: opt ? opt.score : 0, reasoning: Q3_REASONING[q3Selected] || "" };
+  }
+
+  // ---------- Modal ----------
+  function openModal(id) { document.getElementById(id).hidden = false; }
+  function closeModal(id) { document.getElementById(id).hidden = true; }
+  document.getElementById("openVideoBtn").addEventListener("click", () => openModal("videoModal"));
+  document.getElementById("openSearchBtn").addEventListener("click", () => openModal("searchModal"));
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
+
+  // ---------- ส่งผลไป Google Sheet ----------
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return; // ยังไม่ตั้งค่า URL
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" }, // เลี่ยง CORS preflight กับ Apps Script
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+    }
+  }
+
+  // ---------- Submit ----------
+  async function handleSubmit() {
+    const statusEl = document.getElementById("quizStatus");
+    const submitBtn = document.getElementById("submitBtn");
+    const q2_text = document.getElementById("q2Text").value.trim();
+
+    if (q1State.includes(null)) { statusEl.textContent = "กรุณาตอบข้อ 1 ให้ครบทั้ง 5 ข้อ"; return; }
+    if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
+    if (!q3Selected) { statusEl.textContent = "กรุณาเลือกคำตอบข้อ 3"; return; }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "กำลังตรวจคะแนน...";
+
+    const q1Result = gradeQ1();
+    const q2Result = gradeQ2(q2_text);
+    const q3Result = gradeQ3();
+    const total_score = q1Result.score + q2Result.score + q3Result.score;
+
+    await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name,
+      grade: profile.grade,
+      school: profile.school,
+      scenario_id: SCENARIO_ID,
+      scenario_name: SCENARIO_NAME,
+      score: total_score,
+      max_score: MAX_SCORE,
+      details: { q1: q1Result, q2: { score: q2Result.score, text: q2_text }, q3: { score: q3Result.score, selected: q3Selected } },
+    });
+
+    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score });
+  }
+
+  function showResult(data) {
+    document.getElementById("quizSection").hidden = true;
+    const resultSection = document.getElementById("resultSection");
+    resultSection.hidden = false;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultBreakdown").innerHTML = `
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 1 — การจำแนกหลักฐาน</span><span>${data.q1.score} / 2</span></div>
+        <div class="result__item-reason">ตอบถูก ${data.q1.correctCount} จาก 5 ข้อ</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 2 — ข้อจำกัดของเครื่องมือตรวจจับ</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning}</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 3 — การตอบกลับในกลุ่ม</span><span>${data.q3.score} / 3</span></div>
+        <div class="result__item-reason">${data.q3.reasoning}</div>
+      </div>`;
+    resultSection.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+
+  if (profile) {
+    renderQ1();
+    renderQ3();
+  }
+</script>
+</body>
+</html>
