@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 8: กราฟยอดผู้เล่นเกมในชมรมอีสปอร์ต</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #6a1b6a; --th-mid: #c23fa3; --paper: #f4f0f3; --ink: #1a1a1a; --ink-soft: #5c5866;
+    --bubble: #ffffff; --bubble-border: #e6dee4; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #9b2c2c; --ok: #2f6b3a; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d8d0d6; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .scenario-intro { max-width: 600px; margin: 0 auto 20px; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px 18px; }
+  .scenario-intro p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--ink); }
+
+  .device-frame { width: 390px; max-width: 100%; margin: 0 auto; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
+  .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
+  .device-screen { background: var(--paper); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; }
+  .content-wide { width: 100%; max-width: 760px; margin: 28px auto 0; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  .ig-header { background: linear-gradient(90deg,#833ab4,#c23fa3,#e67e49); color: #fff; display: flex; align-items: center; gap: 10px; padding: 12px 14px; position: sticky; top: 0; z-index: 5; }
+  .ig-header__back { font-size: 20px; opacity: .9; text-decoration: none; color: #fff; }
+  .ig-header__logo { font-weight: 700; font-size: 14.5px; }
+
+  .ig-post__user { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+  .ig-post__avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#833ab4,#e67e49); flex-shrink: 0; }
+  .ig-post__name { font-size: 12.5px; font-weight: 700; }
+  .ig-post__tag { font-size: 10.5px; color: var(--ink-soft); }
+
+  .chart-card { margin: 0 12px; background: #0a0a0a; border-radius: 10px; padding: 16px 14px 12px; color: #fff; }
+  .chart-card__brand { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; margin-bottom: 10px; }
+  .chart-card__title { font-size: 15px; font-weight: 700; margin-bottom: 14px; line-height: 1.4; }
+  .chart-card__game { text-align: center; font-size: 11.5px; color: #ccc; margin-bottom: 8px; }
+  .chart-axis { display: flex; align-items: flex-end; gap: 10px; height: 130px; border-left: 2px solid #888; position: relative; padding-left: 8px; }
+  .chart-axis__label { position: absolute; left: -2px; top: -8px; font-size: 10px; color: #aaa; }
+  .chart-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .chart-bar-group__value { font-size: 11.5px; font-weight: 700; margin-bottom: 4px; }
+  .chart-bar-group__bar { width: 70%; border-radius: 3px 3px 0 0; }
+  .chart-bar-group__month { font-size: 9.5px; color: #ccc; margin-top: 5px; }
+  .chart-card__footnote { font-size: 9px; color: #888; text-align: right; margin-top: 10px; }
+  .chart-card__banner { display: flex; justify-content: space-between; align-items: center; background: #0a0a0a; margin: 2px 12px 0; padding: 10px 14px; border-radius: 0 0 10px 10px; color: #fff; font-size: 11px; }
+  .chart-card__banner b { color: #baff4a; font-size: 13px; }
+
+  .ig-post__caption { padding: 10px 12px 16px; font-size: 12.5px; line-height: 1.6; }
+  .ig-post__caption b { font-weight: 700; }
+  .ig-post__stats { padding: 0 12px 14px; font-size: 11.5px; color: var(--ink-soft); }
+
+  .chat-nudge { background: var(--accent-soft); border: 1px solid #e3c196; border-radius: var(--radius); padding: 14px; width: 100%; max-width: 390px; margin: 18px auto 0; text-align: center; }
+  .chat-nudge p { margin: 0 0 10px; font-size: 13.5px; color: #5c3d17; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn--primary { background: var(--accent); color: #fff; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 5vh 16px; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px; padding: 20px 18px 28px; max-height: 90vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .gt-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+  .gt-table th, .gt-table td { border: 1px solid var(--bubble-border); padding: 6px 8px; text-align: center; }
+  .gt-table th { background: #ece0e8; }
+  .gt-note { font-size: 12px; color: var(--ink-soft); margin-top: 10px; line-height: 1.6; }
+
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 12px; }
+
+  .q-match-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .q-match-table th, .q-match-table td { border: 1px solid var(--bubble-border); padding: 7px; text-align: center; vertical-align: middle; }
+  .q-match-table th { background: #ece0e8; font-size: 11px; }
+  .q-match-table td:first-child { text-align: right; font-size: 12px; line-height: 1.5; }
+  .q-match-table input[type="radio"] { width: 18px; height: 18px; cursor: pointer; }
+
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+
+  .quiz__status { text-align: center; font-size: 13px; color: var(--ink-soft); min-height: 18px; margin-top: 10px; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+</style>
+</head>
+<body>
+
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+  <div class="scenario-intro">
+    <p>ชมรมอีสปอร์ตของโรงเรียนมัธยมแห่งหนึ่งนัดประชุมประจำเดือนเพื่อเลือกเกมที่จะใช้แข่งขันในงานกีฬาสีปีนี้ สมาชิกแบ่งเป็นสองฝ่าย ฝ่ายหนึ่งนำโดย "ปั้น" เชียร์เกม "เดือด: อารีนา" เกมต่อสู้ออนไลน์ที่เพิ่งอัปเดตแพตช์ใหญ่เมื่อเดือนมีนาคมของปีการศึกษานี้ ส่วนอีกฝ่ายนำโดย "ต้นข้าว" เชียร์เกมอื่นที่เล่นกันมานานในชมรม ปั้นเปิดโทรศัพท์ให้เพื่อนดูโพสต์อินโฟกราฟิกที่บริษัทผู้พัฒนาเกม Blaze Studio โพสต์ลงอินสตาแกรมทางการเมื่อสัปดาห์ก่อน ด้านล่างนี้คือโพสต์อินโฟกราฟิกที่ปั้นนำเสนอ</p>
+  </div>
+
+ <div class="device-frame">
+  <div class="device-frame__notch"></div>
+  <div class="device-screen">
+
+  <header class="ig-header">
+    <a class="ig-header__back" href="index.html">‹</a>
+    <div class="ig-header__logo">📷 Instagram</div>
+  </header>
+
+  <div class="ig-post__user">
+    <div class="ig-post__avatar"></div>
+    <div>
+      <div class="ig-post__name">blazestudio.official</div>
+      <div class="ig-post__tag">บัญชีทางการของผู้พัฒนาเกม</div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-card__brand">🔥 Blaze Studio</div>
+    <div class="chart-card__title">ยอดผู้เล่นพร้อมกันสูงสุดพุ่งทะยาน!</div>
+    <div class="chart-card__game">Duel: Arena</div>
+    <div class="chart-axis">
+      <span class="chart-axis__label">80,000</span>
+      <div class="chart-bar-group"><div class="chart-bar-group__value">82,000</div><div class="chart-bar-group__bar" style="height:10%; background:#e67e49;"></div><div class="chart-bar-group__month">มี.ค.</div></div>
+      <div class="chart-bar-group"><div class="chart-bar-group__value">85,000</div><div class="chart-bar-group__bar" style="height:25%; background:#eaa23c;"></div><div class="chart-bar-group__month">เม.ย.</div></div>
+      <div class="chart-bar-group"><div class="chart-bar-group__value">91,000</div><div class="chart-bar-group__bar" style="height:55%; background:#e8d23c;"></div><div class="chart-bar-group__month">พ.ค.</div></div>
+      <div class="chart-bar-group"><div class="chart-bar-group__value">98,000</div><div class="chart-bar-group__bar" style="height:90%; background:#baff4a;"></div><div class="chart-bar-group__month">มิ.ย.</div></div>
+    </div>
+    <div class="chart-card__footnote">*ข้อมูลเฉพาะช่วง มี.ค.-มิ.ย. 2569 หลังอัปเดตแพตช์ใหญ่</div>
+  </div>
+  <div class="chart-card__banner"><span>#1 เกมมาแรงแห่งปี</span><span>แชร์ <b>15,400</b> ครั้ง</span></div>
+
+  <div class="ig-post__caption"><b>blazestudio.official</b> ยอดผู้เล่นพุ่งทะยานแบบนี้ เกมนี้ต้องมาแรงที่สุดแน่นอน! 🔥🎮</div>
+  <div class="ig-post__stats">❤️ 24,100 ถูกใจ · 💬 1,820 ความคิดเห็น</div>
+
+  </div>
+ </div>
+
+  <div class="chat-nudge">
+    <p>ต้นข้าวสังเกตเห็นตัวหนังสือเล็กๆ มุมล่างขวาของภาพ จึงลองค้นหาสถิติจากเว็บไซต์อิสระ GameTrack Thailand</p>
+    <button class="btn btn--primary" id="openSearchBtn" type="button">📊 ดูข้อมูลเต็มจาก GameTrack Thailand</button>
+  </div>
+
+  <div class="modal" id="searchModal" hidden>
+    <div class="modal__sheet">
+      <button class="modal__close" data-close="searchModal" type="button">✕</button>
+      <p class="quiz__desc" style="margin-top:14px;">ข้อมูลยอดผู้เล่นพร้อมกันสูงสุด (ม.ค.-ส.ค. ปีเดียวกัน) จาก GameTrack Thailand</p>
+      <table class="gt-table">
+        <tr><th>เดือน</th><th>ม.ค.</th><th>ก.พ.</th><th>มี.ค.</th><th>เม.ย.</th><th>พ.ค.</th><th>มิ.ย.</th><th>ก.ค.</th><th>ส.ค.</th></tr>
+        <tr><th>ผู้เล่น</th><td>75,000</td><td>79,000</td><td>82,000</td><td>85,000</td><td>91,000</td><td>98,000</td><td>99,000</td><td>97,000</td></tr>
+      </table>
+      <p class="gt-note">กราฟที่ปั้นนำมาอ้างแสดงเฉพาะ 4 เดือน (มี.ค.-มิ.ย.) และตัดแกนตั้งให้เริ่มที่ 80,000 แทนที่จะเริ่มจาก 0 — หากคำนวณยอดผู้เล่นตลอด 8 เดือนเต็ม (ม.ค.-ส.ค.) จะเพิ่มขึ้นจาก 75,000 เป็น 97,000 คน หรือประมาณร้อยละ 29 ไม่ใช่การ "พุ่งทะยาน" แบบก้าวกระโดด และตัวเลขเริ่มทรงตัว/ลดลงเล็กน้อยหลังเดือนกรกฎาคม</p>
+    </div>
+  </div>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 8: กราฟยอดผู้เล่นเกมในชมรมอีสปอร์ต</h1>
+      <p>ปั้นใช้อินโฟกราฟิกนี้เพื่อโน้มน้าวให้ชมรมเลือกเกม "เดือด: อารีนา" แข่งขันในงานกีฬาสี</p>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 1 — ข้อความใดถูกต้องตามข้อมูล?</h2>
+      <p class="quiz__desc">พิจารณาแต่ละข้อความว่า "ถูกต้องตามข้อมูล" หรือ "ไม่ถูกต้องตามข้อมูล" ในสถานการณ์นี้</p>
+      <table class="q-match-table">
+        <tr><th style="width:55%">ข้อความ</th><th>ถูกต้อง</th><th>ไม่ถูกต้อง</th></tr>
+        <tbody id="q1Rows"></tbody>
+      </table>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — กราฟใช้เทคนิคใดทำให้ดูน่าตื่นเต้นเกินจริง?</h2>
+      <p class="quiz__desc">ต้นข้าวบอกว่ากราฟที่ปั้นนำมาอ้างทำให้ "ตัวเลขที่ถูกต้องดูน่าตื่นเต้นเกินจริง" จงอธิบายสั้นๆ ว่ากราฟดังกล่าวใช้เทคนิคใดสองอย่างที่ทำให้เกิดผลเช่นนี้ พร้อมยกตัวเลขจากสถานการณ์ประกอบอย่างน้อยหนึ่งตัวเลข</p>
+      <textarea id="q2Text" rows="5" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-08";
+  const SCENARIO_NAME = "กราฟยอดผู้เล่นเกมในชมรมอีสปอร์ต";
+  const MAX_SCORE = 4; // q1(2) + q2(2)
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    document.getElementById("guardScreen").hidden = false;
+    document.getElementById("mainScreen").style.display = "none";
+  }
+
+  function openModal(id) { document.getElementById(id).hidden = false; }
+  function closeModal(id) { document.getElementById(id).hidden = true; }
+  document.getElementById("openSearchBtn").addEventListener("click", () => openModal("searchModal"));
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
+
+  // ---------- ข้อ 1: ถูกต้อง / ไม่ถูกต้องตามข้อมูล ----------
+  const Q1_STATEMENTS = [
+    "กราฟที่ปั้นนำมาอ้างแสดงยอดผู้เล่นตั้งแต่เดือนมกราคมถึงสิงหาคม",
+    "แกนตั้งของกราฟที่ปั้นนำมาอ้างเริ่มต้นจาก 0 คน",
+    "ตัวเลขยอดผู้เล่นในเดือนมิถุนายนตามกราฟของปั้นคือ 98,000 คน",
+    "ข้อมูลจาก GameTrack Thailand แสดงว่ายอดผู้เล่นในเดือนสิงหาคมสูงกว่าเดือนกรกฎาคม",
+    "ยอดผู้เล่นเพิ่มขึ้นประมาณร้อยละ 29 ตลอด 8 เดือน (มกราคม-สิงหาคม) ตามข้อมูลของ GameTrack Thailand",
+  ];
+  const Q1_ANSWER_KEY = [false, false, true, false, true]; // true = ถูกต้องตามข้อมูล
+  const q1State = new Array(Q1_STATEMENTS.length).fill(null);
+
+  function renderQ1() {
+    const tbody = document.getElementById("q1Rows");
+    tbody.innerHTML = "";
+    Q1_STATEMENTS.forEach((text, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${text}</td>
+        <td><input type="radio" name="q1-${i}" data-i="${i}" data-val="true" /></td>
+        <td><input type="radio" name="q1-${i}" data-i="${i}" data-val="false" /></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll("input[type=radio]").forEach((inp) => {
+      inp.addEventListener("change", () => { q1State[Number(inp.dataset.i)] = inp.dataset.val === "true"; });
+    });
+  }
+
+  function gradeQ1() {
+    const correctCount = q1State.filter((a, i) => a === Q1_ANSWER_KEY[i]).length;
+    let score = 0;
+    if (correctCount === 5) score = 2;
+    else if (correctCount >= 3) score = 1;
+    return { score, correctCount };
+  }
+
+  // ---------- ข้อ 2: keyword checklist (2 เทคนิค) ----------
+  const Q2_PART_A_KEYWORDS = ["แกนตั้ง", "แกน y", "แกนวาย", "ไม่เริ่มจาก 0", "ไม่เริ่มที่ 0", "80,000", "80000", "ตัดแกน", "เริ่มที่ 80"];
+  const Q2_PART_B_KEYWORDS = ["เลือกช่วงเวลา", "เลือกแสดง", "ไม่แสดงเดือน", "ตัดเดือน", "เฉพาะช่วง", "มีนาคมถึงมิถุนายน", "มี.ค.-มิ.ย.", "4 เดือน", "cherry"];
+
+  function containsAny(text, keywords) {
+    const lower = text.toLowerCase();
+    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
+  }
+
+  function gradeQ2(text) {
+    const hasA = containsAny(text, Q2_PART_A_KEYWORDS);
+    const hasB = containsAny(text, Q2_PART_B_KEYWORDS);
+    let score = 0, reasoning;
+    if (hasA && hasB) { score = 2; reasoning = "ระบุทั้งเทคนิคการตัดแกนตั้งและการเลือกช่วงเวลานำเสนอได้ครบถ้วน"; }
+    else if (hasA || hasB) { score = 1; reasoning = hasA ? "ระบุเทคนิคการตัดแกนตั้งได้ แต่ยังไม่ได้พูดถึงการเลือกช่วงเวลานำเสนอ" : "ระบุเทคนิคการเลือกช่วงเวลานำเสนอได้ แต่ยังไม่ได้พูดถึงการตัดแกนตั้ง"; }
+    else { score = 0; reasoning = "ยังไม่ได้ระบุเทคนิคการนำเสนอข้อมูลที่ทำให้ตัวเลขดูเกินจริง (ตัดแกนตั้ง / เลือกช่วงเวลา)"; }
+    return { score, reasoning };
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+    }
+  }
+
+  async function handleSubmit() {
+    const statusEl = document.getElementById("quizStatus");
+    const submitBtn = document.getElementById("submitBtn");
+    const q2_text = document.getElementById("q2Text").value.trim();
+
+    if (q1State.includes(null)) { statusEl.textContent = "กรุณาตอบข้อ 1 ให้ครบทั้ง 5 ข้อ"; return; }
+    if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "กำลังตรวจคะแนน...";
+
+    const q1Result = gradeQ1();
+    const q2Result = gradeQ2(q2_text);
+    const total_score = q1Result.score + q2Result.score;
+
+    await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name,
+      grade: profile.grade,
+      school: profile.school,
+      scenario_id: SCENARIO_ID,
+      scenario_name: SCENARIO_NAME,
+      score: total_score,
+      max_score: MAX_SCORE,
+      details: { q1: q1Result, q2: { score: q2Result.score, text: q2_text } },
+    });
+
+    showResult({ q1: q1Result, q2: q2Result, total_score });
+  }
+
+  function showResult(data) {
+    document.getElementById("quizSection").hidden = true;
+    const resultSection = document.getElementById("resultSection");
+    resultSection.hidden = false;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultBreakdown").innerHTML = `
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 1 — ตรวจสอบข้อเท็จจริง</span><span>${data.q1.score} / 2</span></div>
+        <div class="result__item-reason">ตอบถูก ${data.q1.correctCount} จาก 5 ข้อ</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 2 — ระบุเทคนิคการนำเสนอข้อมูลที่บิดเบือน</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning}</div>
+      </div>`;
+    resultSection.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  if (profile) renderQ1();
+</script>
+</body>
+</html>
