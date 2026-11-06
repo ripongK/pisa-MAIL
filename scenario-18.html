@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 18: แอปจำแนกภาพขนมไทย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #0a7d5c; --th-mid: #16a085; --paper: #f2f6f4; --ink: #1a1a1a; --ink-soft: #5c655f;
+    --bubble: #ffffff; --bubble-border: #dde7e1; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #9b2c2c; --ok: #2f6b3a; --radius: 14px;
+    --r-c: #d99a12; --r-n: #2f8f5b; --r-e: #c0504d; --r-s: #4a6fa5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d3dbd6; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+  .scenario-intro { max-width: 600px; margin: 0 auto 20px; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px 18px; }
+  .scenario-intro p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--ink); }
+
+  .device-frame { width: 390px; max-width: 100%; margin: 0 auto 20px; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
+  .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
+  .device-screen { background: var(--paper); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; }
+  .content-wide { width: 100%; max-width: 760px; margin: 28px auto 0; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  /* ---------- แชท LINE ---------- */
+  .line-screen { background: #8fb785; min-height: 100%; padding-bottom: 16px; }
+  .line-head { background: #3f7d37; color: #fff; padding: 30px 14px 10px; font-size: 13px; font-weight: 700; position: sticky; top: 0; z-index: 5; }
+  .line-head small { font-weight: 400; opacity: .85; font-size: 11px; }
+  .chat-day { text-align: center; margin: 12px 0 4px; }
+  .chat-day span { display: inline-block; font-size: 10.5px; color: #fff; background: rgba(0,0,0,.22); border-radius: 999px; padding: 2px 10px; }
+  .msg { display: flex; gap: 8px; margin: 9px 10px; align-items: flex-start; }
+  .msg--me { flex-direction: row-reverse; }
+  .msg__avatar { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: #fff; }
+  .msg__avatar svg { display: block; width: 100%; height: 100%; }
+  .msg__col { max-width: 245px; }
+  .msg--me .msg__col { display: flex; flex-direction: column; align-items: flex-end; }
+  .msg__name { font-size: 10.5px; color: #f0fae9; margin: 0 0 2px 2px; }
+  .msg--me .msg__name { display: none; }
+  .msg__bubble { background: #fff; border-radius: 4px 14px 14px 14px; padding: 8px 11px; font-size: 12.5px; line-height: 1.55; }
+  .msg--me .msg__bubble { background: #a8e58b; border-radius: 14px 4px 14px 14px; }
+  .msg__time { font-size: 9.5px; color: #eaf5e4; margin-top: 2px; }
+  .sys-note { text-align: center; margin: 10px 14px; font-size: 11px; color: #fff; background: rgba(0,0,0,.25); border-radius: 10px; padding: 5px 10px; line-height: 1.5; }
+
+  /* ---------- หน้าจอแอปทดลอง ---------- */
+  .app-head { background: #7a3e1d; color: #fff; padding: 30px 16px 12px; position: sticky; top: 0; z-index: 5; }
+  .app-head b { font-size: 14px; display: block; }
+  .app-head span { font-size: 11px; opacity: .85; }
+  .app-row { display: flex; gap: 10px; background: #fff; border-bottom: 1px solid var(--bubble-border); padding: 10px 14px; align-items: center; }
+  .app-row__img { width: 76px; height: 57px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #fff4e0; }
+  .app-row__img svg { display: block; width: 100%; height: 100%; }
+  .app-row__txt { font-size: 12px; line-height: 1.55; }
+  .verdict { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-bottom: 2px; }
+  .verdict--ok { background: #dff3e6; color: var(--ok); }
+  .verdict--bad { background: #fde3e3; color: var(--danger); }
+  .app-note { padding: 12px 14px; font-size: 11px; color: var(--danger); background: #fdeeee; line-height: 1.6; }
+
+  /* ---------- ห้องทดลอง ---------- */
+  .sim { max-width: 1120px; margin: 32px auto 0; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 18px; }
+  .sim__head { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+  .sim__head h2 { font-size: 17px; margin: 0 0 4px; }
+  .sim__head p { margin: 0; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; max-width: 720px; }
+  .sim__grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 960px) { .sim__grid { grid-template-columns: 1.25fr 1fr .95fr; } }
+  .panel { border: 1px solid var(--bubble-border); border-radius: 12px; padding: 12px; background: #fafcfb; min-width: 0; }
+  .panel h3 { font-size: 14px; margin: 0 0 4px; }
+  .panel__sub { font-size: 11.5px; color: var(--ink-soft); margin: 0 0 10px; line-height: 1.5; }
+  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+  .dropzone { min-height: 150px; border: 2px dashed #b9cbc1; border-radius: 12px; padding: 8px; transition: background .12s, border-color .12s; }
+  .dropzone.over { background: #e9f6f1; border-color: var(--th-mid); }
+  .dropzone__empty { font-size: 12px; color: var(--ink-soft); text-align: center; padding: 28px 8px; line-height: 1.6; }
+  .pcard { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; overflow: hidden; cursor: grab; font-size: 11px; display: flex; flex-direction: column; }
+  .pcard.dragging { opacity: .45; }
+  .pcard svg { display: block; width: 100%; height: auto; }
+  .pcard__body { padding: 6px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .pcard__name { font-weight: 600; font-size: 11.5px; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 999px; width: fit-content; color: #fff; }
+  .tag--c { background: var(--r-c); } .tag--n { background: var(--r-n); } .tag--e { background: var(--r-e); } .tag--s { background: var(--r-s); }
+  .mini { font-family: inherit; font-size: 10.5px; border: 1px solid #b9cbc1; border-radius: 6px; padding: 4px 6px; background: #fff; cursor: pointer; width: 100%; line-height: 1.3; }
+  .mini:hover { background: #eef6f2; }
+  .sim-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .sim-actions .btn { flex: 1; min-width: 110px; padding: 10px 12px; font-size: 13.5px; }
+  .btn--train { background: var(--th-deep); color: #fff; }
+  .btn--ghost { background: transparent; border: 1px solid #9aa9a0; color: var(--ink-soft); }
+  .sim-msg { margin-top: 12px; font-size: 12.5px; line-height: 1.6; min-height: 20px; padding: 8px 10px; border-radius: 8px; background: #f0f4f2; }
+  .sim-msg--warn { background: #fdeeee; color: var(--danger); font-weight: 600; }
+  .sim-msg--ok { background: #e6f5ec; color: var(--ok); }
+
+  .barlabel { font-size: 11.5px; font-weight: 600; margin: 8px 0 4px; }
+  .bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; background: #e2e9e5; font-size: 10.5px; color: #fff; font-weight: 600; }
+  .bar span { display: flex; align-items: center; justify-content: center; white-space: nowrap; overflow: hidden; min-width: 0; }
+  .seg-c { background: var(--r-c); } .seg-n { background: var(--r-n); } .seg-e { background: var(--r-e); } .seg-s { background: var(--r-s); }
+  .bar--empty { color: var(--ink-soft); justify-content: center; align-items: center; font-weight: 400; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.tbl th, table.tbl td { border: 1px solid var(--bubble-border); padding: 5px 7px; text-align: center; }
+  table.tbl th { background: #eef4f0; font-weight: 600; }
+  table.tbl td:first-child, table.tbl th:first-child { text-align: left; }
+  .tblwrap { overflow-x: auto; }
+  .acc-big { font-weight: 700; color: var(--th-deep); }
+  .low { color: var(--danger); font-weight: 700; }
+  .good { color: var(--ok); font-weight: 700; }
+  .note-small { font-size: 11px; color: var(--ink-soft); line-height: 1.5; margin: 6px 0 0; }
+  .history { margin-top: 14px; }
+  .history h3 { font-size: 14px; margin: 0 0 6px; }
+
+  /* ---------- แบบทดสอบ ---------- */
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.6; margin: 0 0 12px; }
+  .casebox { border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #fafcfb; }
+  .casebox h3 { font-size: 13.5px; margin: 0 0 8px; }
+  .field { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; line-height: 1.5; padding: 5px 0; }
+  .field input { width: 84px; border: 1px solid var(--bubble-border); border-radius: 8px; padding: 6px 8px; font-family: inherit; font-size: 14px; text-align: right; flex-shrink: 0; }
+  .option { display: block; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13.5px; line-height: 1.55; }
+  .option input { margin-right: 8px; }
+  .option.selected { border-color: var(--th-mid); background: #e9f6f1; }
+  .qlabel { font-size: 13.5px; font-weight: 600; margin: 14px 0 8px; }
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+  .quiz__status { text-align: center; font-size: 13px; color: var(--danger); min-height: 18px; margin-top: 10px; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; gap: 8px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; }
+  .checks { list-style: none; margin: 6px 0 0; padding: 0; font-size: 12.5px; line-height: 1.7; }
+  .checks .yes { color: var(--ok); } .checks .no { color: var(--danger); }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+  :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+  <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="scenario-intro">
+    <p>เนยกับเพื่อนในชมรมคอมพิวเตอร์ของโรงเรียนกำลังพัฒนาแอปจำแนกภาพขนมไทยสำหรับใช้ในงานเปิดบ้านโรงเรียนปลายเดือนนี้ ทีมออกไปถ่ายภาพขนมจากร้านรอบโรงเรียนและตลาดนัดใกล้บ้านมาได้หลายสิบภาพ แล้วนำมาสร้างเป็นชุดข้อมูลฝึกให้ระบบเรียนรู้ว่าขนมแต่ละชิ้นคือขนมอะไร เมื่อทดลองใช้แอปกับภาพขนมที่เพื่อนคนอื่นถ่ายมาให้ลองทาย กลับพบผลดังหน้าจอด้านล่างนี้</p>
+  </div>
+
+  <!-- โทรศัพท์ 1: หน้าจอแอปทดลอง -->
+  <div class="device-frame">
+    <div class="device-frame__notch"></div>
+    <div class="device-screen">
+      <div class="app-head"><b>แอปจำแนกขนมไทย (ทดลอง)</b><span>ทายขนมจากภาพที่เพื่อนส่งมา</span></div>
+      <div class="app-row"><div class="app-row__img" data-dessert="thongyip"></div><div class="app-row__txt"><span class="verdict verdict--ok">ทาย: ทองหยิบ</span><br>ถูกต้อง</div></div>
+      <div class="app-row"><div class="app-row__img" data-dessert="thongyod"></div><div class="app-row__txt"><span class="verdict verdict--ok">ทาย: ทองหยอด</span><br>ถูกต้อง</div></div>
+      <div class="app-row"><div class="app-row__img" data-dessert="khanomchan"></div><div class="app-row__txt"><span class="verdict verdict--ok">ทาย: ขนมชั้น</span><br>ถูกต้อง</div></div>
+      <div class="app-row"><div class="app-row__img" data-dessert="khaotaeng"></div><div class="app-row__txt"><span class="verdict verdict--bad">ทาย: ไม่ใช่ขนมไทย</span><br>ความจริง: ข้าวแต๋น (เชียงใหม่)</div></div>
+      <div class="app-row"><div class="app-row__img" data-dessert="khaotom"></div><div class="app-row__txt"><span class="verdict verdict--bad">ทาย: ไม่ใช่ขนมไทย</span><br>ความจริง: ข้าวต้มมัด (อีสาน)</div></div>
+      <div class="app-row"><div class="app-row__img" data-dessert="kanomla"></div><div class="app-row__txt"><span class="verdict verdict--bad">ทาย: ฝอยทอง</span><br>ความจริง: ขนมลา (ภาคใต้)</div></div>
+      <div class="app-note">⚠️ แอปทายขนมภาคกลางได้แม่นเกือบทุกครั้ง แต่ทายขนมจากภาคอื่นผิดบ่อยมาก</div>
+    </div>
+  </div>
+
+  <div class="scenario-intro">
+    <p>เนยเปิดดูคลังภาพที่ทีมเก็บไว้ทั้งหมด แล้วพบว่าในบรรดาภาพขนมทั้งหมดที่มี ส่วนใหญ่เป็นขนมภาคกลางเกือบทั้งสิ้น มีขนมภาคเหนือ อีสาน และใต้ปนอยู่เพียงเล็กน้อยเท่านั้น เพื่อนคนหนึ่งเสนอทางแก้ในกลุ่มไลน์ของชมรม</p>
+  </div>
+
+  <!-- โทรศัพท์ 2: กลุ่มไลน์ชมรม -->
+  <div class="device-frame">
+    <div class="device-frame__notch"></div>
+    <div class="device-screen">
+      <div class="line-screen">
+        <div class="line-head">💬 ชมรมคอมพิวเตอร์ <small>(12)</small></div>
+        <div class="chat-day"><span>วันนี้</span></div>
+
+        <div class="msg msg--me">
+          <div class="msg__avatar" data-avatar="noei"></div>
+          <div class="msg__col"><div class="msg__name">เนย</div><div class="msg__bubble">เปิดดูคลังภาพแล้วนะ ส่วนใหญ่เป็นขนมภาคกลางเกือบหมดเลย ภาคอื่นมีนิดเดียว</div><div class="msg__time">17:02</div></div>
+        </div>
+        <div class="msg">
+          <div class="msg__avatar" data-avatar="fah"></div>
+          <div class="msg__col"><div class="msg__name">ฟ้า</div><div class="msg__bubble">งั้นไปถ่ายขนมภาคกลางเพิ่มอีกเท่าตัวเลยไหม ภาคกลางทำให้แอปแม่นยำขึ้นอยู่แล้ว</div></div>
+        </div>
+        <div class="msg">
+          <div class="msg__avatar" data-avatar="ton"></div>
+          <div class="msg__col"><div class="msg__name">ต้น</div><div class="msg__bubble">เห็นด้วย ภาพเยอะๆ แอปน่าจะเก่งขึ้นเอง 👍</div></div>
+        </div>
+        <div class="msg msg--me">
+          <div class="msg__avatar" data-avatar="noei"></div>
+          <div class="msg__col"><div class="msg__name">เนย</div><div class="msg__bubble">ก่อนตัดสินใจ ขอลองปรับชุดข้อมูลฝึกดูก่อนนะ ว่าองค์ประกอบแบบไหนจะทายได้แม่นทุกภูมิภาคจริงๆ</div><div class="msg__time">17:09</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ห้องทดลอง ===================== -->
+  <section class="sim" aria-label="ห้องทดลองชุดข้อมูลฝึกขนมไทย">
+    <div class="sim__head">
+      <div>
+        <h2>ห้องทดลองชุดข้อมูลฝึก: ขนมไทย</h2>
+        <p>คลังมีการ์ดภาพขนม 18 ใบ ติดป้ายภูมิภาค ลากการ์ดไปวางในกล่องชุดข้อมูลฝึก หรือกดปุ่มเพิ่มและเอาออกบนการ์ด แล้วกดฝึกระบบเพื่อดูความแม่นยำแยกภูมิภาคและความแม่นยำรวม ฝึกซ้ำได้ไม่จำกัดรอบ ระดับที่ยอมรับได้ของภาคเหนือ อีสาน และใต้ คือความแม่นยำไม่ต่ำกว่า 70%</p>
+      </div>
+      <button class="btn btn--ghost" id="resetBtn" type="button">เริ่มใหม่</button>
+    </div>
+
+    <div class="sim__grid">
+      <div class="panel">
+        <h3>คลังการ์ดภาพขนม</h3>
+        <p class="panel__sub">ภาพวาดจำลองขนมพร้อมชื่อและป้ายภูมิภาค</p>
+        <div id="libZone" class="dropzone" aria-label="คลังการ์ดภาพ"><div id="libGrid" class="cardgrid"></div></div>
+      </div>
+
+      <div class="panel">
+        <h3>ชุดข้อมูลฝึก (<span id="setCount">0</span> / 18 ใบ)</h3>
+        <p class="panel__sub">ลากการ์ดมาวางที่นี่ หรือกดปุ่มเพิ่มบนการ์ด</p>
+        <div id="setZone" class="dropzone" aria-label="ชุดข้อมูลฝึก"><div id="setGrid" class="cardgrid"></div></div>
+        <div class="sim-actions"><button class="btn btn--train" id="trainBtn" type="button">ฝึกระบบ</button></div>
+        <div id="simMsg" class="sim-msg" role="status" aria-live="polite">เริ่มต้นด้วยการ์ดทั้ง 18 ใบอยู่ในคลัง ยังไม่มีการ์ดในชุดข้อมูลฝึก</div>
+      </div>
+
+      <div class="panel">
+        <h3>แถบองค์ประกอบชุดข้อมูลฝึก</h3>
+        <p class="panel__sub">ปรับทันทีเมื่อเพิ่มหรือเอาการ์ดออก</p>
+        <div id="barRegion" class="bar"></div>
+        <div class="tblwrap" style="margin-top:10px;">
+          <table class="tbl" aria-label="จำนวนการ์ดในชุดฝึกแยกภูมิภาค">
+            <thead><tr><th>ภูมิภาค</th><th>จำนวน</th><th>สัดส่วน</th></tr></thead>
+            <tbody id="compBody"></tbody>
+          </table>
+        </div>
+
+        <h3 style="margin-top:16px;">ความแม่นยำรอบล่าสุด</h3>
+        <div class="tblwrap">
+          <table class="tbl" aria-label="ความแม่นยำแยกภูมิภาค">
+            <thead><tr><th>ภูมิภาค</th><th>ความแม่นยำ</th></tr></thead>
+            <tbody>
+              <tr><td>กลาง</td><td id="accC">—</td></tr>
+              <tr><td>เหนือ</td><td id="accN">—</td></tr>
+              <tr><td>อีสาน</td><td id="accE">—</td></tr>
+              <tr><td>ใต้</td><td id="accS">—</td></tr>
+              <tr><td><b>รวม</b></td><td id="accAll" class="acc-big">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note-small" id="accRound">ยังไม่เคยกดฝึก</p>
+      </div>
+    </div>
+
+    <div class="history">
+      <h3>ประวัติการฝึกสะสม</h3>
+      <div class="tblwrap">
+        <table class="tbl" aria-label="ประวัติการฝึก">
+          <thead><tr><th>รอบ</th><th>กลาง<br>(ใบ)</th><th>เหนือ<br>(ใบ)</th><th>อีสาน<br>(ใบ)</th><th>ใต้<br>(ใบ)</th><th>แม่นยำ<br>กลาง</th><th>แม่นยำ<br>เหนือ</th><th>แม่นยำ<br>อีสาน</th><th>แม่นยำ<br>ใต้</th><th>แม่นยำ<br>รวม</th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 18: แอปจำแนกภาพขนมไทย</h1>
+      <p>ใช้ห้องทดลองด้านบนเพื่อทดลองและตอบคำถามทั้งสามข้อ</p>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 1 — จัดชุดข้อมูลให้แม่นยำทุกภูมิภาค</h2>
+      <p class="quiz__desc">จัดชุดข้อมูลฝึกจากคลังการ์ดขนมไทยหลายแบบ แล้วกดฝึกระบบดูผล จากนั้นจัดชุดข้อมูลฝึกอีกครั้งให้ความแม่นยำของขนมภาคเหนือ อีสาน และใต้ ทั้งสามภูมิภาคไม่ต่ำกว่าระดับที่ยอมรับได้ (70%) แล้วบันทึกองค์ประกอบของชุดที่เลือก และอธิบายว่าทำไมไม่ควรพิจารณาเพียงค่าความแม่นยำรวมที่ระบบแสดงเพียงอย่างเดียว ต้องกดฝึกระบบอย่างน้อย 2 รอบ และตัวเลขที่บันทึกต้องตรงกับรอบฝึกล่าสุด</p>
+      <div class="casebox">
+        <h3>องค์ประกอบของชุดฝึกรอบสุดท้าย</h3>
+        <div class="field"><label for="n_c">จำนวนการ์ดภาคกลางที่เลือกไว้ในชุดฝึกรอบสุดท้าย</label><input id="n_c" type="number" inputmode="numeric" min="0" max="9" step="1" /></div>
+        <div class="field"><label for="n_n">จำนวนการ์ดภาคเหนือที่เลือกไว้ในชุดฝึกรอบสุดท้าย</label><input id="n_n" type="number" inputmode="numeric" min="0" max="3" step="1" /></div>
+        <div class="field"><label for="n_e">จำนวนการ์ดภาคอีสานที่เลือกไว้ในชุดฝึกรอบสุดท้าย</label><input id="n_e" type="number" inputmode="numeric" min="0" max="3" step="1" /></div>
+        <div class="field"><label for="n_s">จำนวนการ์ดภาคใต้ที่เลือกไว้ในชุดฝึกรอบสุดท้าย</label><input id="n_s" type="number" inputmode="numeric" min="0" max="3" step="1" /></div>
+      </div>
+      <div class="qlabel">จงอธิบายว่าทำไมจึงไม่ควรใช้เพียงค่าความแม่นยำรวม</div>
+      <textarea id="q1Text" rows="5" placeholder="พิมพ์คำอธิบายของคุณที่นี่..."></textarea>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — ทำไมการเพิ่มภาพภาคกลางจึงไม่ช่วย</h2>
+      <p class="quiz__desc">ข้อใดอธิบายได้ถูกต้องที่สุดว่าทำไมการถ่ายภาพขนมภาคกลางเพิ่มอีกจำนวนมากจึงไม่ช่วยแก้ปัญหาที่แอปทายขนมภาคอื่นผิดบ่อย</p>
+      <div id="q2List"></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 3 — ข้อเสนอของเพื่อน</h2>
+      <p class="quiz__desc">หากมีเพื่อนเสนอทางแก้ว่า “ควรเก็บภาพขนมภาคกลางเพิ่มอีกเท่าตัว เพราะขนมจากภาคกลางส่งผลให้ค่าความแม่นยำสูงขึ้น” นักเรียนเห็นด้วยกับแนวคิดนี้หรือไม่ ให้แสดงเหตุผลสนับสนุนหรือขัดแย้งแนวคิดนี้</p>
+      <textarea id="q3Text" rows="6" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-18";
+  const SCENARIO_NAME = "แอปจำแนกภาพขนมไทย";
+  const MAX_SCORE = 5; // q1(2) + q2(1) + q3(2)
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    document.getElementById("guardScreen").hidden = false;
+    document.getElementById("mainScreen").style.display = "none";
+  }
+
+  // ===================================================================
+  // ภาพวาดจำลองขนม 18 แบบ (SVG สร้างด้วยโค้ด)
+  // ===================================================================
+  const ART = {
+    thongyip: () => {
+      const flower = (cx, cy) => [0, 60, 120, 180, 240, 300].map((a) => `<ellipse cx="${cx}" cy="${cy - 8}" rx="4.5" ry="8" fill="#f2b705" stroke="#c98a00" stroke-width="1" transform="rotate(${a} ${cx} ${cy})"/>`).join("") + `<circle cx="${cx}" cy="${cy}" r="3.2" fill="#e09a00"/>`;
+      return flower(40, 56) + flower(66, 50) + flower(90, 58);
+    },
+    thongyod: () => [[42, 56], [62, 52], [82, 56], [52, 66], [74, 66]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="9" fill="#f4b400" stroke="#c98a00" stroke-width="1"/><circle cx="${x - 3}" cy="${y - 3}" r="2.5" fill="#ffe38a"/>`).join(""),
+    foithong: () => `<path d="M30 60 Q60 20 92 58 Q60 84 36 62 Q58 36 84 58 Q62 74 44 62 Q58 46 76 58 Q62 66 52 60" fill="none" stroke="#f2b705" stroke-width="3.2" stroke-linecap="round"/><path d="M34 66 Q60 40 90 64" fill="none" stroke="#e09a00" stroke-width="2" stroke-linecap="round"/>`,
+    khanomchan: () => {
+      const cols = ["#4a9b52", "#fff7d6", "#4a9b52", "#fff7d6", "#4a9b52", "#fff7d6"];
+      return `<g transform="translate(34 28)">` + cols.map((c, i) => `<polygon points="${6 + i * 0},${10 + i * 5} ${50 + 0},${10 + i * 5} ${56},${16 + i * 5} ${12},${16 + i * 5}" fill="${c}" stroke="#2f6b3a" stroke-width=".6"/>`).join("") + `<polygon points="6,10 50,10 56,16 12,16" fill="#6fba76"/></g>`;
+    },
+    tako: () => [34, 58, 82].map((x) => `<path d="M${x - 10} 48 L${x + 10} 48 L${x + 7} 66 L${x - 7} 66Z" fill="#dff0d8" stroke="#6aa86a" stroke-width="1"/><rect x="${x - 10}" y="42" width="20" height="8" rx="3" fill="#fff"/><rect x="${x - 8}" y="55" width="16" height="9" fill="#7cc576" opacity=".8"/>`).join(""),
+    lukchup: () => [[36, 58, "#d9402f"], [58, 52, "#f08a24"], [80, 58, "#4a9b52"], [58, 68, "#f2c200"]].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="9.5" fill="${c}"/><circle cx="${x - 3}" cy="${y - 3}" r="2.6" fill="#fff" opacity=".6"/><path d="M${x - 3} ${y - 9} q3 -5 7 -2 q-3 4 -7 2" fill="#2f8f3a"/>`).join(""),
+    sangkhaya: () => `<ellipse cx="46" cy="58" rx="22" ry="17" fill="#e8892b" stroke="#b86614" stroke-width="1.2"/><path d="M46 41 Q36 58 46 75 M34 45 Q26 58 36 72 M58 45 Q66 58 56 72" fill="none" stroke="#b86614" stroke-width="1"/><path d="M68 56 L100 52 L98 70 L70 72Z" fill="#f6e7b4" stroke="#d8c27a" stroke-width="1"/><path d="M70 56 L100 52 L99 58 L70 62Z" fill="#e8892b"/>`,
+    piakpun: () => [[40, 60], [62, 54], [84, 60], [58, 70]].map(([x, y]) => `<polygon points="${x},${y - 10} ${x + 11},${y} ${x},${y + 10} ${x - 11},${y}" fill="#4a4550" stroke="#2e2a33" stroke-width="1"/><circle cx="${x - 3}" cy="${y - 2}" r="1.3" fill="#fff"/><circle cx="${x + 3}" cy="${y + 2}" r="1.3" fill="#fff"/><circle cx="${x}" cy="${y - 4}" r="1.2" fill="#fff"/>`).join(""),
+    kluay: () => `<path d="M26 52 L94 52 Q92 78 60 80 Q28 78 26 52Z" fill="#fffaf0" stroke="#c9b99a" stroke-width="1.4"/><path d="M30 54 L90 54" stroke="#f1e6cf" stroke-width="3"/><ellipse cx="46" cy="52" rx="11" ry="5" fill="#f4d35e" stroke="#c9a21e"/><ellipse cx="64" cy="51" rx="11" ry="5" fill="#f4d35e" stroke="#c9a21e"/><ellipse cx="80" cy="53" rx="9" ry="4.5" fill="#f4d35e" stroke="#c9a21e"/>`,
+    khaotaeng: () => [[32, 46], [58, 44], [44, 64], [72, 62]].map(([x, y]) => `<rect x="${x}" y="${y}" width="22" height="16" rx="2" fill="#e9c98a" stroke="#b58a3c" stroke-width="1"/><path d="M${x + 3} ${y + 4} h16 M${x + 3} ${y + 9} h16" stroke="#8a4b17" stroke-width="2.2" stroke-linecap="round"/><circle cx="${x + 6}" cy="${y + 13}" r="1.2" fill="#fff"/><circle cx="${x + 14}" cy="${y + 12}" r="1.2" fill="#fff"/>`).join(""),
+    thiankaeo: () => [[44, 60], [76, 60]].map(([x, y]) => `<polygon points="${x},${y - 20} ${x + 18},${y + 8} ${x - 18},${y + 8}" fill="#69a65a" stroke="#3f7a38" stroke-width="1.2"/><path d="M${x} ${y - 20} L${x} ${y + 8}" stroke="#8cc77d" stroke-width="1.2"/><path d="M${x - 14} ${y + 3} h28" stroke="#d9cf9b" stroke-width="1.4"/>`).join(""),
+    aewlaew: () => `<path d="M60 30 L84 48 L76 76 L44 76 L36 48Z" fill="#7fb36b" stroke="#477a3a" stroke-width="1.3"/><path d="M60 30 L60 76 M36 48 L84 48" stroke="#a8d193" stroke-width="1.2"/><circle cx="60" cy="52" r="3.4" fill="#c1432b"/><path d="M60 52 q10 -4 16 4" stroke="#c1432b" stroke-width="1.4" fill="none"/>`,
+    khaotom: () => `<rect x="30" y="42" width="48" height="16" rx="8" fill="#7fb36b" stroke="#477a3a" stroke-width="1.2" transform="rotate(-10 54 50)"/><rect x="42" y="56" width="48" height="16" rx="8" fill="#6aa65a" stroke="#477a3a" stroke-width="1.2" transform="rotate(8 66 64)"/><path d="M44 42 v16 M56 41 v16 M66 52 v16 M80 58 v16" stroke="#e8e0b0" stroke-width="2"/>`,
+    khaochi: () => `<line x1="32" y1="76" x2="92" y2="40" stroke="#9c7442" stroke-width="3" stroke-linecap="round"/><ellipse cx="60" cy="58" rx="22" ry="13" fill="#f1e2bd" stroke="#c9a96b" stroke-width="1.2" transform="rotate(-28 60 58)"/><path d="M48 58 l8 -8 M56 62 l10 -10 M64 66 l9 -9" stroke="#8a4b17" stroke-width="2.4" stroke-linecap="round"/>`,
+    thianisan: () => [[40, 62], [62, 54], [84, 62]].map(([x, y]) => `<polygon points="${x},${y - 18} ${x + 15},${y + 8} ${x - 15},${y + 8}" fill="#4f8f48" stroke="#2f6a2b" stroke-width="1.2"/><path d="M${x} ${y - 18} L${x} ${y + 8}" stroke="#78b36c" stroke-width="1.1"/>`).join(""),
+    kanomla: () => `<path d="M60 56 m-26 0 a26 15 0 1 0 52 0 a26 15 0 1 0 -52 0" fill="none" stroke="#f1dc9b" stroke-width="3.2"/><path d="M60 56 m-18 0 a18 10 0 1 0 36 0 a18 10 0 1 0 -36 0" fill="none" stroke="#e8c870" stroke-width="3"/><path d="M60 56 m-10 0 a10 6 0 1 0 20 0 a10 6 0 1 0 -20 0" fill="none" stroke="#f1dc9b" stroke-width="3"/><path d="M34 50 L86 62 M38 64 L82 48" stroke="#e8c870" stroke-width="1.6"/>`,
+    rotikrop: () => `<ellipse cx="60" cy="58" rx="30" ry="15" fill="#e3b872" stroke="#b58a3c" stroke-width="1.3"/><ellipse cx="60" cy="56" rx="24" ry="11" fill="#f0cd8f"/><path d="M42 54 q10 -8 18 0 t18 0 M44 60 q8 -6 16 0 t16 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M82 46 l10 -10 l3 12z" fill="#f4a0b8"/>`,
+    chujun: () => `<path d="M32 64 Q36 36 62 36 Q90 38 90 64 Z" fill="#e7b04a" stroke="#b07a1c" stroke-width="1.3"/><path d="M34 64 L90 64" stroke="#b07a1c" stroke-width="2"/><path d="M38 62 q3 -6 6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0" fill="none" stroke="#b07a1c" stroke-width="1.2"/><circle cx="52" cy="50" r="2" fill="#f7d98a"/><circle cx="68" cy="46" r="2" fill="#f7d98a"/>`,
+  };
+  // ภาพวาดจากโค้ด: แต่ละใบวางบนจานสีขาว
+  function dessertSVG(kind, region) {
+    const bg = { c: "#fff4e0", n: "#e8f3e6", e: "#fbe9e1", s: "#e4eef9" }[region] || "#fff4e0";
+    return `<svg viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ภาพวาดจำลองขนม"><rect width="120" height="90" fill="${bg}"/><ellipse cx="60" cy="68" rx="48" ry="16" fill="#000" opacity=".08"/><ellipse cx="60" cy="64" rx="46" ry="16" fill="#fff" stroke="#d6d6d6" stroke-width="1.2"/><ellipse cx="60" cy="64" rx="36" ry="11" fill="#f6f6f6"/>${ART[kind]()}</svg>`;
+  }
+  document.querySelectorAll("[data-dessert]").forEach((el) => {
+    const k = el.dataset.dessert;
+    const region = { thongyip: "c", thongyod: "c", khanomchan: "c", khaotaeng: "n", khaotom: "e", kanomla: "s" }[k];
+    el.innerHTML = dessertSVG(k, region);
+  });
+
+  // ---------- อวตารตัวละคร ----------
+  const SKINS = ["#f7d6b8", "#ecbf94", "#d39a6d", "#a97550"];
+  function figure(l) {
+    const skin = l.skin, hair = l.hair, sh = l.shirt || "#ffffff";
+    let back = "", front = "";
+    const cap = `<path d="M43 45 Q42 26 60 26 Q78 26 77 45 Q72 34 60 34 Q48 34 43 45Z" fill="${hair}"/>`;
+    if (l.style === 1) {
+      back = `<path d="M41 52 Q37 24 60 24 Q83 24 79 52 L79 66 Q74 68 71 60 L49 60 Q46 68 41 66Z" fill="${hair}"/>`;
+      front = `<path d="M44 42 Q60 28 76 42 Q60 35 44 42Z" fill="${hair}"/>`;
+    } else if (l.style === 2) front = cap + `<path d="M75 36 Q96 40 90 68 Q86 52 76 48Z" fill="${hair}"/>`;
+    else if (l.style === 3) front = cap + `<circle cx="60" cy="22" r="7" fill="${hair}"/>`;
+    else if (l.style === 4) front = `<path d="M43 46 Q41 25 62 26 Q80 27 77 46 Q74 35 56 36 Q48 37 43 46Z" fill="${hair}"/>`;
+    else front = cap;
+    const torso = `<rect x="55" y="60" width="10" height="9" fill="${skin}"/><path d="M40 70 Q60 62 80 70 L83 114 L37 114Z" fill="${sh}" stroke="#cfd8dc" stroke-width="1"/><path d="M52 66 L60 78 L68 66 L64 64 L60 70 L56 64Z" fill="#fff" stroke="#cfd8dc" stroke-width=".8"/>`;
+    const head = `<circle cx="43" cy="48" r="3.2" fill="${skin}"/><circle cx="77" cy="48" r="3.2" fill="${skin}"/><circle cx="60" cy="46" r="17" fill="${skin}"/>`;
+    const face = `<circle cx="53.5" cy="47" r="1.9" fill="#2b2b2b"/><circle cx="66.5" cy="47" r="1.9" fill="#2b2b2b"/><ellipse cx="49" cy="53" rx="3" ry="1.8" fill="#f08a8a" opacity=".35"/><ellipse cx="71" cy="53" rx="3" ry="1.8" fill="#f08a8a" opacity=".35"/><path d="M54 54 Q60 59.5 66 54" fill="none" stroke="#7a3b2e" stroke-width="1.6" stroke-linecap="round"/>`;
+    return back + torso + head + front + face;
+  }
+  function avatarSVG(look) {
+    return `<svg viewBox="30 20 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="30" y="20" width="60" height="60" fill="${look.bg}"/>${figure(look)}</svg>`;
+  }
+  const LOOKS = {
+    noei: { skin: SKINS[1], hair: "#17171b", style: 1, shirt: "#fbe1f0", bg: "#ffe3a3" },
+    fah:  { skin: SKINS[0], hair: "#4b2f1b", style: 2, shirt: "#fff3c4", bg: "#d9d3f3" },
+    ton:  { skin: SKINS[2], hair: "#2a1c12", style: 4, shirt: "#cfe5ff", bg: "#cdebd4" },
+  };
+  document.querySelectorAll("[data-avatar]").forEach((el) => { el.innerHTML = avatarSVG(LOOKS[el.dataset.avatar]); });
+
+  // ===================================================================
+  // ห้องทดลอง: การ์ด 18 ใบ (กลาง 9 / เหนือ 3 / อีสาน 3 / ใต้ 3)
+  // ===================================================================
+  const REGION_NAME = { c: "กลาง", n: "เหนือ", e: "อีสาน", s: "ใต้" };
+  const CARD_SPEC = [
+    ["thongyip", "ทองหยิบ", "c"], ["khaotaeng", "ข้าวแต๋น", "n"], ["thongyod", "ทองหยอด", "c"], ["khaotom", "ข้าวต้มมัด", "e"],
+    ["foithong", "ฝอยทอง", "c"], ["kanomla", "ขนมลา", "s"], ["khanomchan", "ขนมชั้น", "c"], ["thiankaeo", "ขนมเทียนแก้ว", "n"],
+    ["tako", "ตะโก้", "c"], ["khaochi", "ข้าวจี่", "e"], ["lukchup", "ลูกชุบ", "c"], ["rotikrop", "โรตีกรอบ", "s"],
+    ["sangkhaya", "สังขยาฟักทอง", "c"], ["aewlaew", "แอ่วแหลว", "n"], ["piakpun", "ขนมเปียกปูน", "c"], ["thianisan", "ขนมเทียน", "e"],
+    ["kluay", "กล้วยบวชชี", "c"], ["chujun", "ขนมจู้จุน", "s"],
+  ];
+  const CARDS = CARD_SPEC.map(([kind, name, r], i) => ({ id: "d" + (i + 1), kind, name, r }));
+  const CARD_BY_ID = Object.fromEntries(CARDS.map((c) => [c.id, c]));
+  const MAX_SET = 18;
+  const THRESHOLD = 70;
+
+  const sim = { inSet: [], history: [], dragLog: [] };
+  const nowISO = () => new Date().toISOString();
+
+  // GRADING-START
+  // ---------- แบบจำลองความแม่นยำ (คำนวณแน่นอน ไม่สุ่ม) ----------
+  // ภูมิภาคที่มีการ์ดมากขึ้นแม่นขึ้น และถ้าภาคกลางครองสัดส่วนเกิน 40% ภาคอื่นจะถูกดึงให้แม่นลดลง
+  // ความแม่นยำรวมถ่วงด้วยจำนวนการ์ดของแต่ละภูมิภาคในชุดฝึก ภูมิภาคที่ไม่มีการ์ดจึงไม่ถูกนับในค่ารวม
+  function computeAccCounts(n) {
+    const total = n.c + n.n + n.e + n.s;
+    const share = total ? n.c / total : 0;
+    const pen = 1 - 0.3 * Math.max(0, (share - 0.4) / 0.6);
+    const r1 = (x) => Math.round(x * 10) / 10;
+    const accC = n.c ? 25 + 69 * (1 - Math.exp(-n.c / 2.5)) : 15;
+    const other = (k) => (k ? (22 + 70 * (1 - Math.exp(-k / 1.6))) * pen : 15);
+    const acc = { c: accC, n: other(n.n), e: other(n.e), s: other(n.s) };
+    const overall = total ? (n.c * acc.c + n.n * acc.n + n.e * acc.e + n.s * acc.s) / total : 0;
+    return { c: r1(acc.c), n: r1(acc.n), e: r1(acc.e), s: r1(acc.s), all: r1(overall) };
+  }
+  // GRADING-END
+  function countCards(cards) {
+    const n = { c: 0, n: 0, e: 0, s: 0 };
+    cards.forEach((c) => n[c.r]++);
+    return n;
+  }
+
+  const simMsgEl = document.getElementById("simMsg");
+  function say(text, kind) { simMsgEl.textContent = text; simMsgEl.className = "sim-msg" + (kind ? " sim-msg--" + kind : ""); }
+
+  function addToSet(id, via) {
+    const c = CARD_BY_ID[id];
+    if (!c || sim.inSet.includes(id)) return;
+    if (sim.inSet.length >= MAX_SET) { say("ชุดข้อมูลฝึกเลือกได้ไม่เกิน 18 ใบ", "warn"); return; }
+    sim.inSet.push(id);
+    sim.dragLog.push({ t: nowISO(), action: "add", id, name: c.name, region: c.r, via });
+    renderAll();
+  }
+  function removeFromSet(id, via) {
+    if (!sim.inSet.includes(id)) return;
+    const c = CARD_BY_ID[id];
+    sim.inSet = sim.inSet.filter((x) => x !== id);
+    sim.dragLog.push({ t: nowISO(), action: "remove", id, name: c.name, region: c.r, via });
+    renderAll();
+  }
+  function train() {
+    if (!sim.inSet.length) { say("ยังไม่มีการ์ดในชุดข้อมูลฝึก กรุณาเพิ่มการ์ดอย่างน้อย 1 ใบก่อนกดฝึกระบบ", "warn"); return; }
+    const n = countCards(sim.inSet.map((id) => CARD_BY_ID[id]));
+    const acc = computeAccCounts(n);
+    const round = sim.history.length + 1;
+    sim.history.push({ round, n, acc, total: sim.inSet.length, ids: [...sim.inSet], t: nowISO() });
+    renderAll();
+    say(`ฝึกระบบรอบที่ ${round} เสร็จแล้ว ความแม่นยำรวม ${acc.all.toFixed(1)}%`, "ok");
+  }
+  function resetAll() {
+    if (!window.confirm("ล้างชุดข้อมูลฝึกและประวัติการฝึกทั้งหมดกลับสู่สภาพเริ่มต้น?")) return;
+    sim.inSet = []; sim.history = []; sim.dragLog = [];
+    renderAll();
+    say("เริ่มใหม่แล้ว การ์ดทั้ง 18 ใบอยู่ในคลัง ยังไม่มีการ์ดในชุดข้อมูลฝึก", "");
+  }
+
+  let draggingId = null;
+  function cardEl(c, where) {
+    const el = document.createElement("div");
+    el.className = "pcard"; el.dataset.id = c.id; el.draggable = true;
+    el.innerHTML = `
+      ${dessertSVG(c.kind, c.r)}
+      <div class="pcard__body">
+        <div class="pcard__name">${c.name}</div>
+        <span class="tag tag--${c.r}">ภาค${REGION_NAME[c.r]}</span>
+        <button type="button" class="mini">${where === "lib" ? "เพิ่มเข้าชุดฝึก" : "เอาออก"}</button>
+      </div>`;
+    el.addEventListener("dragstart", (e) => { draggingId = c.id; e.dataTransfer.setData("text/plain", c.id); e.dataTransfer.effectAllowed = "move"; el.classList.add("dragging"); });
+    el.addEventListener("dragend", () => { draggingId = null; el.classList.remove("dragging"); });
+    el.querySelector("button").addEventListener("click", () => (where === "lib" ? addToSet(c.id, "button") : removeFromSet(c.id, "button")));
+    return el;
+  }
+  function setupDropzone(zoneId, onDrop) {
+    const z = document.getElementById(zoneId);
+    z.addEventListener("dragover", (e) => { e.preventDefault(); z.classList.add("over"); });
+    z.addEventListener("dragleave", (e) => { if (!z.contains(e.relatedTarget)) z.classList.remove("over"); });
+    z.addEventListener("drop", (e) => { e.preventDefault(); z.classList.remove("over"); const id = e.dataTransfer.getData("text/plain") || draggingId; if (id) onDrop(id); });
+  }
+  setupDropzone("setZone", (id) => addToSet(id, "drag"));
+  setupDropzone("libZone", (id) => removeFromSet(id, "drag"));
+
+  function accCell(v, region) {
+    if (v == null) return "—";
+    const txt = v.toFixed(1) + "%";
+    if (region === "c" || region === "all") return txt;
+    return `<span class="${v >= THRESHOLD ? "good" : "low"}">${txt}</span>`;
+  }
+
+  function renderAll() {
+    const libGrid = document.getElementById("libGrid"), setGrid = document.getElementById("setGrid");
+    libGrid.innerHTML = ""; setGrid.innerHTML = "";
+    CARDS.filter((c) => !sim.inSet.includes(c.id)).forEach((c) => libGrid.appendChild(cardEl(c, "lib")));
+    sim.inSet.map((id) => CARD_BY_ID[id]).forEach((c) => setGrid.appendChild(cardEl(c, "set")));
+    if (!sim.inSet.length) setGrid.innerHTML = '<div class="dropzone__empty" style="grid-column:1/-1">ยังไม่มีการ์ดในชุดข้อมูลฝึก<br>ลากการ์ดจากคลังมาวางที่นี่</div>';
+    document.getElementById("setCount").textContent = sim.inSet.length;
+
+    const n = countCards(sim.inSet.map((id) => CARD_BY_ID[id]));
+    const total = sim.inSet.length;
+    const bar = document.getElementById("barRegion");
+    bar.innerHTML = total
+      ? ["c", "n", "e", "s"].filter((k) => n[k] > 0).map((k) => `<span class="seg-${k}" style="width:${(n[k] / total) * 100}%">${REGION_NAME[k]} ${n[k]} (${Math.round((n[k] / total) * 100)}%)</span>`).join("")
+      : '<span class="bar--empty" style="width:100%">ยังไม่มีการ์ดในชุด</span>';
+    document.getElementById("compBody").innerHTML = ["c", "n", "e", "s"].map((k) => `<tr><td>ภาค${REGION_NAME[k]}</td><td>${n[k]}</td><td>${total ? Math.round((n[k] / total) * 100) : 0}%</td></tr>`).join("") + `<tr><td><b>รวม</b></td><td><b>${total}</b></td><td>${total ? "100%" : "0%"}</td></tr>`;
+
+    const last = sim.history[sim.history.length - 1];
+    ["c", "n", "e", "s"].forEach((k) => { document.getElementById("acc" + k.toUpperCase()).innerHTML = last ? accCell(last.acc[k], k) : "—"; });
+    document.getElementById("accAll").textContent = last ? last.acc.all.toFixed(1) + "%" : "—";
+    document.getElementById("accRound").textContent = last ? `ผลของรอบที่ ${last.round} (ชุดฝึก ${last.total} ใบ) ตัวเลขสีแดงคือต่ำกว่า ${THRESHOLD}%` : "ยังไม่เคยกดฝึก";
+
+    document.getElementById("historyBody").innerHTML = sim.history.length
+      ? sim.history.map((h) => `<tr><td>${h.round}</td><td>${h.n.c}</td><td>${h.n.n}</td><td>${h.n.e}</td><td>${h.n.s}</td><td>${h.acc.c.toFixed(1)}%</td><td>${accCell(h.acc.n, "n")}</td><td>${accCell(h.acc.e, "e")}</td><td>${accCell(h.acc.s, "s")}</td><td class="acc-big">${h.acc.all.toFixed(1)}%</td></tr>`).join("")
+      : '<tr><td colspan="10" style="text-align:center;color:#5c655f;">ยังไม่มีประวัติการฝึก</td></tr>';
+  }
+  document.getElementById("trainBtn").addEventListener("click", train);
+  document.getElementById("resetBtn").addEventListener("click", resetAll);
+  renderAll();
+
+  // ===================================================================
+  // ข้อ 2: ปรนัย
+  // ===================================================================
+  const Q2_OPTIONS = [
+    "เพราะขนมภาคกลางมีสีสันใกล้เคียงกับพื้นหลังมากกว่าขนมภาคอื่น ทำให้ระบบสามารถแยกแยะขนมได้ดีกว่าภาคอื่นมาก",
+    "เพราะขนมภาคกลางมีรูปทรงและสีสันซับซ้อนกว่าขนมภาคอื่นมากจนระบบแยกแยะไม่ค่อยได้",
+    "เพราะภาพขนมภาคกลางมีคุณภาพต่ำกว่าภาพขนมจากภาคอื่น ทำให้การเพิ่มจำนวนไม่ส่งผลต่อความแม่นยำ",
+    "เพราะสัดส่วนขนมแต่ละภูมิภาคในชุดฝึกของภาคอื่นยังมีน้อยกว่าภาคกลางมาก",
+  ];
+  const Q2_CORRECT = 3;
+  let q2Selected = null;
+  function renderQ2() {
+    const container = document.getElementById("q2List");
+    container.innerHTML = "";
+    Q2_OPTIONS.forEach((text, i) => {
+      const label = document.createElement("label");
+      label.className = "option";
+      label.innerHTML = `<input type="radio" name="q2" value="${i}" /> ${i + 1}. ${text}`;
+      label.querySelector("input").addEventListener("change", () => {
+        q2Selected = i;
+        container.querySelectorAll(".option").forEach((el) => el.classList.remove("selected"));
+        label.classList.add("selected");
+      });
+      container.appendChild(label);
+    });
+  }
+  function gradeQ2() { return { score: q2Selected === Q2_CORRECT ? 1 : 0 }; }
+
+  // GRADING-START
+  // ===================================================================
+  // เครื่องตรวจคำสำคัญและรูปแบบข้อความ (Keyword & Pattern Matching)
+  // น้ำหนัก w: คำหลัก = 1 (พอเป็นหลักฐาน), คำสนับสนุน = 0.5 (ต้องมี 2 คำ)
+  // neg: 0 = ไม่ตรวจการปฏิเสธ, 1 = ตัดทิ้งถ้ามี “ไม่ต้อง/ไม่จำเป็น/ไม่ควร” นำหน้า, 2 = ตัดทิ้งถ้ามี “ไม่/ไม่ได้/มิ” นำหน้า
+  // ===================================================================
+  function normalizeText(t) {
+    const digits = "๐๑๒๓๔๕๖๗๘๙";
+    return String(t)
+      .replace(/[๐-๙]/g, (d) => digits.indexOf(d))
+      .replace(/[\s\u200b\u200c\u200d\u00a0.,;:!?"'“”‘’()\[\]{}\-–—_\/\\]/g, "")
+      .toLowerCase()
+      .replace(/อีสาณ/g, "อีสาน")
+      .replace(/ถ่วงน้ำหนัก/g, "ถ่วง");
+  }
+  function isNegated(norm, idx, level) {
+    if (!level) return false;
+    const before = norm.slice(Math.max(0, idx - 8), idx);
+    return level === 2
+      ? /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร|ไม่ได้|ไม่|มิ)$/.test(before)
+      : /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร)$/.test(before);
+  }
+  function scorePatterns(norm, patterns) {
+    let sum = 0; const hits = [];
+    patterns.forEach((p) => {
+      const re = new RegExp(p.re.source, "g"); let m;
+      while ((m = re.exec(norm))) {
+        if (isNegated(norm, m.index, p.neg || 0)) continue;
+        sum += p.w; hits.push(m[0]); break;
+      }
+    });
+    return { hit: sum >= 1, hits };
+  }
+
+  // ----- ข้อ 1: คำอธิบายว่าทำไมไม่ควรดูแค่ความแม่นยำรวม -----
+  // E1 = ค่ารวมสูงได้ทั้งที่บางภูมิภาคยังต่ำ / ค่ารวมปิดบังปัญหา
+  const Q1_E1 = [
+    { re: /รวม.{0,30}(ปิดบัง|บดบัง|ซ่อน|กลบ|ไม่สะท้อน|ไม่เห็น|มองไม่เห็น|หลอก|เข้าใจผิด|ไม่บอก|ไม่พอ|ไม่ได้บอก|ตัดสินใจไม่ได้|ไม่ได้สะท้อน)/, w: 1 },
+    { re: /(ภาค|ภูมิภาค|กลุ่ม).{0,10}(ยังต่ำ|ต่ำลง|ต่ำ|ไม่ดี|แย่|ผิดบ่อย|ทายผิด|คงที่|ไม่ขยับ)/, w: 0.5 },
+    { re: /รวม.{0,10}(สูง|ดี|เพิ่ม)/, w: 0.5 },
+  ];
+  // E2 = กลไก: ภาคกลางมีข้อมูลมาก ถ่วงค่าเฉลี่ย / สัดส่วนไม่สมดุล
+  const Q1_E2 = [
+    { re: /ถ่วง|ค่าเฉลี่ย|เป็นหลัก|ส่วนใหญ่เป็น(ภาค)?กลาง|ภาคกลาง.{0,10}(เยอะ|มาก|จำนวนมาก|ส่วนใหญ่)|(ข้อมูล|ภาพ).{0,6}(ภาคกลาง|เยอะ).{0,10}(มากกว่า|เยอะกว่า)|สัดส่วน.{0,10}(ภาคกลาง|เอียง|ไม่สมดุล|ไม่เท่า)|ไม่สมดุล|เอียง|ข้อมูล(ส่วนใหญ่|เกือบทั้งหมด)/, w: 1 },
+  ];
+  // F = ข้อความต้องห้าม: เห็นว่าความแม่นยำรวมอย่างเดียวพอ
+  const Q1_F = [
+    { re: /(ความแม่นยำ)?รวม.{0,10}(อย่างเดียวก็พอ|พอแล้ว|ใช้ได้ดี|เพียงพอ)|รวมสูง(มาก)?(แล้ว)?แสดงว่า.{0,6}(ใช้ได้|ดี)|ระบบใช้ได้ดีแล้ว/, w: 1, neg: 2 },
+  ];
+  const CHECK_REGIONS = ["n", "e", "s"];
+  function gradeQ1(counts, text) {
+    const accs = computeAccCounts(counts);
+    const passCount = CHECK_REGIONS.filter((k) => accs[k] >= THRESHOLD).length;
+    const n = normalizeText(text);
+    const E1 = scorePatterns(n, Q1_E1), E2 = scorePatterns(n, Q1_E2), F = scorePatterns(n, Q1_F);
+    let score = 0;
+    if (passCount === 3) score = (E1.hit && E2.hit && !F.hit && n.length >= 20) ? 2 : 1;
+    else if (passCount >= 1) score = 1;
+    return { score, passCount, accs, e1: E1.hit, e2: E2.hit, forbidden: F.hit };
+  }
+
+  // ----- ข้อ 3: ข้อเสนอเพิ่มภาพภาคกลางเท่าตัว -----
+  // W = ชี้จุดอ่อน: เพิ่มเฉพาะภาคกลางไม่ช่วยภาคอื่น / ปัญหาคือสัดส่วน
+  const Q3_W = [
+    { re: /(ระบบ|แอป|โมเดล).{0,6}(ไม่เคย|ยังไม่เคย|ไม่ได้เห็น|ไม่ได้เรียนรู้).{0,12}(ขนม)?(ภาคอื่น|ภาคเหนือ|อีสาน|ใต้|ภูมิภาคอื่น)/, w: 1 },
+    { re: /(ภาคอื่น|ภาคเหนือ|อีสาน|ใต้|ภูมิภาคอื่น).{0,16}(ไม่(ได้)?(ขยับ|ดีขึ้น|เพิ่ม|เปลี่ยน)|เหมือนเดิม|ยังต่ำ|ยังแย่|ยังทายผิด|ยังผิด|ไม่แม่น|ยังไม่แม่น)/, w: 1 },
+    { re: /(เพิ่ม|เก็บ|ถ่าย)(เฉพาะ|แต่)?(ภาพ|ขนม)?ภาคกลาง.{0,25}(ไม่ช่วย|ไม่ได้ช่วย|ไม่แก้|ไม่ทำให้|ไม่ได้แก้|ไม่มีประโยชน์|ก็ไม่)/, w: 1 },
+    { re: /ไม่ใช่(ปัญหา)?(ที่)?(จำนวน|ปริมาณ)|ภาคกลาง.{0,10}(มี|เยอะ|มาก).{0,10}(อยู่แล้ว|เพียงพอ|พอแล้ว)|ไม่ครอบคลุม/, w: 1 },
+    { re: /สัดส่วน|ไม่สมดุล|เอียง|ถ่วง/, w: 0.5 },
+    { re: /ไม่เท่า(เทียม|กัน)?|ปัญหา(ที่แท้จริง)?(คือ|อยู่ที่)/, w: 0.5 },
+  ];
+  // S = ทางแก้: เพิ่มสัดส่วนภาพภาคเหนือ อีสาน ใต้ / ทำให้สมดุล
+  const Q3_S = [
+    { re: /(เก็บ|เพิ่ม|ถ่าย|หา|ไปเก็บ|ไปหา|ไปถ่าย|รวบรวม).{0,12}(ขนม|ภาพ)?(ภาค|ภูมิภาค)?(อื่น|เหนือ|อีสาน|ใต้|ทุกภาค|ทุกภูมิภาค|ที่มีน้อย|ที่ขาด)/, w: 1 },
+    { re: /เพิ่มสัดส่วน|ให้สมดุล|ให้เท่า(กัน)?|ให้ใกล้เคียง|ให้ครบ(ทุก)?ภาค|ทุกภาค.{0,6}(เท่า|พอ|ครบ)|ปรับสัดส่วน|จำนวนเท่ากัน/, w: 1 },
+  ];
+  const Q3_AGREE = [{ re: /เห็นด้วย/, w: 1, neg: 2 }];
+  const Q3_EVID = /จากที่ลอง|จากการทดลอง|ในหน้าจอ|จากหน้าจอ|ผลการฝึก|รอบที่|จากตาราง|จากผล|ที่ทดลอง/;
+  function gradeQ3(text) {
+    const n = normalizeText(text);
+    const W = scorePatterns(n, Q3_W), S = scorePatterns(n, Q3_S), A = scorePatterns(n, Q3_AGREE);
+    let score = 0;
+    if (n.length >= 12) {
+      if (W.hit && S.hit) score = 2;
+      else if (W.hit || S.hit) score = 1;
+      if (A.hit && !W.hit && !S.hit) score = 0;
+    }
+    return { score, weakness: W.hit, solution: S.hit, evidence: Q3_EVID.test(n), agrees: A.hit };
+  }
+  // GRADING-END
+
+  // ===================================================================
+  // ส่งคำตอบ
+  // ===================================================================
+  function readCounts() {
+    const spec = [["n_c", "c", 9, "ภาคกลาง"], ["n_n", "n", 3, "ภาคเหนือ"], ["n_e", "e", 3, "ภาคอีสาน"], ["n_s", "s", 3, "ภาคใต้"]];
+    const counts = {};
+    for (const [id, k, max, name] of spec) {
+      const raw = document.getElementById(id).value.trim();
+      if (raw === "") return { error: `กรุณากรอกจำนวนการ์ด${name}` };
+      const v = Number(raw);
+      if (!Number.isInteger(v) || v < 0 || v > max) return { error: `จำนวนการ์ด${name}ต้องเป็นจำนวนเต็มระหว่าง 0 ถึง ${max}` };
+      counts[k] = v;
+    }
+    return { counts };
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+    } catch (err) { console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err); }
+  }
+
+  async function handleSubmit() {
+    const statusEl = document.getElementById("quizStatus");
+    const submitBtn = document.getElementById("submitBtn");
+    const q1_text = document.getElementById("q1Text").value.trim();
+    const q3_text = document.getElementById("q3Text").value.trim();
+
+    if (sim.history.length < 2) { statusEl.textContent = "ข้อ 1: กรุณากดฝึกระบบในห้องทดลองอย่างน้อย 2 รอบก่อนส่งคำตอบ"; return; }
+    const r = readCounts();
+    if (r.error) { statusEl.textContent = "ข้อ 1: " + r.error; return; }
+    const last = sim.history[sim.history.length - 1];
+    if (["c", "n", "e", "s"].some((k) => last.n[k] !== r.counts[k])) {
+      statusEl.textContent = "ข้อ 1: ตัวเลขที่บันทึกไม่ตรงกับรอบฝึกล่าสุดในประวัติ กรุณากดฝึกรอบสุดท้ายด้วยองค์ประกอบที่ต้องการบันทึก แล้วกรอกตัวเลขให้ตรง";
+      return;
+    }
+    if (!q1_text) { statusEl.textContent = "ข้อ 1: กรุณาอธิบายว่าทำไมไม่ควรใช้เพียงค่าความแม่นยำรวม"; return; }
+    if (q2Selected === null) { statusEl.textContent = "กรุณาเลือกคำตอบข้อ 2"; return; }
+    if (!q3_text) { statusEl.textContent = "กรุณาตอบข้อ 3"; return; }
+
+    submitBtn.disabled = true;
+    statusEl.style.color = "#5c655f";
+    statusEl.textContent = "กำลังตรวจคะแนน...";
+
+    const q1 = gradeQ1(r.counts, q1_text), q2 = gradeQ2(), q3 = gradeQ3(q3_text);
+    const total_score = q1.score + q2.score + q3.score;
+
+    await saveToSheet({
+      studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: total_score, max_score: MAX_SCORE,
+      details: {
+        q1: { score: q1.score, counts: r.counts, accuracy: q1.accs, text: q1_text },
+        q2: { score: q2.score, selected: q2Selected },
+        q3: { score: q3.score, text: q3_text },
+        sim_log: {
+          train_count: sim.history.length,
+          rounds: sim.history.map((h) => ({ round: h.round, counts: h.n, acc: h.acc, t: h.t })),
+          drag_log: sim.dragLog,
+        },
+      },
+    });
+    showResult({ q1, q2, q3, total_score, counts: r.counts });
+  }
+
+  function checksHTML(parts) {
+    return `<ul class="checks">${parts.map((p) => `<li class="${p.ok ? "yes" : "no"}">${p.ok ? "✓" : "✗"} ${p.label}</li>`).join("")}</ul>`;
+  }
+
+  function showResult(d) {
+    document.getElementById("quizSection").hidden = true;
+    const resultSection = document.getElementById("resultSection");
+    resultSection.hidden = false;
+    document.getElementById("resultTotal").textContent = `${d.total_score} / ${MAX_SCORE}`;
+
+    const a = d.q1.accs;
+    const q1Reason = d.q1.score === 2 ? "จัดองค์ประกอบให้ทั้งสามภูมิภาคถึงเกณฑ์ และอธิบายกลไกที่ความแม่นยำรวมปิดบังปัญหาได้ถูกต้อง"
+      : d.q1.passCount === 3 ? "จัดองค์ประกอบให้ทั้งสามภูมิภาคถึงเกณฑ์ได้ แต่คำอธิบายยังไม่ชัดว่าความแม่นยำรวมปิดบังปัญหาด้วยกลไกใด"
+        : d.q1.passCount >= 1 ? `ภูมิภาคเป้าหมายถึงเกณฑ์ ${d.q1.passCount} จาก 3 ภูมิภาค ยังไม่ครบ`
+          : "ชุดข้อมูลยังเอียงไปทางภาคกลาง ไม่มีภูมิภาคเป้าหมายใดถึงเกณฑ์";
+    const q1Checks = [
+      { ok: a.n >= THRESHOLD, label: `ภาคเหนือ ${a.n.toFixed(1)}% (เกณฑ์ ${THRESHOLD}%)` },
+      { ok: a.e >= THRESHOLD, label: `ภาคอีสาน ${a.e.toFixed(1)}% (เกณฑ์ ${THRESHOLD}%)` },
+      { ok: a.s >= THRESHOLD, label: `ภาคใต้ ${a.s.toFixed(1)}% (เกณฑ์ ${THRESHOLD}%)` },
+      { ok: d.q1.e1, label: "อธิบายว่าความแม่นยำรวมอาจสูงทั้งที่บางภูมิภาคยังต่ำ" },
+      { ok: d.q1.e2, label: "อธิบายกลไก: ภาคกลางมีข้อมูลมากกว่าจึงถ่วงค่าเฉลี่ย / สัดส่วนไม่สมดุล" },
+    ];
+    const q2Reason = d.q2.score ? "เลือกถูกต้อง: ปัญหาอยู่ที่สัดส่วนข้อมูลของภาคอื่นที่น้อยกว่าภาคกลางมาก" : "คำตอบที่ถูกคือข้อ 4 เพราะสัดส่วนข้อมูลของภาคอื่นในชุดฝึกยังน้อยกว่าภาคกลางมาก";
+    const q3Reason = d.q3.score === 2 ? "ไม่เห็นด้วยกับข้อเสนอ ชี้จุดอ่อนได้ และเสนอทางแก้ที่ถูกทาง คือเพิ่มสัดส่วนภาพของภาคอื่น"
+      : d.q3.score === 1 ? "ตอบถูกทิศทางบางส่วน แต่ยังไม่ครบทั้งการชี้จุดอ่อนของข้อเสนอและทางแก้ที่ตรงประเด็น"
+        : "ยังไม่ได้ชี้ว่าการเพิ่มเฉพาะภาพภาคกลางไม่แก้ปัญหาของภาคอื่น และยังไม่เสนอทางแก้ที่ตรงประเด็น";
+    const q3Checks = [
+      { ok: d.q3.weakness, label: "ชี้จุดอ่อน: เพิ่มเฉพาะภาคกลางไม่ช่วยภาคอื่น / ปัญหาคือสัดส่วน" },
+      { ok: d.q3.solution, label: "เสนอทางแก้: เพิ่มสัดส่วนภาพภาคเหนือ อีสาน ใต้ ให้สมดุล" },
+      { ok: d.q3.evidence, label: "อ้างอิงผลการทดลองในหน้าจอ (เพิ่มความน่าเชื่อถือ ไม่บังคับ)" },
+    ];
+
+    document.getElementById("resultBreakdown").innerHTML = `
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 1 — จัดชุดข้อมูลและอธิบายข้อจำกัดของความแม่นยำรวม</span><span>${d.q1.score} / 2</span></div>
+        <div class="result__item-reason">${q1Reason} (องค์ประกอบที่บันทึก: กลาง ${d.counts.c} เหนือ ${d.counts.n} อีสาน ${d.counts.e} ใต้ ${d.counts.s})</div>
+        ${checksHTML(q1Checks)}
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 2 — เหตุที่เพิ่มภาพภาคกลางไม่ช่วย</span><span>${d.q2.score} / 1</span></div>
+        <div class="result__item-reason">${q2Reason}</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 3 — ข้อเสนอเพิ่มภาพภาคกลางเท่าตัว</span><span>${d.q3.score} / 2</span></div>
+        <div class="result__item-reason">${q3Reason}</div>
+        ${checksHTML(q3Checks)}
+      </div>`;
+    resultSection.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  if (profile) renderQ2();
+</script>
+</body>
+</html>
