@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 11: สองบัญชี หนึ่งแฟ้มสะสมผลงาน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #833ab4; --th-mid: #c23fa3; --paper: #f5f1f8; --ink: #1a1a1a; --ink-soft: #5c5866;
+    --bubble: #ffffff; --bubble-border: #e6dee9; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #9b2c2c; --ok: #2f6b3a; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #ddd4e2; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+
+  .scenario-intro { max-width: 600px; margin: 0 auto 18px; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px 18px; }
+  .scenario-intro p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--ink); }
+
+  /* รูปภาพเท่ากับกรอบแบบทดสอบ (.quiz__card): 760px สูงสุด − padding 32px ซ้าย-ขวา = 696px */
+  .phone-frame { width: calc(100% - 32px); max-width: 696px; margin: 0 auto 6px; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 34px rgba(0,0,0,.22); }
+  .phone-frame img { width: 100%; display: block; }
+  .phone-caption { width: calc(100% - 32px); max-width: 696px; margin: 0 auto 22px; text-align: center; font-size: 12px; color: var(--ink-soft); }
+  @media (min-width: 640px) { .phone-frame, .phone-caption { width: calc(100% - 64px); } }
+
+  .content-wide { width: 100%; max-width: 760px; margin: 0 auto; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 12px; }
+
+  .option { display: block; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13px; line-height: 1.5; }
+  .option input { margin-right: 8px; }
+  .option.selected { border-color: var(--th-mid); background: #f6ecfa; }
+
+  .order-row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .order-row__text { flex: 1; font-size: 13px; line-height: 1.5; }
+  .order-row select { padding: 7px 8px; border-radius: 8px; border: 1px solid var(--bubble-border); font-family: inherit; font-size: 13px; }
+
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+
+  .quiz__status { text-align: center; font-size: 13px; color: var(--ink-soft); min-height: 18px; margin-top: 10px; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+</style>
+</head>
+<body>
+
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+  <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <!-- 1. ข้อความเกริ่นสถานการณ์ -->
+  <div class="scenario-intro">
+    <p>ปราง นักเรียนชั้นมัธยมศึกษาปีที่ 6 กำลังเตรียมแฟ้มสะสมผลงาน (portfolio) เพื่อยื่นสมัครเข้าคณะศิลปกรรมศาสตร์ของมหาวิทยาลัยแห่งหนึ่ง และในเวลาเดียวกันก็กำลังสมัครงานพาร์ตไทม์ในร้านหนังสือใกล้บ้านช่วงปิดเทอม เธอใช้อินสตาแกรมสองบัญชีมาตลอดสามปี บัญชีแรกชื่อ @prang.creates เป็นบัญชีสาธารณะที่เธอตั้งใจใช้โพสต์ผลงานศิลปะดิจิทัล กิจกรรมประกวดและงานอาสาสมัครต่างๆ ในบัญชี @prang.creates ปรางโพสต์ผลงานวาดภาพดิจิทัลที่ได้รางวัลรองชนะเลิศการประกวดภาพประกอบระดับเขต พร้อมเขียนอธิบายขั้นตอนการทำงานตั้งแต่ร่างภาพจนถึงลงสี นอกจากนี้ยังมีภาพกิจกรรมที่เธอไปเป็นอาสาสมัครสอนศิลปะให้เด็กที่มูลนิธิแห่งหนึ่งทุกวันเสาร์ ติดแฮชแท็ก #อาสาสมัคร ไว้ด้วย และมีโพสต์รีวิวหนังสือที่อ่านจบแต่ละเล่มพร้อมข้อคิดสั้นๆ ซึ่งแสดงความสม่ำเสมอในการอ่านของเธอ แต่ยังมีอีกโพสต์หนึ่งที่ปรางนำภาพประกอบของศิลปินต่างชาติคนหนึ่งมาปรับสี และใส่ตัวอักษรทับ แล้วโพสต์ลงบัญชีนี้เสมือนเป็นผลงานของตัวเอง โดยไม่ได้ระบุเครดิตเจ้าของภาพต้นฉบับไว้เลย บัญชีนี้มีผู้ติดตาม 1,240 คน รวมถึงรุ่นพี่มหาวิทยาลัยและเจ้าของร้านหนังสือที่เธอสมัครงานด้วย</p>
+  </div>
+
+  <!-- 2. ภาพบัญชี @prang.creates -->
+  <div class="phone-frame"><img src="images/scenario-11-public.jpg" alt="บัญชี @prang.creates (บัญชีสาธารณะ)" /></div>
+  <div class="phone-caption">บัญชี @prang.creates — บัญชีสาธารณะ</div>
+
+  <!-- 3. ข้อความคั่นกลาง -->
+  <div class="scenario-intro">
+    <p>บัญชีที่สองชื่อ @prang_555 เป็นบัญชีส่วนตัวที่ตั้งค่าล็อกไว้ ใช้คุยเล่นกับเพื่อนสนิทเท่านั้น ดูโพสต์ด้านล่าง</p>
+  </div>
+
+  <!-- 4. ภาพบัญชี @prang_555 -->
+  <div class="phone-frame"><img src="images/scenario-11-private.jpg" alt="บัญชี @prang_555 (บัญชีส่วนตัว)" /></div>
+  <div class="phone-caption">บัญชี @prang_555 — บัญชีส่วนตัว (ล็อกไว้ อนุมัติผู้ติดตามเอง)</div>
+
+  <div class="scenario-intro">
+    <p>ปรางเชื่อมั่นมาตลอดว่าเพราะบัญชี @prang_555 เป็นบัญชีส่วนตัวที่ล็อกไว้และเธอเป็นคนอนุมัติผู้ติดตามเองทุกคน เนื้อหาในนั้นจึงปลอดภัยและจะไม่มีทางไปถึงคนนอกกลุ่มเพื่อนได้เลย จนกระทั่งวันหนึ่งเพื่อนสนิทคนหนึ่งแคปภาพชุดฮาโลวีนที่ล้อเลียนครูไปแชร์ต่อในกลุ่มไลน์ห้องเพื่อความสนุก และภาพนั้นก็หลุดไปถึงมือครูท่านที่ถูกล้อเลียนในที่สุด ทำให้ปรางถูกเรียกพบและถูกตักเตือนอย่างเป็นทางการ เหตุการณ์นี้ทำให้ปรางเริ่มกังวลว่าหากมีใครแคปภาพหรือข้อความอื่นๆ จากบัญชีส่วนตัวไปเผยแพร่ต่อในอนาคต อาจส่งผลกระทบต่อการสมัครเข้ามหาวิทยาลัยและงานพาร์ตไทม์ที่เธอกำลังพยายามสร้างภาพลักษณ์ที่ดีไว้ในบัญชีสาธารณะ เธอจึงปรึกษาครูแนะแนวว่าควรจัดการเนื้อหาทั้งสองบัญชีของตัวเองอย่างไรต่อไป</p>
+  </div>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 11: สองบัญชี หนึ่งแฟ้มสะสมผลงาน</h1>
+      <p>ครูแนะแนวขอให้ปรางช่วยวิเคราะห์โพสต์ทั้งหมดของตัวเองก่อนตัดสินใจว่าจะจัดการอย่างไรต่อไป</p>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 1 — โพสต์ใดเสี่ยงที่สุด?</h2>
+      <p class="quiz__desc">จากโพสต์ทั้ง 7 รายการในทั้งสองบัญชี ข้อใดคือโพสต์ที่มีความเสี่ยงต่อแฟ้มสะสมผลงานและการสมัครงานของปรางมากที่สุด หากมีคนแคปภาพไปเผยแพร่ต่อ (เลือกได้มากกว่า 1 ข้อ)</p>
+      <div id="q1List"></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — ทำไมบัญชีส่วนตัวจึงไม่ปลอดภัย 100%?</h2>
+      <p class="quiz__desc">ปรางตั้งค่าบัญชี @prang_555 เป็นบัญชีส่วนตัวและอนุมัติผู้ติดตามเองทุกคน แต่เพื่อนสนิทคนหนึ่งกลับแคปภาพไปแชร์ต่อจนครูเห็น เพราะเหตุใดการตั้งค่าความเป็นส่วนตัวจึงไม่ได้รับประกันว่าจะไม่มีใครนอกกลุ่มเห็นภาพนั้น (ตอบสั้นๆ 1-2 ประโยค)</p>
+      <textarea id="q2Text" rows="3" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 3 — ปรางควรทำอะไรก่อน-หลัง?</h2>
+      <p class="quiz__desc">สมมติว่าปรางเพิ่งรู้ว่าเพื่อนสนิทโพสต์ภาพแอบถ่ายเธอหลับในห้องเรียนลงบัญชีของเพื่อนโดยไม่ได้ขออนุญาต และภาพนั้นเริ่มถูกแชร์ต่อ เลือกลำดับ 1-4 ของขั้นตอนที่ปรางควรทำเพื่อจัดการปัญหานี้อย่างเหมาะสมโดยไม่ทำให้ความสัมพันธ์แย่ลงเกินจำเป็น</p>
+      <div id="q3Rows"></div>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-11";
+  const SCENARIO_NAME = "สองบัญชี หนึ่งแฟ้มสะสมผลงาน";
+  const MAX_SCORE = 6; // q1(2) + q2(2) + q3(2)
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    document.getElementById("guardScreen").hidden = false;
+    document.getElementById("mainScreen").style.display = "none";
+  }
+
+  // ---------- ข้อ 1: เลือกได้หลายข้อ (checkbox) ----------
+  const Q1_STATEMENTS = [
+    "ภาพผลงานวาดดิจิทัลรางวัลรองชนะเลิศ พร้อมคำบรรยายขั้นตอนการทำงาน (บัญชีสาธารณะ)",
+    "สตอรี่ระบายอารมณ์เรื่องคะแนนสอบ ตำหนิครูผู้สอนด้วยถ้อยคำรุนแรง (บัญชีส่วนตัว)",
+    "ภาพกิจกรรมอาสาสอนศิลปะให้เด็กที่มูลนิธิ ติดแฮชแท็ก #อาสาสมัคร (บัญชีสาธารณะ)",
+    "ภาพประกอบของศิลปินคนอื่นที่นำมาปรับสีแล้วโพสต์เป็นผลงานตัวเองโดยไม่ให้เครดิต (บัญชีสาธารณะ)",
+    "ภาพสเก็ตช์ตัวละครที่วาดเล่นตอนดึก พร้อมแคปชันบ่นว่าง่วงแต่ยังอยากวาดต่อ (บัญชีส่วนตัว)",
+    "ภาพแต่งกายธีมฮาโลวีนล้อเลียนหน้าตาครู พร้อมระบุชื่อจริงของครูในแคปชัน (บัญชีส่วนตัว)",
+    "โพสต์รีวิวหนังสือที่อ่านจบแต่ละเล่มพร้อมข้อคิดสั้นๆ (บัญชีสาธารณะ)",
+  ];
+  const Q1_CORRECT = [1, 3, 5]; // index ของข้อ 2, 4, 6
+  const q1Checked = new Set();
+
+  function renderQ1() {
+    const container = document.getElementById("q1List");
+    container.innerHTML = "";
+    Q1_STATEMENTS.forEach((text, i) => {
+      const label = document.createElement("label");
+      label.className = "option";
+      label.innerHTML = `<input type="checkbox" value="${i}" /> ${i + 1}. ${text}`;
+      label.querySelector("input").addEventListener("change", (e) => {
+        if (e.target.checked) q1Checked.add(i); else q1Checked.delete(i);
+        label.classList.toggle("selected", e.target.checked);
+      });
+      container.appendChild(label);
+    });
+  }
+
+  function gradeQ1() {
+    const selected = Array.from(q1Checked);
+    const correctSelected = selected.filter((i) => Q1_CORRECT.includes(i)).length;
+    const wrongSelected = selected.filter((i) => !Q1_CORRECT.includes(i)).length;
+    let score = 0;
+    if (correctSelected === 3 && wrongSelected === 0) score = 2;
+    else if ((correctSelected === 2 && wrongSelected === 0) || (correctSelected === 3 && wrongSelected === 1)) score = 1;
+    return { score, correctSelected, wrongSelected };
+  }
+
+  // ---------- ข้อ 2: keyword checklist ----------
+  const Q2_MECHANISM_KEYWORDS = ["แคป", "สกรีนช็อต", "screenshot", "ถ่ายหน้าจอ", "บันทึกภาพ", "แคปรูป", "แคปภาพ"];
+  const Q2_GENERIC_SHARE_KEYWORDS = ["แชร์ต่อ", "ส่งต่อ", "บอกต่อ"];
+
+  function containsAny(text, keywords) {
+    const lower = text.toLowerCase();
+    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
+  }
+
+  function gradeQ2(text) {
+    if (containsAny(text, Q2_MECHANISM_KEYWORDS)) {
+      return { score: 2, reasoning: "อธิบายกลไกการแคปภาพ/ถ่ายหน้าจอแล้วส่งต่อได้ชัดเจน" };
+    }
+    if (containsAny(text, Q2_GENERIC_SHARE_KEYWORDS)) {
+      return { score: 1, reasoning: "กล่าวถึงการแชร์ต่อของเพื่อน แต่ยังไม่ได้อธิบายกลไก (เช่น การแคปภาพ/ถ่ายหน้าจอ) ว่าทำไมการตั้งค่าส่วนตัวจึงป้องกันไม่ได้" };
+    }
+    return { score: 0, reasoning: "ยังไม่ได้อธิบายว่าทำไมการตั้งค่าความเป็นส่วนตัวจึงไม่ได้ป้องกันการเผยแพร่ต่อ" };
+  }
+
+  // ---------- ข้อ 3: เรียงลำดับ ----------
+  const Q3_ITEMS = [
+    { key: "ข", text: "ขอให้เพื่อนลบภาพออกจากบัญชีและช่วยแจ้งคนที่แชร์ต่อให้ลบด้วย", correctPos: 3 },
+    { key: "ก", text: "พูดคุยกับเพื่อนโดยตรงอย่างสงบ อธิบายว่าภาพนั้นทำให้รู้สึกอย่างไรและขอให้ลบ", correctPos: 2 },
+    { key: "ง", text: "หากเพื่อนไม่ยอมลบหรือภาพกระทบต่อชื่อเสียงมาก ให้แจ้งครูที่ปรึกษาหรือผู้ปกครองเพื่อขอความช่วยเหลือ", correctPos: 4 },
+    { key: "ค", text: "ตรวจสอบก่อนว่าภาพหลุดไปอยู่ที่ใดบ้างแล้ว โดยลองค้นหาชื่อบัญชีหรือคำค้นที่เกี่ยวข้อง", correctPos: 1 },
+  ];
+  const q3Selected = {};
+
+  function renderQ3() {
+    const container = document.getElementById("q3Rows");
+    container.innerHTML = "";
+    Q3_ITEMS.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "order-row";
+      row.innerHTML = `
+        <div class="order-row__text">${item.text}</div>
+        <select data-key="${item.key}">
+          <option value="">ลำดับ</option>
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+        </select>
+      `;
+      row.querySelector("select").addEventListener("change", (e) => {
+        q3Selected[item.key] = e.target.value ? Number(e.target.value) : null;
+      });
+      container.appendChild(row);
+    });
+  }
+
+  function gradeQ3() {
+    const correctCount = Q3_ITEMS.filter((item) => q3Selected[item.key] === item.correctPos).length;
+    let score = 0;
+    if (correctCount === 4) score = 2;
+    else if (correctCount === 3) score = 1;
+    else if (q3Selected["ก"] === 3 && q3Selected["ข"] === 2 && q3Selected["ค"] === 1 && q3Selected["ง"] === 4) score = 1; // สลับ ก กับ ข เท่านั้น
+    return { score, correctCount };
+  }
+  function q3IsComplete() { return Q3_ITEMS.every((item) => q3Selected[item.key] != null); }
+  function q3HasDuplicates() {
+    const vals = Q3_ITEMS.map((item) => q3Selected[item.key]).filter((v) => v != null);
+    return new Set(vals).size !== vals.length;
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+    }
+  }
+
+  async function handleSubmit() {
+    const statusEl = document.getElementById("quizStatus");
+    const submitBtn = document.getElementById("submitBtn");
+    const q2_text = document.getElementById("q2Text").value.trim();
+
+    if (q1Checked.size === 0) { statusEl.textContent = "กรุณาเลือกคำตอบข้อ 1 อย่างน้อย 1 ข้อ"; return; }
+    if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
+    if (!q3IsComplete()) { statusEl.textContent = "กรุณาเลือกลำดับข้อ 3 ให้ครบทั้ง 4 ข้อ"; return; }
+    if (q3HasDuplicates()) { statusEl.textContent = "ข้อ 3 เลือกลำดับซ้ำกัน กรุณาตรวจสอบ"; return; }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "กำลังตรวจคะแนน...";
+
+    const q1Result = gradeQ1();
+    const q2Result = gradeQ2(q2_text);
+    const q3Result = gradeQ3();
+    const total_score = q1Result.score + q2Result.score + q3Result.score;
+
+    await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name,
+      grade: profile.grade,
+      school: profile.school,
+      scenario_id: SCENARIO_ID,
+      scenario_name: SCENARIO_NAME,
+      score: total_score,
+      max_score: MAX_SCORE,
+      details: { q1: { ...q1Result, selected: Array.from(q1Checked) }, q2: { score: q2Result.score, text: q2_text }, q3: { ...q3Result, selected: q3Selected } },
+    });
+
+    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score });
+  }
+
+  function showResult(data) {
+    document.getElementById("quizSection").hidden = true;
+    const resultSection = document.getElementById("resultSection");
+    resultSection.hidden = false;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultBreakdown").innerHTML = `
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 1 — ระบุโพสต์ที่เสี่ยงที่สุด</span><span>${data.q1.score} / 2</span></div>
+        <div class="result__item-reason">เลือกถูก ${data.q1.correctSelected} จาก 3 ข้อ, เลือกข้อที่ไม่เสี่ยงปนมา ${data.q1.wrongSelected} ข้อ</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 2 — ข้อจำกัดของบัญชีส่วนตัว</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning}</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 3 — ลำดับการจัดการปัญหา</span><span>${data.q3.score} / 2</span></div>
+        <div class="result__item-reason">เรียงลำดับถูกต้อง ${data.q3.correctCount} จาก 4 ตำแหน่ง</div>
+      </div>`;
+    resultSection.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  if (profile) { renderQ1(); renderQ3(); }
+</script>
+</body>
+</html>
