@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 13: การตั้งค่าความเป็นส่วนตัวแอป</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #0a7d5c; --th-mid: #16a085; --paper: #f2f6f4; --ink: #1a1a1a; --ink-soft: #5c655f;
+    --bubble: #ffffff; --bubble-border: #dde7e1; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #9b2c2c; --ok: #2f6b3a; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d3dbd6; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+  .scenario-intro { max-width: 600px; margin: 0 auto 20px; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px 18px; }
+  .scenario-intro p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--ink); }
+
+  .device-frame { width: 390px; max-width: 100%; margin: 0 auto; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
+  .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
+  .device-screen { background: var(--paper); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; }
+  .content-wide { width: 100%; max-width: 760px; margin: 28px auto 0; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  .app-header { background: var(--th-deep); color: #fff; padding: 14px 16px; text-align: center; position: sticky; top: 0; z-index: 5; }
+  .app-header__logo { font-weight: 700; font-size: 15px; }
+  .app-header__sub { font-size: 11.5px; opacity: .85; margin-top: 2px; }
+
+  .privacy-item { background: #fff; border-bottom: 1px solid var(--bubble-border); padding: 12px 16px; display: flex; gap: 10px; align-items: flex-start; }
+  .privacy-item__text { flex: 1; }
+  .privacy-item__title { font-size: 12.5px; font-weight: 700; margin-bottom: 3px; }
+  .privacy-item__desc { font-size: 10.5px; color: var(--ink-soft); line-height: 1.5; }
+  .toggle { width: 38px; height: 22px; border-radius: 999px; background: #ccc; position: relative; flex-shrink: 0; cursor: pointer; margin-top: 2px; transition: background .15s; }
+  .toggle__knob { width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 2px; left: 2px; transition: left .15s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .toggle.on { background: var(--th-mid); }
+  .toggle.on .toggle__knob { left: 18px; }
+
+  .app-actions { padding: 14px 16px; }
+  .app-actions button { display: block; width: 100%; background: #2d7dd2; color: #fff; border: none; border-radius: 10px; padding: 12px; font-size: 13.5px; font-weight: 700; font-family: inherit; margin-bottom: 8px; }
+  .app-actions a { display: block; text-align: center; font-size: 12px; color: #999; }
+
+  /* การแคปเจอร์แชทไลน์ของแก้มป่อง */
+  .line-capture { max-width: 340px; margin: 0 auto 20px; background: #9bbf8f; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 24px rgba(0,0,0,.18); }
+  .line-capture__head { background: #4a8c3f; color: #fff; font-size: 12px; font-weight: 700; padding: 8px 12px; }
+  .line-capture__body { padding: 14px 12px; }
+  .line-capture__row { display: flex; gap: 8px; align-items: flex-end; }
+  .line-capture__avatar { width: 28px; height: 28px; border-radius: 50%; background: #ffd27a; flex-shrink: 0; }
+  .line-capture__bubble { background: #fff; border-radius: 4px 12px 12px 12px; padding: 9px 12px; font-size: 13px; line-height: 1.55; max-width: 240px; }
+  .line-capture__name { font-size: 10.5px; color: #eafbe5; margin-bottom: 3px; margin-left: 36px; }
+
+  /* หน้าจอแชทกับ AI */
+  .ai-chat-header { background: var(--th-deep); color: #fff; padding: 12px 16px; text-align: center; position: sticky; top: 0; z-index: 5; }
+  .ai-chat-body { padding: 14px; }
+  .ai-exchange { margin-bottom: 18px; }
+  .ai-badge { display: inline-block; font-size: 9.5px; background: #fde3e3; color: #9b2c2c; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-bottom: 6px; }
+  .ai-msg { border-radius: 4px 12px 12px 12px; padding: 9px 12px; font-size: 12.5px; line-height: 1.6; max-width: 86%; margin-bottom: 6px; }
+  .ai-msg--user { background: var(--th-mid); color: #fff; margin-left: auto; border-radius: 12px 4px 12px 12px; }
+  .ai-msg--ai { background: #fff; border: 1px solid var(--bubble-border); }
+  .ai-warn-note { font-size: 10.5px; color: var(--danger); background: #fdeeee; border-radius: 8px; padding: 8px 10px; line-height: 1.6; }
+
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 12px; }
+
+  .option { display: block; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13.5px; line-height: 1.55; }
+  .option input { margin-right: 8px; }
+  .option.selected { border-color: var(--th-mid); background: #e9f6f1; }
+
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+
+  .quiz__status { text-align: center; font-size: 13px; color: var(--ink-soft); min-height: 18px; margin-top: 10px; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+</style>
+</head>
+<body>
+
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+  <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="scenario-intro">
+    <p>เนยเรียนอยู่ชั้นมัธยมศึกษาปีที่ 4 กำลังเตรียมสอบกลางภาควิชาคณิตศาสตร์และวิทยาศาสตร์ เพื่อนในห้องแนะนำแอปติวสอบชื่อ StudyGenie AI ซึ่งใช้เทคโนโลยีปัญญาประดิษฐ์แบบเดียวกับ ChatGPT ช่วยตอบคำถาม อธิบายโจทย์ และสร้างแบบฝึกหัดให้ตามระดับความสามารถของผู้เรียนแต่ละคน เนยดาวน์โหลดแอปมาลงในโทรศัพท์ทันทีหลังเลิกเรียน เพราะอยากเริ่มติวให้ทันก่อนสอบในอีกสิบวัน เมื่อเปิดแอปครั้งแรก หน้าจอที่ปรากฏขึ้นมาไม่ใช่หน้าติวเลย แต่เป็นหน้า "ตั้งค่าความเป็นส่วนตัว" ที่มีตัวเลือกเรียงกันหกรายการ แต่ละรายการมีคำอธิบายตัวหนังสือขนาดเล็กสีเทาที่อ่านยากและใช้ศัพท์เทคนิค เนยกวาดสายตาผ่านไปอย่างเร็วๆ โดยไม่ได้อ่านรายละเอียดแต่ละบรรทัดจริงจัง ลองแตะสวิตช์แต่ละอันเพื่อดูสถานะเริ่มต้นของแต่ละตัวเลือกได้ด้านล่างนี้</p>
+  </div>
+
+ <div class="device-frame">
+  <div class="device-frame__notch"></div>
+  <div class="device-screen">
+
+    <div class="app-header">
+      <div class="app-header__logo">🧞 StudyGenie AI</div>
+      <div class="app-header__sub">ตั้งค่าความเป็นส่วนตัว — โปรดปรับแต่งการตั้งค่าก่อนเริ่มใช้งาน</div>
+    </div>
+
+    <div id="privacyList"></div>
+
+    <div class="app-actions">
+      <button type="button">ยอมรับทั้งหมดและเริ่มใช้งาน</button>
+      <a href="#" onclick="return false;">ปรับแต่งเอง</a>
+    </div>
+
+  </div>
+ </div>
+
+  <div class="scenario-intro">
+    <p>สองวันต่อมา</p>
+  </div>
+
+  <div class="line-capture">
+    <div class="line-capture__head">💬 LINE</div>
+    <div class="line-capture__body">
+      <div class="line-capture__name">แก้มป่อง (เพื่อนสนิท)</div>
+      <div class="line-capture__row">
+        <div class="line-capture__avatar"></div>
+        <div class="line-capture__bubble">อ่านให้ดีก่อนนะ บางแอปเอาข้อมูลแชทไปขายต่อ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scenario-intro">
+    <p>เนยกดปุ่ม "ยอมรับทั้งหมดและเริ่มใช้งาน" โดยไม่ได้อ่านรายละเอียดใดๆ</p>
+  </div>
+
+  <div class="device-frame">
+   <div class="device-frame__notch"></div>
+   <div class="device-screen">
+
+    <div class="ai-chat-header">
+      <div class="app-header__logo">🧞 StudyGenie AI — แชท</div>
+    </div>
+
+    <div class="ai-chat-body">
+      <div class="ai-exchange">
+        <span class="ai-badge">สถานะ: ใช้ฝึกโมเดล</span>
+        <div class="ai-msg ai-msg--user">ช่วงนี้พ่อกับแม่แยกกันอยู่ เครียดมากจนอ่านหนังสือไม่ค่อยเข้า</div>
+        <div class="ai-msg ai-msg--ai">เข้าใจว่าช่วงนี้คงเครียดมากเลยนะ ลองแบ่งเวลาอ่านหนังสือเป็นช่วงสั้นๆ ครั้งละ 25 นาทีแล้วพัก 5 นาที จะช่วยให้มีสมาธิง่ายขึ้น ระหว่างพักลองหายใจเข้าลึกๆ สัก 3-4 ครั้งดูนะ ถ้ารู้สึกหนักใจมากๆ ลองคุยกับคุณครูแนะแนวหรือคนที่ไว้ใจก็ได้นะ เป็นกำลังใจให้นะ 💪</div>
+      </div>
+
+      <div class="ai-exchange">
+        <span class="ai-badge">สถานะ: ใช้ฝึกโมเดล</span>
+        <div class="ai-msg ai-msg--user">เพื่อนฉันชื่อปู เป็นโรคซึมเศร้า อยากรู้ว่าควรช่วยเขายังไงตอนสอบ</div>
+        <div class="ai-msg ai-msg--ai">การเป็นเพื่อนที่รับฟังโดยไม่ตัดสินช่วยได้มากเลยนะ ลองชวนเขาพักผ่อนและกินอาหารให้ตรงเวลาในช่วงสอบ ไม่กดดันเรื่องคะแนนมากเกินไป และถ้าเขาดูเครียดหรือไม่ไหว อาจชวนไปพบครูแนะแนวหรือนักจิตวิทยาประจำโรงเรียนด้วยกันก็ได้นะ</div>
+      </div>
+
+      <div class="ai-warn-note">⚠️ บทสนทนาที่เปิดใช้ตัวเลือก "ฝึกโมเดล" จะถูกส่งให้ทีมตรวจสอบคุณภาพซึ่งเป็นพนักงานภายนอกอ่านบางส่วนเพื่อประเมินคำตอบของ AI และอาจถูกเก็บไว้ในระบบนานถึงสามปี</div>
+    </div>
+
+   </div>
+  </div>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 13: การตั้งค่าความเป็นส่วนตัวแอป</h1>
+      <p>คืนก่อนสอบ เนยเปิดหน้าตั้งค่ากลับมาดูอีกครั้งเพื่อพิจารณาว่าควรแก้ไขตัวเลือกใดบ้าง</p>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 1 — ตัวเลือกใดเสี่ยงที่สุดต่อ "คนอื่น"?</h2>
+      <p class="quiz__desc">จากตัวเลือกในหน้าตั้งค่าของแอป StudyGenie AI ตัวเลือกใดมีความเสี่ยงมากที่สุดที่จะทำให้ข้อมูลส่วนตัวของ "บุคคลอื่น" ที่ไม่ได้ให้ความยินยอม เช่น เพื่อนของเนย ถูกส่งออกไปอยู่ในมือของคนที่เนยควบคุมไม่ได้</p>
+      <div id="q1List"></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — เนยควรทำอย่างไรต่อไป?</h2>
+      <p class="quiz__desc">หลังจากอ่านหน้าตั้งค่าอีกครั้งในคืนก่อนสอบ เนยควรตัดสินใจอย่างไรกับตัวเลือกทั้งหกรายการนี้ และควรทำอย่างไรก่อนพิมพ์ข้อความลงในแอปติวสอบในครั้งต่อไป จงอธิบายให้ครบ 3 ส่วน: (1) ตัวเลือกอย่างน้อยหนึ่งรายการที่ควรปิดหรือเปลี่ยนพร้อมเหตุผล (2) ความเสี่ยงของการพิมพ์ข้อมูลส่วนตัวของตนเองหรือผู้อื่นลงในบทสนทนากับ AI (3) สิ่งที่ควรทำก่อนพิมพ์ข้อความลักษณะนี้อีกในอนาคต</p>
+      <textarea id="q2Text" rows="5" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-13";
+  const SCENARIO_NAME = "การตั้งค่าความเป็นส่วนตัวแอป";
+  const MAX_SCORE = 4; // q1(2) + q2(2)
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    document.getElementById("guardScreen").hidden = false;
+    document.getElementById("mainScreen").style.display = "none";
+  }
+
+  // ---------- หน้าตั้งค่าความเป็นส่วนตัว (แตะสวิตช์ได้ เพื่อความสมจริง ไม่มีผลต่อคะแนน) ----------
+  const PRIVACY_ITEMS = [
+    { title: "ใช้บทสนทนาของฉันเพื่อฝึกและปรับปรุงโมเดล AI", desc: "นำเอาผลข้อมูลการสนทนาเพื่อพัฒนาคุณภาพของระบบ AI อย่างต่อเนื่อง", on: true },
+    { title: "แชร์ประวัติการแชทกับครูผู้สอนในระบบ", desc: "อนุญาตให้ครูผู้สอนเข้าถึงประวัติการเรียนรู้ของคุณ", on: false },
+    { title: "อนุญาตให้แอปเข้าถึงรูปภาพในเครื่องเพื่อสแกนโจทย์", desc: "ใช้รูปภาพสำหรับฟีเจอร์สแกนโจทย์คณิตศาสตร์/วิทยาศาสตร์", on: true },
+    { title: "รับการแจ้งเตือนและอีเมลโปรโมชันจากพันธมิตรทางธุรกิจ", desc: "รับข่าวสารล่าสุดและข้อเสนอพิเศษจากพันธมิตรของเรา", on: true },
+    { title: "เก็บบันทึกบทสนทนาไว้ 3 ปีเพื่อวิเคราะห์พัฒนาการเรียนรู้", desc: "จัดเก็บข้อมูลประวัติการใช้งานเพื่อติดตามความก้าวหน้าทางการเรียนของคุณในระยะยาว", on: true },
+    { title: "แชร์ตำแหน่งที่ตั้งเพื่อแนะนำติวเตอร์ใกล้บ้าน", desc: "ใช้ตำแหน่งของคุณเพื่อค้นหาติวเตอร์และแหล่งเรียนรู้ในพื้นที่ใกล้เคียง", on: false },
+  ];
+
+  function renderPrivacyList() {
+    const container = document.getElementById("privacyList");
+    container.innerHTML = "";
+    PRIVACY_ITEMS.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "privacy-item";
+      row.innerHTML = `
+        <div class="privacy-item__text">
+          <div class="privacy-item__title">${item.title}</div>
+          <div class="privacy-item__desc">${item.desc}</div>
+        </div>
+        <div class="toggle ${item.on ? "on" : ""}"><div class="toggle__knob"></div></div>
+      `;
+      row.querySelector(".toggle").addEventListener("click", function () { this.classList.toggle("on"); });
+      container.appendChild(row);
+    });
+  }
+  renderPrivacyList();
+
+  // ---------- ข้อ 1: ปรนัย ----------
+  const Q1_OPTIONS = [
+    "อนุญาตให้แอปเข้าถึงรูปภาพในเครื่องเพื่อสแกนโจทย์",
+    "ใช้บทสนทนาของฉันเพื่อฝึกและปรับปรุงโมเดล AI",
+    "รับการแจ้งเตือนและอีเมลโปรโมชันจากพันธมิตรทางธุรกิจ",
+    "แชร์ตำแหน่งที่ตั้งเพื่อแนะนำติวเตอร์ใกล้บ้าน",
+  ];
+  const Q1_CORRECT = 1;
+  let q1Selected = null;
+
+  function renderQ1() {
+    const container = document.getElementById("q1List");
+    container.innerHTML = "";
+    Q1_OPTIONS.forEach((text, i) => {
+      const label = document.createElement("label");
+      label.className = "option";
+      label.innerHTML = `<input type="radio" name="q1" value="${i}" /> ${text}`;
+      label.querySelector("input").addEventListener("change", () => {
+        q1Selected = i;
+        container.querySelectorAll(".option").forEach((el) => el.classList.remove("selected"));
+        label.classList.add("selected");
+      });
+      container.appendChild(label);
+    });
+  }
+
+  function gradeQ1() {
+    return { score: q1Selected === Q1_CORRECT ? 2 : 0 };
+  }
+
+  // ---------- ข้อ 2: keyword checklist (3 ส่วน) ----------
+  const Q2_PART_A = ["ปิด", "เปลี่ยน", "ฝึกโมเดล", "เก็บบันทึก", "3 ปี", "ปิดตัวเลือก", "ปิดการใช้"];
+  const Q2_PART_B = ["คนอื่นอ่าน", "เก็บไว้นาน", "พนักงาน", "ตรวจสอบ", "ความเสี่ยง", "ข้อมูลส่วนตัว", "ยินยอม", "คนอื่นเห็น"];
+  const Q2_PART_C = ["ไม่พิมพ์ชื่อ", "ขออนุญาต", "อ่านการตั้งค่า", "อ่านก่อนกด", "ระวัง", "ถามทั่วไป", "ไม่บอกชื่อจริง", "อ่านให้ดีก่อน"];
+
+  function containsAny(text, keywords) {
+    const lower = text.toLowerCase();
+    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
+  }
+
+  function gradeQ2(text) {
+    const hasA = containsAny(text, Q2_PART_A);
+    const hasB = containsAny(text, Q2_PART_B);
+    const hasC = containsAny(text, Q2_PART_C);
+    const count = [hasA, hasB, hasC].filter(Boolean).length;
+    let score = 0, reasoning;
+    if (count === 3) { score = 2; reasoning = "อธิบายครบทั้งตัวเลือกที่ควรปิด ความเสี่ยงของการพิมพ์ข้อมูลส่วนตัว และแนวทางในอนาคต"; }
+    else if (count === 2) { score = 1; reasoning = "อธิบายได้ 2 ใน 3 ส่วนที่เกณฑ์กำหนด"; }
+    else { score = 0; reasoning = "ยังอธิบายไม่ครบตามเกณฑ์ (ตัวเลือกที่ควรปิด / ความเสี่ยงต่อข้อมูลส่วนตัว / แนวทางในอนาคต)"; }
+    return { score, reasoning };
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+    }
+  }
+
+  async function handleSubmit() {
+    const statusEl = document.getElementById("quizStatus");
+    const submitBtn = document.getElementById("submitBtn");
+    const q2_text = document.getElementById("q2Text").value.trim();
+
+    if (q1Selected === null) { statusEl.textContent = "กรุณาเลือกคำตอบข้อ 1"; return; }
+    if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "กำลังตรวจคะแนน...";
+
+    const q1Result = gradeQ1();
+    const q2Result = gradeQ2(q2_text);
+    const total_score = q1Result.score + q2Result.score;
+
+    await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name,
+      grade: profile.grade,
+      school: profile.school,
+      scenario_id: SCENARIO_ID,
+      scenario_name: SCENARIO_NAME,
+      score: total_score,
+      max_score: MAX_SCORE,
+      details: { q1: { ...q1Result, selected: q1Selected }, q2: { score: q2Result.score, text: q2_text } },
+    });
+
+    showResult({ q1: q1Result, q2: q2Result, total_score });
+  }
+
+  function showResult(data) {
+    document.getElementById("quizSection").hidden = true;
+    const resultSection = document.getElementById("resultSection");
+    resultSection.hidden = false;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultBreakdown").innerHTML = `
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 1 — ความเสี่ยงต่อข้อมูลบุคคลอื่น</span><span>${data.q1.score} / 2</span></div>
+        <div class="result__item-reason">${data.q1.score === 2 ? "เลือกถูกต้อง: การใช้บทสนทนาฝึกโมเดล AI" : "คำตอบยังไม่ตรงกับตัวเลือกที่เสี่ยงที่สุดต่อข้อมูลบุคคลอื่น"}</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 2 — การตัดสินใจและแนวทางในอนาคต</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning}</div>
+      </div>`;
+    resultSection.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  if (profile) renderQ1();
+</script>
+</body>
+</html>
