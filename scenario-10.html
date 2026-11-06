@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 10: บอร์ดแนะแนวอาชีพ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #6b4a1e; --th-mid: #b8862f; --paper: #f5f1e8; --ink: #1a1a1a; --ink-soft: #5c5748;
+    --bubble: #ffffff; --bubble-border: #e6ddc8; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #9b2c2c; --ok: #2f6b3a; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #e4ded0; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+
+  .scenario-intro, .teacher-note { max-width: 760px; margin: 0 auto 20px; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px 18px; }
+  .scenario-intro p, .teacher-note p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--ink); }
+  .teacher-note { background: var(--accent-soft); border-color: #e3c196; }
+  .teacher-note p { color: #5c3d17; }
+
+  .board-wrap { max-width: 760px; margin: 0 auto 20px; }
+  .board-wrap img { width: 100%; border-radius: 10px; display: block; box-shadow: 0 10px 26px rgba(0,0,0,.18); }
+
+  .content-wide { width: 100%; max-width: 760px; margin: 0 auto; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 12px; }
+
+  .match-row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .match-row__text { flex: 1; font-size: 12.5px; line-height: 1.5; }
+  .match-row select { padding: 7px 8px; border-radius: 8px; border: 1px solid var(--bubble-border); font-family: inherit; font-size: 12px; max-width: 180px; }
+
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+
+  .quiz__status { text-align: center; font-size: 13px; color: var(--ink-soft); min-height: 18px; margin-top: 10px; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+</style>
+</head>
+<body>
+
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+  <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="scenario-intro">
+    <p>ในคาบวิชาแนะแนวของโรงเรียน ครูอ้อยมอบหมายให้นักเรียนแต่ละกลุ่มจัดทำบอร์ดนิทรรศการ "อาชีพในฝัน" สำหรับกิจกรรมวันแนะแนวอาชีพประจำปี ติดไว้หน้าห้องแนะแนวให้รุ่นน้องชั้นมัธยมต้นเดินดูก่อนเลือกวิชาเรียนในปีถัดไป กลุ่มของ "ใบเฟิร์น" และ "ปันปัน" นักเรียนชั้นมัธยมศึกษาปีที่ 4 ได้รับมอบหมายให้ทำภาพประกอบ 6 อาชีพ ได้แก่ แพทย์ พยาบาล วิศวกร โปรแกรมเมอร์ ครู และผู้บริหารบริษัท เพื่อประหยัดเวลา ทั้งคู่เลือกใช้เครื่องมือสร้างภาพด้วย AI สร้างภาพประกอบแทนการวาดเอง โดยพิมพ์พร้อมต์ในรูปแบบเดียวกันทุกอาชีพ เช่น "ภาพนักเรียนไทยโตขึ้นไปเป็นแพทย์ กำลังทำงานในโรงพยาบาล" และสร้างภาพซ้ำอาชีพละ 5 ครั้ง เพื่อเลือกภาพที่สวยที่สุดไปติดบอร์ด แต่เมื่อดูผลลัพธ์ทั้งหมดพร้อมกัน ทั้งสองคนสังเกตเห็นรูปแบบที่ซ้ำกันอย่างเป็นระบบจนน่าแปลกใจ</p>
+  </div>
+
+  <div class="board-wrap">
+    <img src="images/scenario-10-board.jpg" alt="บอร์ดนิทรรศการอาชีพในฝัน แสดงภาพ AI ของ 6 อาชีพ" />
+  </div>
+
+  <div class="teacher-note">
+    <p>ครูอ้อยเห็นภาพชุดนี้แล้วชวนทั้งห้องถกกันในคาบถัดไปว่า ทำไมผลลัพธ์จาก AI จึงออกมาเหมารวมอย่างเป็นระบบขนาดนี้ อคติเช่นนี้มาจากไหน และหากยังต้องการใช้ภาพจาก AI ในการทำสื่อการเรียนการสอนหรือกิจกรรมของโรงเรียนต่อไป ควรมีวิธีจัดการหรือตรวจสอบอย่างไรก่อนนำไปเผยแพร่จริง ทุกคนที่เห็นภาพนี้ร่วมกันวิเคราะห์</p>
+  </div>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 10: บอร์ดแนะแนวอาชีพ</h1>
+      <p>ใบเฟิร์นและปันปันต้องตัดสินใจว่าจะทำอย่างไรต่อก่อนนำบอร์ดนี้ไปติดจริง</p>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 1 — จับคู่อาชีพกับลักษณะภาพที่ AI สร้างซ้ำ</h2>
+      <p class="quiz__desc">จับคู่อาชีพทางซ้ายกับลักษณะภาพที่ AI สร้างซ้ำกันเป็นระบบทางขวาให้ถูกต้อง</p>
+      <div id="q1Rows"></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — อคตินี้เกิดจากอะไร และควรทำอย่างไร?</h2>
+      <p class="quiz__desc">จากภาพชุด 6 อาชีพที่ใบเฟิร์นและปันปันสร้างด้วย AI อคติเหมารวมทางเพศและรูปลักษณ์ที่ปรากฏอย่างเป็นระบบนี้เกิดจากอะไร และทั้งสองคนควรทำอย่างไรก่อนนำภาพไปติดบอร์ดจริง (ตอบสั้นๆ ไม่เกิน 3 บรรทัด ระบุทั้งสาเหตุและวิธีจัดการ)</p>
+      <textarea id="q2Text" rows="4" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-10";
+  const SCENARIO_NAME = "บอร์ดแนะแนวอาชีพ";
+  const MAX_SCORE = 4; // q1(2) + q2(2)
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    document.getElementById("guardScreen").hidden = false;
+    document.getElementById("mainScreen").style.display = "none";
+  }
+
+  // ---------- ข้อ 1: จับคู่อาชีพกับลักษณะภาพ ----------
+  const Q1_LEFT = [
+    { key: "ก", text: "แพทย์" },
+    { key: "ข", text: "พยาบาล" },
+    { key: "ค", text: "วิศวกร" },
+    { key: "ง", text: "โปรแกรมเมอร์" },
+  ];
+  const Q1_RIGHT = [
+    { num: 1, text: "AI สร้างเป็นภาพผู้หญิงล้วนสวมชุดพยาบาลทุกภาพ" },
+    { num: 2, text: "AI สร้างเป็นภาพผู้ชายผิวขาวใส่เสื้อกาวน์ทุกภาพ" },
+    { num: 3, text: "AI สร้างเป็นภาพผู้ชายสวมหมวกนิรภัยยืนหน้าตึกก่อสร้างทุกภาพ" },
+    { num: 4, text: "AI สร้างเป็นภาพผู้ชายหนุ่มผิวขาวใส่แว่นตานั่งหน้าจอคอมพิวเตอร์หลายจอทุกภาพ" },
+  ];
+  const Q1_ANSWER_KEY = { "ก": 2, "ข": 1, "ค": 3, "ง": 4 };
+  const q1Selected = {};
+
+  function renderQ1() {
+    const container = document.getElementById("q1Rows");
+    container.innerHTML = "";
+    Q1_LEFT.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "match-row";
+      const options = Q1_RIGHT.map((r) => `<option value="${r.num}">${r.num}. ${r.text}</option>`).join("");
+      row.innerHTML = `
+        <div class="match-row__text"><strong>${item.key}. ${item.text}</strong></div>
+        <select data-key="${item.key}"><option value="">จับคู่กับ...</option>${options}</select>
+      `;
+      row.querySelector("select").addEventListener("change", (e) => {
+        q1Selected[item.key] = e.target.value ? Number(e.target.value) : null;
+      });
+      container.appendChild(row);
+    });
+  }
+
+  function gradeQ1() {
+    const correctCount = Q1_LEFT.filter((item) => q1Selected[item.key] === Q1_ANSWER_KEY[item.key]).length;
+    let score = 0;
+    if (correctCount === 4) score = 2;
+    else if (correctCount >= 2) score = 1;
+    return { score, correctCount };
+  }
+  function q1IsComplete() { return Q1_LEFT.every((item) => q1Selected[item.key] != null); }
+
+  // ---------- ข้อ 2: keyword checklist (สาเหตุ + วิธีจัดการ) ----------
+  const Q2_PART_A = ["ข้อมูลที่ใช้ฝึก", "ข้อมูลฝึก", "ข้อมูลเทรน", "training data", "เหมารวมอยู่แล้ว", "เรียนรู้จาก", "ข้อมูลเดิม", "ข้อมูลที่ป้อน"];
+  const Q2_PART_B = ["ปรับพร้อมต์", "พร้อมต์ใหม่", "ตรวจสอบ", "แก้ไขภาพ", "ปรึกษาครู", "หลากหลาย", "เลือกภาพ", "คัดเลือกภาพ", "ผสมภาพ"];
+
+  function containsAny(text, keywords) {
+    const lower = text.toLowerCase();
+    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
+  }
+
+  function gradeQ2(text) {
+    const hasA = containsAny(text, Q2_PART_A);
+    const hasB = containsAny(text, Q2_PART_B);
+    let score = 0, reasoning;
+    if (hasA && hasB) { score = 2; reasoning = "ระบุทั้งสาเหตุ (ข้อมูลฝึก AI มีความเหมารวม) และวิธีจัดการที่ปฏิบัติได้จริง"; }
+    else if (hasA || hasB) { score = 1; reasoning = hasA ? "ระบุสาเหตุได้ถูกต้อง แต่ยังไม่ได้เสนอวิธีจัดการก่อนนำไปติดบอร์ด" : "เสนอวิธีจัดการได้ แต่ยังไม่ได้อธิบายว่าอคตินี้เกิดจากอะไร"; }
+    else { score = 0; reasoning = "ยังไม่ได้ระบุทั้งสาเหตุของอคติและวิธีจัดการก่อนเผยแพร่"; }
+    return { score, reasoning };
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+    }
+  }
+
+  async function handleSubmit() {
+    const statusEl = document.getElementById("quizStatus");
+    const submitBtn = document.getElementById("submitBtn");
+    const q2_text = document.getElementById("q2Text").value.trim();
+
+    if (!q1IsComplete()) { statusEl.textContent = "กรุณาจับคู่ข้อ 1 ให้ครบทั้ง 4 ข้อ"; return; }
+    if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "กำลังตรวจคะแนน...";
+
+    const q1Result = gradeQ1();
+    const q2Result = gradeQ2(q2_text);
+    const total_score = q1Result.score + q2Result.score;
+
+    await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name,
+      grade: profile.grade,
+      school: profile.school,
+      scenario_id: SCENARIO_ID,
+      scenario_name: SCENARIO_NAME,
+      score: total_score,
+      max_score: MAX_SCORE,
+      details: { q1: { ...q1Result, selected: q1Selected }, q2: { score: q2Result.score, text: q2_text } },
+    });
+
+    showResult({ q1: q1Result, q2: q2Result, total_score });
+  }
+
+  function showResult(data) {
+    document.getElementById("quizSection").hidden = true;
+    const resultSection = document.getElementById("resultSection");
+    resultSection.hidden = false;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultBreakdown").innerHTML = `
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 1 — จับคู่อาชีพกับลักษณะภาพ</span><span>${data.q1.score} / 2</span></div>
+        <div class="result__item-reason">จับคู่ถูก ${data.q1.correctCount} จาก 4 คู่</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 2 — สาเหตุและวิธีจัดการอคติ</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning}</div>
+      </div>`;
+    resultSection.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  if (profile) renderQ1();
+</script>
+</body>
+</html>
