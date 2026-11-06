@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 7: คลิป TikTok สูตรน้ำมะนาวผสมเกลือดีทอกซ์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #1a1a1a; --th-mid: #ff3b5c; --paper: #f4f1ee; --ink: #1a1a1a; --ink-soft: #5c5853;
+    --bubble: #ffffff; --bubble-border: #e5e0d8; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #9b2c2c; --ok: #2f6b3a; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d4d0c8; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .device-frame { width: 390px; max-width: 100%; margin: 0 auto; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
+  .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
+  .device-screen { background: var(--paper); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; }
+  .content-wide { width: 100%; max-width: 760px; margin: 28px auto 0; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  .tt-header { background: #000; color: #fff; display: flex; align-items: center; gap: 10px; padding: 12px 14px; position: sticky; top: 0; z-index: 5; }
+  .tt-header__back { font-size: 20px; opacity: .85; text-decoration: none; color: #fff; }
+  .tt-header__logo { font-weight: 700; font-size: 14.5px; }
+
+  .tt-video { position: relative; aspect-ratio: 479/752; background: #000 url('images/scenario-07-tiktok.jpg') center/cover no-repeat; overflow: hidden; }
+  .tt-video::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,0) 32%); pointer-events: none; }
+  .tt-video__caption { position: absolute; left: 12px; right: 56px; bottom: 44px; color: #fff; font-size: 12.5px; font-weight: 600; line-height: 1.5; text-shadow: 0 1px 4px rgba(0,0,0,.6); z-index: 1; }
+  .tt-video__user { position: absolute; left: 12px; bottom: 16px; color: #fff; font-size: 11.5px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,.6); z-index: 1; }
+  .tt-video__stats { position: absolute; right: 10px; bottom: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; color: #fff; font-size: 10px; text-shadow: 0 1px 4px rgba(0,0,0,.6); z-index: 1; }
+  .tt-video__stats span { font-size: 19px; display: block; }
+  .tt-video__views { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,.5); color: #fff; font-size: 10px; padding: 3px 8px; border-radius: 999px; z-index: 1; }
+
+  .tt-comments { padding: 12px 14px 16px; }
+  .tt-comments__label { font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+  .tt-comment { display: flex; gap: 8px; margin-bottom: 10px; }
+  .tt-comment__avatar { width: 26px; height: 26px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+  .tt-comment__name { font-size: 10.5px; color: var(--ink-soft); font-weight: 600; }
+  .tt-comment__text { font-size: 12.5px; }
+
+  .chat-nudge { background: var(--accent-soft); border: 1px solid #e3c196; border-radius: var(--radius); padding: 14px; width: 100%; max-width: 390px; margin: 18px auto 0; text-align: center; }
+  .chat-nudge p { margin: 0 0 10px; font-size: 13.5px; color: #5c3d17; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn--primary { background: var(--accent); color: #fff; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 5vh 16px; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px; padding: 20px 18px 28px; max-height: 90vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .result-card { background: #fff; border: 1px solid var(--bubble-border); border-left: 3px solid var(--th-mid); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result-card__source { font-size: 11.5px; color: var(--th-mid); font-weight: 600; margin-bottom: 4px; }
+  .result-card__title { font-size: 13.5px; font-weight: 600; line-height: 1.45; }
+  .result-card__desc { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; line-height: 1.5; }
+
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 12px; }
+
+  .match-row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .match-row__text { flex: 1; font-size: 12.5px; line-height: 1.5; }
+  .match-row select { padding: 7px 8px; border-radius: 8px; border: 1px solid var(--bubble-border); font-family: inherit; font-size: 12px; max-width: 150px; }
+
+  .order-row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .order-row__text { flex: 1; font-size: 13px; line-height: 1.5; }
+  .order-row select { padding: 7px 8px; border-radius: 8px; border: 1px solid var(--bubble-border); font-family: inherit; font-size: 13px; }
+
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+
+  .quiz__status { text-align: center; font-size: 13px; color: var(--ink-soft); min-height: 18px; margin-top: 10px; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+</style>
+</head>
+<body>
+
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+ <div class="device-frame">
+  <div class="device-frame__notch"></div>
+  <div class="device-screen">
+
+  <header class="tt-header">
+    <a class="tt-header__back" href="index.html">‹</a>
+    <div class="tt-header__logo">♪ TikTok</div>
+  </header>
+
+  <div class="tt-video">
+    <div class="tt-video__views">👁 3.2M</div>
+    <div class="tt-video__caption">ดื่มน้ำมะนาวผสมเกลือตอนเช้าท้องว่าง 7 วันติด ล้างสารพิษ ลดพุง ผิวใสขึ้นชัดเจน! ✨</div>
+    <div class="tt-video__stats">
+      <div>❤️<span>3.1M</span></div>
+      <div>💬<span>8.4K</span></div>
+      <div>↗️<span>แชร์</span></div>
+    </div>
+  </div>
+
+  <div class="tt-comments">
+    <div class="tt-comments__label">คอมเมนต์ยอดนิยม</div>
+    <div class="tt-comment"><div class="tt-comment__avatar"></div><div><div class="tt-comment__name">user_fahsai</div><div class="tt-comment__text">ได้ผลจริงค่ะ ลดไปตั้ง 2 โลใน 1 อาทิตย์!</div></div></div>
+    <div class="tt-comment"><div class="tt-comment__avatar"></div><div><div class="tt-comment__name">p.chonlada</div><div class="tt-comment__text">ดื่มแล้วปวดท้องมากเลยค่ะ เวียนหัวด้วย ไม่ไหว 😥</div></div></div>
+  </div>
+
+  </div>
+ </div>
+
+  <div class="chat-nudge">
+    <p>เอิร์ธลองค้นหาข้อมูลเพิ่มเติมทาง Google และเจอ 4 แหล่งข้อมูลที่ให้ข้อมูลขัดแย้งกัน</p>
+    <button class="btn btn--primary" id="openSearchBtn" type="button">🔍 ดูแหล่งข้อมูลที่เอิร์ธพบ</button>
+  </div>
+
+  <div class="modal" id="searchModal" hidden>
+    <div class="modal__sheet">
+      <button class="modal__close" data-close="searchModal" type="button">✕</button>
+      <p class="quiz__desc" style="margin-top:14px;">4 แหล่งข้อมูลที่เอิร์ธค้นเจอ</p>
+
+      <div class="result-card">
+        <div class="result-card__source">🛒 เว็บไซต์ขายชุดผลิตภัณฑ์ "ดีทอกซ์มะนาวเกลือ 7 วัน" ราคา 990 บาท</div>
+        <div class="result-card__title">อ้างคำรับรองจากนักโภชนาการที่ไม่ระบุชื่อเต็มหรือสถานที่ทำงาน</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card__source">📰 เพจสุขภาพ "สุขภาพดีทุกวัน" (ผู้ติดตามหลักแสน)</div>
+        <div class="result-card__title">ไม่มีข้อมูลผู้เขียนหรือทีมงานเลยแม้แต่คนเดียว อ้างว่า "ผู้เชี่ยวชาญหลายท่านยืนยันแล้ว" โดยไม่ระบุว่าเป็นใคร</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card__source">🏛️ เว็บไซต์ทางการของกรมอนามัย กระทรวงสาธารณสุข</div>
+        <div class="result-card__title">ตับและไตกำจัดของเสียได้เองตามธรรมชาติ ไม่มีหลักฐานวิทยาศาสตร์สนับสนุนสูตรนี้ และอาจเสี่ยงโซเดียมสูงหรือระคายเคืองกระเพาะ</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card__source">💬 กระทู้ความคิดเห็นผู้ใช้ทั่วไป</div>
+        <div class="result-card__title">มีคนเล่าว่าดื่มแล้วรู้สึกดีขึ้น แต่ไม่มีรายละเอียดที่ตรวจสอบได้ว่าเป็นใครหรือมีภาวะสุขภาพพื้นฐานอย่างไร</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 7: คลิป TikTok สูตรน้ำมะนาวผสมเกลือดีทอกซ์</h1>
+      <p>แนนเพื่อนสนิทของเอิร์ธเริ่มทำตามสูตรนี้แล้ว แม้จะมีปัญหากระเพาะอาหารอยู่เดิม</p>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 1 — จับคู่แหล่งข้อมูลกับลักษณะความน่าเชื่อถือ</h2>
+      <p class="quiz__desc">จับคู่แหล่งข้อมูลแต่ละแหล่งกับลักษณะความน่าเชื่อถือที่ตรงกับแหล่งนั้นที่สุด</p>
+      <div id="q1Rows"></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — เรียงลำดับการตรวจสอบข้ามแหล่งข้อมูล</h2>
+      <p class="quiz__desc">เลือกลำดับ 1-4 ของขั้นตอนที่เหมาะสมที่สุดในการตรวจสอบข้อมูลข้ามแหล่ง (lateral reading) ก่อนตัดสินใจเชื่อคำกล่าวอ้างในคลิปนี้</p>
+      <div id="q2Rows"></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 3 — เอิร์ธควรพูดอะไรกับแนน?</h2>
+      <p class="quiz__desc">จงอธิบายว่าเอิร์ธควรพูดอะไรกับแนนบ้างเพื่อโน้มน้าวให้แนนตรวจสอบข้อมูลเพิ่มก่อนทำต่อ โดยต้องกล่าวถึง (1) ความน่าเชื่อถือของแหล่งที่แนนเชื่อเทียบกับหน่วยงานสาธารณสุข (2) ข้อมูลขัดแย้งจากกรมอนามัย (3) ความเสี่ยงต่อสุขภาพที่อาจเกิดขึ้นจริง</p>
+      <textarea id="q3Text" rows="5" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-07";
+  const SCENARIO_NAME = "คลิป TikTok สูตรน้ำมะนาวผสมเกลือดีทอกซ์";
+  const MAX_SCORE = 6; // q1(2) + q2(2) + q3(2)
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    document.getElementById("guardScreen").hidden = false;
+    document.getElementById("mainScreen").style.display = "none";
+  }
+
+  function openModal(id) { document.getElementById(id).hidden = false; }
+  function closeModal(id) { document.getElementById(id).hidden = true; }
+  document.getElementById("openSearchBtn").addEventListener("click", () => openModal("searchModal"));
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
+
+  // ---------- ข้อ 1: จับคู่แหล่งข้อมูล ----------
+  const Q1_LEFT = [
+    { key: "ก", text: "เว็บไซต์ขายชุดผลิตภัณฑ์ดีทอกซ์มะนาวเกลือ 7 วัน ราคา 990 บาท" },
+    { key: "ข", text: "เพจสุขภาพ \"สุขภาพดีทุกวัน\" ที่ไม่ระบุผู้เขียนหรือทีมงาน" },
+    { key: "ค", text: "เว็บไซต์ทางการของกรมอนามัย กระทรวงสาธารณสุข" },
+    { key: "ง", text: "คลิป TikTok ต้นทางที่แนนเปิดให้เอิร์ธดู" },
+  ];
+  const Q1_RIGHT = [
+    { num: 1, text: "แหล่งข้อมูลที่มีผลประโยชน์ทางการค้าแอบแฝง อาจบิดเบือนข้อมูลเพื่อขายสินค้า" },
+    { num: 2, text: "แหล่งข้อมูลที่ตรวจสอบตัวตนและความเชี่ยวชาญของผู้เขียนไม่ได้" },
+    { num: 3, text: "หน่วยงานราชการด้านสาธารณสุขที่มีความเชี่ยวชาญเฉพาะทางและมีหน้าที่รับผิดชอบโดยตรง" },
+    { num: 4, text: "เนื้อหาโซเชียลมีเดียที่นำเสนอผลลัพธ์แบบก่อน-หลังโดยไม่มีการอ้างอิงหลักฐานทางวิทยาศาสตร์" },
+  ];
+  const Q1_ANSWER_KEY = { "ก": 1, "ข": 2, "ค": 3, "ง": 4 };
+  const q1Selected = {};
+
+  function renderQ1() {
+    const container = document.getElementById("q1Rows");
+    container.innerHTML = "";
+    Q1_LEFT.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "match-row";
+      const options = Q1_RIGHT.map((r) => `<option value="${r.num}">${r.num}. ${r.text}</option>`).join("");
+      row.innerHTML = `
+        <div class="match-row__text"><strong>${item.key}.</strong> ${item.text}</div>
+        <select data-key="${item.key}"><option value="">จับคู่กับ...</option>${options}</select>
+      `;
+      row.querySelector("select").addEventListener("change", (e) => {
+        q1Selected[item.key] = e.target.value ? Number(e.target.value) : null;
+      });
+      container.appendChild(row);
+    });
+  }
+
+  function gradeQ1() {
+    const correctCount = Q1_LEFT.filter((item) => q1Selected[item.key] === Q1_ANSWER_KEY[item.key]).length;
+    let score = 0;
+    if (correctCount === 4) score = 2;
+    else if (correctCount >= 2) score = 1;
+    return { score, correctCount };
+  }
+  function q1IsComplete() { return Q1_LEFT.every((item) => q1Selected[item.key] != null); }
+
+  // ---------- ข้อ 2: เรียงลำดับ lateral reading ----------
+  const Q2_ITEMS = [
+    { key: "ค", text: "เปรียบเทียบข้อมูลจากทุกแหล่งที่พบว่าตรงกันหรือขัดแย้งกัน และแหล่งใดมีน้ำหนักน่าเชื่อถือกว่า", correctPos: 3 },
+    { key: "ก", text: "ตรวจสอบว่าใครเป็นผู้สร้างคลิปนี้และมีความเชี่ยวชาญหรือผลประโยชน์แอบแฝงหรือไม่", correctPos: 1 },
+    { key: "ง", text: "ตัดสินใจว่าจะเชื่อ ทำตาม หรือแชร์ต่อ โดยอ้างอิงจากหลักฐานที่ประเมินแล้ว", correctPos: 4 },
+    { key: "ข", text: "ค้นหาว่าหน่วยงานด้านสาธารณสุขที่น่าเชื่อถือมีข้อมูลเกี่ยวกับเรื่องนี้ว่าอย่างไร", correctPos: 2 },
+  ];
+  const q2Selected = {};
+
+  function renderQ2() {
+    const container = document.getElementById("q2Rows");
+    container.innerHTML = "";
+    Q2_ITEMS.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "order-row";
+      row.innerHTML = `
+        <div class="order-row__text">${item.text}</div>
+        <select data-key="${item.key}">
+          <option value="">ลำดับ</option>
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+        </select>
+      `;
+      row.querySelector("select").addEventListener("change", (e) => {
+        q2Selected[item.key] = e.target.value ? Number(e.target.value) : null;
+      });
+      container.appendChild(row);
+    });
+  }
+
+  function gradeQ2() {
+    const correctCount = Q2_ITEMS.filter((item) => q2Selected[item.key] === item.correctPos).length;
+    // ถ้าเลือกขั้นตอน "ตัดสินใจ" (ง) เป็นลำดับแรก ถือว่าผิดหลักการสำคัญ ให้ 0 คะแนนทันที
+    if (q2Selected["ง"] === 1) return { score: 0, correctCount };
+    let score = 0;
+    if (correctCount === 4) score = 2;
+    else if (correctCount >= 2) score = 1;
+    return { score, correctCount };
+  }
+  function q2IsComplete() { return Q2_ITEMS.every((item) => q2Selected[item.key] != null); }
+  function q2HasDuplicates() {
+    const vals = Q2_ITEMS.map((item) => q2Selected[item.key]).filter((v) => v != null);
+    return new Set(vals).size !== vals.length;
+  }
+
+  // ---------- ข้อ 3: keyword checklist (3 องค์ประกอบ) ----------
+  const Q3_PART_A = ["เชื่อถือน้อย", "เชื่อถือกว่า", "น่าเชื่อถือ", "ขายของ", "อยากขายของ", "ไม่รู้ว่าใครเขียน", "ไม่ระบุผู้เขียน", "ไม่ระบุตัวตน", "หน่วยงานราชการ", "ผลประโยชน์ทางการค้า"];
+  const Q3_PART_B = ["ตับ", "ไต", "ขับสารพิษ", "ล้างสารพิษ", "ธรรมชาติ", "ไม่มีหลักฐาน", "กรมอนามัย"];
+  const Q3_PART_C = ["โซเดียม", "ความดัน", "แสบท้อง", "ระคายเคือง", "กระเพาะ", "เวียนหัว", "วิงเวียน", "ปวดท้อง"];
+  const Q3_ENDORSE = ["ลองก็ได้", "เผื่อได้ผล", "คนดูเยอะ", "น่าจะจริง", "น่าจะได้ผล"];
+
+  function containsAny(text, keywords) {
+    const lower = text.toLowerCase();
+    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
+  }
+
+  function gradeQ3(text) {
+    if (containsAny(text, Q3_ENDORSE)) {
+      return { score: 0, reasoning: "คำตอบดูเหมือนเห็นด้วยกับพฤติกรรมเสี่ยงหรือใช้ความนิยมเป็นเกณฑ์ตัดสิน" };
+    }
+    const hasA = containsAny(text, Q3_PART_A);
+    const hasB = containsAny(text, Q3_PART_B);
+    const hasC = containsAny(text, Q3_PART_C);
+    const count = [hasA, hasB, hasC].filter(Boolean).length;
+    let score = 0, reasoning;
+    if (count === 3) { score = 2; reasoning = "กล่าวถึงครบทั้งความน่าเชื่อถือของแหล่ง ข้อมูลขัดแย้งจากกรมอนามัย และความเสี่ยงต่อสุขภาพ"; }
+    else if (count === 2) { score = 1; reasoning = "กล่าวถึง 2 ใน 3 องค์ประกอบที่เกณฑ์กำหนด"; }
+    else { score = 0; reasoning = "ยังกล่าวถึงองค์ประกอบที่เกณฑ์กำหนดไม่ครบ (ความน่าเชื่อถือของแหล่ง / ข้อมูลจากกรมอนามัย / ความเสี่ยงต่อสุขภาพ)"; }
+    return { score, reasoning };
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+    }
+  }
+
+  async function handleSubmit() {
+    const statusEl = document.getElementById("quizStatus");
+    const submitBtn = document.getElementById("submitBtn");
+    const q3_text = document.getElementById("q3Text").value.trim();
+
+    if (!q1IsComplete()) { statusEl.textContent = "กรุณาจับคู่ข้อ 1 ให้ครบทั้ง 4 ข้อ"; return; }
+    if (!q2IsComplete()) { statusEl.textContent = "กรุณาเลือกลำดับข้อ 2 ให้ครบทั้ง 4 ข้อ"; return; }
+    if (q2HasDuplicates()) { statusEl.textContent = "ข้อ 2 เลือกลำดับซ้ำกัน กรุณาตรวจสอบ"; return; }
+    if (!q3_text) { statusEl.textContent = "กรุณาตอบข้อ 3"; return; }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "กำลังตรวจคะแนน...";
+
+    const q1Result = gradeQ1();
+    const q2Result = gradeQ2();
+    const q3Result = gradeQ3(q3_text);
+    const total_score = q1Result.score + q2Result.score + q3Result.score;
+
+    await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name,
+      grade: profile.grade,
+      school: profile.school,
+      scenario_id: SCENARIO_ID,
+      scenario_name: SCENARIO_NAME,
+      score: total_score,
+      max_score: MAX_SCORE,
+      details: { q1: { ...q1Result, selected: q1Selected }, q2: { ...q2Result, selected: q2Selected }, q3: { score: q3Result.score, text: q3_text } },
+    });
+
+    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score });
+  }
+
+  function showResult(data) {
+    document.getElementById("quizSection").hidden = true;
+    const resultSection = document.getElementById("resultSection");
+    resultSection.hidden = false;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultBreakdown").innerHTML = `
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 1 — จับคู่ความน่าเชื่อถือของแหล่ง</span><span>${data.q1.score} / 2</span></div>
+        <div class="result__item-reason">จับคู่ถูก ${data.q1.correctCount} จาก 4 คู่</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 2 — เรียงลำดับการตรวจสอบข้ามแหล่ง</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">เรียงลำดับถูกต้อง ${data.q2.correctCount} จาก 4 ตำแหน่ง</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 3 — โน้มน้าวให้ตรวจสอบข้อมูล</span><span>${data.q3.score} / 2</span></div>
+        <div class="result__item-reason">${data.q3.reasoning}</div>
+      </div>`;
+    resultSection.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  if (profile) { renderQ1(); renderQ2(); }
+</script>
+</body>
+</html>
