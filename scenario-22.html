@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 22: ระบบตรวจการลอกการบ้านด้วย AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #0a7d5c; --th-mid: #16a085; --paper: #f2f6f4; --ink: #1a1a1a; --ink-soft: #5c655f;
+    --bubble: #ffffff; --bubble-border: #dde7e1; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #9b2c2c; --ok: #2f6b3a; --radius: 14px;
+    --r-c: #d99a12; --r-n: #2f8f5b; --r-e: #c0504d; --r-s: #4a6fa5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d3dbd6; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+  .scenario-intro { max-width: 600px; margin: 0 auto 20px; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px 18px; }
+  .scenario-intro p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--ink); }
+
+  .device-frame { width: 390px; max-width: 100%; margin: 0 auto 20px; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
+  .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
+  .device-screen { background: var(--paper); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; }
+  .content-wide { width: 100%; max-width: 760px; margin: 28px auto 0; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  /* ---------- แชท LINE ---------- */
+  .line-screen { background: #8fb785; min-height: 100%; padding-bottom: 16px; }
+  .line-head { background: #3f7d37; color: #fff; padding: 30px 14px 10px; font-size: 13px; font-weight: 700; position: sticky; top: 0; z-index: 5; }
+  .line-head small { font-weight: 400; opacity: .85; font-size: 11px; }
+  .chat-day { text-align: center; margin: 12px 0 4px; }
+  .chat-day span { display: inline-block; font-size: 10.5px; color: #fff; background: rgba(0,0,0,.22); border-radius: 999px; padding: 2px 10px; }
+  .msg { display: flex; gap: 8px; margin: 9px 10px; align-items: flex-start; }
+  .msg--me { flex-direction: row-reverse; }
+  .msg__avatar { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: #fff; }
+  .msg__avatar svg { display: block; width: 100%; height: 100%; }
+  .msg__col { max-width: 245px; }
+  .msg--me .msg__col { display: flex; flex-direction: column; align-items: flex-end; }
+  .msg__name { font-size: 10.5px; color: #f0fae9; margin: 0 0 2px 2px; }
+  .msg--me .msg__name { display: none; }
+  .msg__bubble { background: #fff; border-radius: 4px 14px 14px 14px; padding: 8px 11px; font-size: 12.5px; line-height: 1.55; }
+  .msg--me .msg__bubble { background: #a8e58b; border-radius: 14px 4px 14px 14px; }
+  .msg__time { font-size: 9.5px; color: #eaf5e4; margin-top: 2px; }
+  .sys-note { text-align: center; margin: 10px 14px; font-size: 11px; color: #fff; background: rgba(0,0,0,.25); border-radius: 10px; padding: 5px 10px; line-height: 1.5; }
+
+  /* ---------- หน้าจอแอปทดลอง ---------- */
+  .app-head { background: #7a3e1d; color: #fff; padding: 30px 16px 12px; position: sticky; top: 0; z-index: 5; }
+  .app-head b { font-size: 14px; display: block; }
+  .app-head span { font-size: 11px; opacity: .85; }
+  .app-row { display: flex; gap: 10px; background: #fff; border-bottom: 1px solid var(--bubble-border); padding: 10px 14px; align-items: center; }
+  .app-row__img { width: 76px; height: 57px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #fff4e0; }
+  .app-row__img svg { display: block; width: 100%; height: 100%; }
+  .app-row__txt { font-size: 12px; line-height: 1.55; }
+  .verdict { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-bottom: 2px; }
+  .verdict--ok { background: #dff3e6; color: var(--ok); }
+  .verdict--bad { background: #fde3e3; color: var(--danger); }
+  .app-note { padding: 12px 14px; font-size: 11px; color: var(--danger); background: #fdeeee; line-height: 1.6; }
+
+  /* ---------- ห้องทดลอง ---------- */
+  .sim { max-width: 1120px; margin: 32px auto 0; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 18px; }
+  .sim__head { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+  .sim__head h2 { font-size: 17px; margin: 0 0 4px; }
+  .sim__head p { margin: 0; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; max-width: 720px; }
+  .sim__grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 960px) { .sim__grid { grid-template-columns: 1.25fr 1fr .95fr; } }
+  .panel { border: 1px solid var(--bubble-border); border-radius: 12px; padding: 12px; background: #fafcfb; min-width: 0; }
+  .panel h3 { font-size: 14px; margin: 0 0 4px; }
+  .panel__sub { font-size: 11.5px; color: var(--ink-soft); margin: 0 0 10px; line-height: 1.5; }
+  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+  .dropzone { min-height: 150px; border: 2px dashed #b9cbc1; border-radius: 12px; padding: 8px; transition: background .12s, border-color .12s; }
+  .dropzone.over { background: #e9f6f1; border-color: var(--th-mid); }
+  .dropzone__empty { font-size: 12px; color: var(--ink-soft); text-align: center; padding: 28px 8px; line-height: 1.6; }
+  .pcard { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; overflow: hidden; cursor: grab; font-size: 11px; display: flex; flex-direction: column; }
+  .pcard.dragging { opacity: .45; }
+  .pcard svg { display: block; width: 100%; height: auto; }
+  .pcard__body { padding: 6px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .pcard__name { font-weight: 600; font-size: 11.5px; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 999px; width: fit-content; color: #fff; }
+  .tag--c { background: var(--r-c); } .tag--n { background: var(--r-n); } .tag--e { background: var(--r-e); } .tag--s { background: var(--r-s); }
+  .mini { font-family: inherit; font-size: 10.5px; border: 1px solid #b9cbc1; border-radius: 6px; padding: 4px 6px; background: #fff; cursor: pointer; width: 100%; line-height: 1.3; }
+  .mini:hover { background: #eef6f2; }
+  .sim-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .sim-actions .btn { flex: 1; min-width: 110px; padding: 10px 12px; font-size: 13.5px; }
+  .btn--train { background: var(--th-deep); color: #fff; }
+  .btn--ghost { background: transparent; border: 1px solid #9aa9a0; color: var(--ink-soft); }
+  .sim-msg { margin-top: 12px; font-size: 12.5px; line-height: 1.6; min-height: 20px; padding: 8px 10px; border-radius: 8px; background: #f0f4f2; }
+  .sim-msg--warn { background: #fdeeee; color: var(--danger); font-weight: 600; }
+  .sim-msg--ok { background: #e6f5ec; color: var(--ok); }
+
+  .barlabel { font-size: 11.5px; font-weight: 600; margin: 8px 0 4px; }
+  .bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; background: #e2e9e5; font-size: 10.5px; color: #fff; font-weight: 600; }
+  .bar span { display: flex; align-items: center; justify-content: center; white-space: nowrap; overflow: hidden; min-width: 0; }
+  .seg-c { background: var(--r-c); } .seg-n { background: var(--r-n); } .seg-e { background: var(--r-e); } .seg-s { background: var(--r-s); }
+  .bar--empty { color: var(--ink-soft); justify-content: center; align-items: center; font-weight: 400; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.tbl th, table.tbl td { border: 1px solid var(--bubble-border); padding: 5px 7px; text-align: center; }
+  table.tbl th { background: #eef4f0; font-weight: 600; }
+  table.tbl td:first-child, table.tbl th:first-child { text-align: left; }
+  .tblwrap { overflow-x: auto; }
+  .acc-big { font-weight: 700; color: var(--th-deep); }
+  .low { color: var(--danger); font-weight: 700; }
+  .good { color: var(--ok); font-weight: 700; }
+  .note-small { font-size: 11px; color: var(--ink-soft); line-height: 1.5; margin: 6px 0 0; }
+  .history { margin-top: 14px; }
+  .history h3 { font-size: 14px; margin: 0 0 6px; }
+
+  /* ---------- แบบทดสอบ ---------- */
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.6; margin: 0 0 12px; }
+  .casebox { border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #fafcfb; }
+  .casebox h3 { font-size: 13.5px; margin: 0 0 8px; }
+  .field { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; line-height: 1.5; padding: 5px 0; }
+  .field input { width: 84px; border: 1px solid var(--bubble-border); border-radius: 8px; padding: 6px 8px; font-family: inherit; font-size: 14px; text-align: right; flex-shrink: 0; }
+  .option { display: block; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13.5px; line-height: 1.55; }
+  .option input { margin-right: 8px; }
+  .option.selected { border-color: var(--th-mid); background: #e9f6f1; }
+  .qlabel { font-size: 13.5px; font-weight: 600; margin: 14px 0 8px; }
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+  .quiz__status { text-align: center; font-size: 13px; color: var(--danger); min-height: 18px; margin-top: 10px; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; gap: 8px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; }
+  .checks { list-style: none; margin: 6px 0 0; padding: 0; font-size: 12.5px; line-height: 1.7; }
+  .checks .yes { color: var(--ok); } .checks .no { color: var(--danger); }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+  :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
+
+  .tool { max-width: 1120px; margin: 32px auto 0; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 18px; }
+  .tool__head { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+  .tool__head h2 { font-size: 17px; margin: 0 0 4px; }
+  .tool__head p { margin: 0; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; max-width: 760px; }
+  .btn--ghost { background: transparent; border: 1px solid #9aa9a0; color: var(--ink-soft); }
+  .btn--primary { background: var(--th-deep); color: #fff; padding: 9px 16px; font-size: 13.5px; }
+  .btn--small { padding: 6px 11px; font-size: 12px; background: #fff; border: 1px solid #9aa9a0; color: var(--ink); border-radius: 8px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .image-bubble { padding: 4px !important; }
+  .mini-ref { border-radius: 10px; padding: 8px 10px; font-size: 10.5px; line-height: 1.55; }
+  .mini-ref.wood { background: #6b4a2f; color: #f6e7c8; border: 3px solid #3e2a18; }
+  .mini-ref.paper { background: #fffdf4; color: #2b2b2b; border: 1px solid #d9d2b8; }
+
+  .refcard { margin: 0 0 14px; border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.8; }
+  .refcard h3 { margin: 0 0 6px; font-size: 14px; }
+  .refcard.wood { background: #6b4a2f; color: #f6e7c8; border: 4px solid #3e2a18; box-shadow: inset 0 0 0 2px #8a6a45; }
+  .refcard.paper { background: #fffdf4; border: 1px solid #d9d2b8; color: #2b2b2b; }
+  .askbox { display: grid; gap: 8px; }
+  .askbox label { font-size: 13px; font-weight: 600; }
+  .askbox textarea { min-height: 54px; }
+  .asknote { font-size: 12.5px; color: #8a5a00; background: #fff4dc; border-radius: 8px; padding: 8px 10px; line-height: 1.6; display: none; }
+  .cols { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
+  @media (min-width: 900px) { .cols { grid-template-columns: repeat(3, 1fr); } }
+  .col { border: 1px solid var(--bubble-border); border-radius: 12px; padding: 10px; background: #fafcfb; min-width: 0; }
+  .col h3 { font-size: 14px; margin: 0 0 6px; }
+  .sumbar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; font-size: 11px; }
+  .sumbar span { padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .s-ok { background: #dff3e6; color: #2f6b3a; } .s-unv { background: #fff0d2; color: #8a5a00; } .s-conf { background: #fde3e3; color: #9b2c2c; } .s-none { background: #ececec; color: #555; }
+  .sent { margin-bottom: 8px; }
+  .sentbtn { display: block; width: 100%; text-align: left; font-family: inherit; font-size: 12.5px; line-height: 1.65; border: 1px solid var(--bubble-border); background: #fff; border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+  .sentbtn:hover { background: #f3f8f5; }
+  .lab-ok .sentbtn { background: #e4f5e8; border-color: #7cc58e; } .lab-unv .sentbtn { background: #fff4dc; border-color: #e3b341; } .lab-conf .sentbtn { background: #fde8e8; border-color: #d98a8a; }
+  .tagl { font-weight: 700; font-size: 11px; }
+  .lblmenu { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+  .lblmenu button { font-family: inherit; font-size: 11.5px; border-radius: 999px; padding: 4px 10px; border: 1px solid #9aa9a0; background: #fff; cursor: pointer; }
+  .lblmenu button.on { background: var(--th-deep); color: #fff; border-color: var(--th-deep); }
+  .synth, .trace { margin-top: 14px; border: 1px solid var(--bubble-border); border-radius: 12px; padding: 12px; background: #fafcfb; }
+  .synth h3, .trace h3 { font-size: 14px; margin: 0 0 6px; }
+  .trace p { margin: 3px 0; font-size: 12.5px; line-height: 1.6; }
+  .note-small { font-size: 11px; color: var(--ink-soft); line-height: 1.5; margin: 6px 0 0; }
+  .record { border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; background: #fafcfb; font-size: 13px; line-height: 1.75; margin-bottom: 10px; }
+  .record h3 { font-size: 13.5px; margin: 0 0 4px; }
+
+  .chiprow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 48px; padding: 8px 10px; border: 2px dashed #b9cbc1; border-radius: 12px; background: #fff; }
+  .chiprow.over { background: #e9f6f1; border-color: var(--th-mid); }
+  .chip { width: 26px; height: 26px; border-radius: 50%; background: #16a085; border: 2px solid #0a7d5c; cursor: grab; display: inline-block; flex-shrink: 0; }
+  .chip:active { cursor: grabbing; }
+  .left-count { font-weight: 700; color: var(--th-deep); font-size: 14px; margin: 0 0 6px; }
+  .fgrid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+  @media (min-width: 760px) { .fgrid { grid-template-columns: repeat(3, 1fr); } }
+  .fbox { border: 1px solid var(--bubble-border); border-radius: 12px; padding: 10px; background: #fff; }
+  .fbox.over { background: #e9f6f1; border-color: var(--th-mid); }
+  .fbox h4 { margin: 0 0 4px; font-size: 14px; }
+  .fbox p { margin: 0 0 8px; font-size: 11.5px; color: var(--ink-soft); line-height: 1.55; }
+  .fbox__chips { display: flex; flex-wrap: wrap; gap: 4px; min-height: 30px; margin-bottom: 8px; }
+  .fbox__ctl { display: flex; align-items: center; gap: 8px; }
+  .fbox__ctl button { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #9aa9a0; background: #fff; font-size: 18px; cursor: pointer; font-family: inherit; }
+  .fbox__ctl button:disabled { opacity: .4; cursor: not-allowed; }
+  .fbox__num { font-weight: 700; min-width: 64px; text-align: center; font-size: 13px; }
+  .persp { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+  .persp button { font-family: inherit; font-size: 13px; padding: 8px 14px; border-radius: 999px; border: 1px solid #9aa9a0; background: #fff; cursor: pointer; }
+  .persp button.on { background: var(--th-deep); color: #fff; border-color: var(--th-deep); }
+  .narr { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: #fff8e6; border: 1px solid #f0d58a; font-size: 13.5px; line-height: 1.8; }
+  .snaprec { font-size: 12.5px; background: #f0f4f2; border-radius: 8px; padding: 8px 10px; margin-top: 8px; line-height: 1.7; }
+  .snaprec.warn { background: #fdeeee; color: var(--danger); }
+  details.rubric { margin-top: 12px; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 8px 12px; background: #fafcfb; font-size: 12.5px; line-height: 1.7; }
+  details.rubric summary { cursor: pointer; font-weight: 600; }
+  .tf-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tf-table th, .tf-table td { border: 1px solid var(--bubble-border); padding: 8px 10px; }
+  .tf-table td.c { text-align: center; width: 70px; }
+  .tf-table th { background: #eef4f0; }
+  .qtable { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+  .qtable th, .qtable td { border: 1px solid var(--bubble-border); padding: 5px 7px; vertical-align: top; }
+  .qtable th { background: #eef4f0; }
+  .good { color: var(--ok); font-weight: 700; } .low { color: var(--danger); font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+  <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="scenario-intro">
+    <p>โรงเรียนแสงตะวันวิทยาเตรียมนำระบบตรวจจับการลอกการบ้านด้วย AI มาใช้กับวิชาภาษาไทยและสังคมศึกษา หลังจากครูอ้อมพบว่านักเรียนหลายคนส่งงานที่คล้ายกันมากจนน่าสงสัยว่าคัดลอกจากเพื่อนหรือจากแชตบอต ระบบที่เสนอมาจะให้คะแนนความเสี่ยงของการลอกเป็นเปอร์เซ็นต์และแจ้งเตือนครูอัตโนมัติเมื่อเกินเกณฑ์ที่ตั้งไว้ ดูการหารือของครูและตัวแทนนักเรียนได้ด้านล่างนี้</p>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-frame__notch"></div>
+    <div class="device-screen">
+      <div class="line-screen">
+        <div class="line-head">💬 ครูและตัวแทนนักเรียน แสงตะวันวิทยา <small>(9)</small></div>
+        <div class="chat-day"><span>วันนี้</span></div>
+        <div class="msg">
+          <div class="msg__avatar" data-avatar="aom"></div>
+          <div class="msg__col"><div class="msg__name">ครูอ้อม</div><div class="msg__bubble">ครูพบว่างานภาษาไทยของนักเรียนหลายคนคล้ายกันมากจนน่าสงสัยว่าคัดลอกจากเพื่อนหรือจากแชตบอต</div></div>
+        </div>
+        <div class="msg">
+          <div class="msg__avatar" data-avatar="por"></div>
+          <div class="msg__col"><div class="msg__name">ปอ</div><div class="msg__bubble">หนูกับฟ้าเรียนพิเศษที่เดียวกันค่ะ เลยเขียนคล้ายกัน แต่ต่างคนต่างทำเองจริงๆ นะคะ</div></div>
+        </div>
+        <div class="msg">
+          <div class="msg__avatar" data-avatar="aom"></div>
+          <div class="msg__col"><div class="msg__name">ครูอ้อม</div><div class="msg__bubble">ระบบที่ฝ่ายวิชาการเสนอจะบอกความเสี่ยงเป็นเปอร์เซ็นต์ และแจ้งครูอัตโนมัติเมื่อเกินเกณฑ์ แต่ยังแยกไม่ออกระหว่างลอกจริงกับเรียนพิเศษที่เดียวกัน</div></div>
+        </div>
+        <div class="msg msg--me">
+          <div class="msg__avatar" data-avatar="meen"></div>
+          <div class="msg__col"><div class="msg__bubble">งั้นเรามาลองจัดสรรดูก่อนค่ะ ว่าจะเน้นอะไรและต้องยอมเสียอะไรบ้าง</div><div class="msg__time">15:40</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scenario-intro">
+    <p>แต่ระบบยังแยกไม่ออกชัดเจนระหว่างการลอกจริงกับการที่นักเรียนสองคนเรียนพิเศษที่เดียวกันแล้วได้กรอบความคิดคล้ายกัน หรือกรณีนักเรียนที่ใช้ AI ช่วยเรียบเรียงประโยคแต่คิดเนื้อหาเอง ฝ่ายวิชาการขอให้ตัวแทนนักเรียนและครูร่วมกันตัดสินใจว่าจะตั้งค่าระบบให้เข้มงวดแค่ไหน เพราะการตั้งเกณฑ์ที่ไวเกินไปจะจับนักเรียนบริสุทธิ์ผิดบ่อย และกระทบความไว้ใจระหว่างครูกับศิษย์ ขณะที่การตั้งเกณฑ์หลวมเกินไปก็อาจปล่อยให้การลอกจริงหลุดรอด จนเสียความยุติธรรมกับคนที่ทำงานเอง</p>
+  </div>
+
+  <section class="tool" aria-label="แผงจัดสรรชิปทรัพยากร: ระบบตรวจจับการลอกการบ้าน">
+    <div class="tool__head">
+      <div>
+        <h2>แผงจัดสรรชิปทรัพยากร: ระบบตรวจจับการลอกการบ้าน</h2>
+        <p>มีชิป 12 ชิปให้แบ่งลงในหกคุณสมบัติของระบบ กดปุ่ม + หรือ − ที่แต่ละช่อง (ใช้แป้นพิมพ์ได้) หรือลากชิปจากแถวบนมาวาง ข้อความและตารางตัวอย่างงานด้านล่างแสดงว่านักเรียนกลุ่มใดได้รับผลจากการจัดสรรปัจจุบันและเปลี่ยนทันทีทุกครั้งที่ย้ายชิป</p>
+      </div>
+      <button class="btn btn--ghost" id="resetBtn" type="button">เริ่มใหม่</button>
+    </div>
+    <p class="left-count" id="leftCount" aria-live="polite"></p>
+    <div class="chiprow" id="poolRow" aria-label="ชิปที่ยังไม่ได้จัดสรร"></div>
+    <div class="fgrid" id="fgrid"></div>
+    <div class="narr" id="narr" aria-live="polite"></div>
+    <div class="synth">
+      <h3>ตัวอย่างงานนักเรียนจำลอง (ผลภายใต้การจัดสรรปัจจุบัน)</h3>
+      <div class="tblwrap"><table class="qtable" aria-label="ตัวอย่างงานนักเรียนจำลอง"><thead><tr><th>งาน</th><th>ความคล้าย</th><th>สาเหตุที่แท้จริง</th><th>ผลภายใต้การจัดสรรนี้</th></tr></thead><tbody id="sampleBody"></tbody></table></div>
+      <p class="note-small" id="sampleNote"></p>
+    </div>
+
+    <div class="synth">
+      <h3>เขียนเหตุผลสิ่งที่ยอมลดลง</h3>
+      <textarea id="panelReason" rows="3" placeholder="อธิบายว่าคุณยอมให้คุณสมบัติใดลดลง เพราะอะไร และใครได้รับผล..."></textarea>
+    </div>
+    <div class="trace" aria-live="polite">
+      <h3>แผงร่องรอยกระบวนการ</h3>
+      <div id="traceBody"></div>
+      <p class="note-small">ข้อมูลนี้ใช้เป็นหลักฐานประกอบเท่านั้น</p>
+    </div>
+    <details class="rubric"><summary>ดูเกณฑ์การให้คะแนน (สำหรับผู้ตรวจ)</summary>
+      <p>ไม่มีการจัดสรรชิปแบบใดที่ถูกที่สุด ผู้ตรวจพิจารณาว่านักเรียนจัดสรรชิปครบ 12 ชิป ระบุอย่างจงใจว่ายอมให้คุณสมบัติใดลดลงอย่างน้อย 2 อย่าง ชี้กลุ่มคนที่ได้รับผลอย่างเจาะจงและเป็นรูปธรรม และเชื่อมโยงคำอธิบายกับตัวเลขชิปที่จัดสรรจริง การจัดสรรที่ “เท่ากันทุกช่อง” หรือ “ดีที่สุดแล้ว” โดยไม่กล่าวถึงสิ่งที่เสียไปไม่ได้คะแนน</p>
+    </details>
+  </section>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 22: ระบบตรวจการลอกการบ้านด้วย AI</h1>
+      <p>ใช้แผงจัดสรรชิปด้านบนเพื่อตอบคำถามทุกข้อ</p>
+    </div>
+    <div class="quiz__card">
+      <h2>ข้อ 1 — จัดสรรชิปและอธิบายสิ่งที่ยอมลดลง</h2>
+      <p class="quiz__desc">จัดสรรชิปทรัพยากรทั้ง 12 ชิปลงในหกช่องคุณสมบัติของระบบตรวจจับการลอกการบ้านในแผงจำลอง แล้วอธิบายว่าการจัดสรรของนักเรียนยอมให้คุณสมบัติใดลดลงอย่างน้อยสองอย่าง และบอกว่านักเรียนกลุ่มใดน่าจะได้รับผลจากการลดลงนั้น จากนั้นกดปุ่มบันทึกการจัดสรรเป็นคำตอบ</p>
+      <div style="margin-bottom:8px;"><button class="btn btn--small" data-snap="q49" data-fill="q49Why" type="button">ใช้ค่านี้เป็นคำตอบ</button></div>
+      <div class="snaprec" data-snaprec="q49"></div>
+      <div class="qlabel">คุณสมบัติอย่างน้อยสองอย่างที่ยอมให้ลดลงและเหตุผล</div>
+      <textarea id="q49Why" rows="4" placeholder="พิมพ์คำอธิบายของคุณที่นี่..."></textarea>
+      <div class="qlabel">กลุ่มนักเรียนที่ได้รับผลจากการลดลงนั้น</div>
+      <textarea id="q49Who" rows="3" placeholder="พิมพ์คำอธิบายของคุณที่นี่..."></textarea>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — จริงหรือไม่จริง</h2>
+      <p class="quiz__desc">พิจารณาข้อความต่อไปนี้เกี่ยวกับการตั้งค่าระบบตรวจจับการลอกการบ้าน แล้วระบุว่าแต่ละข้อความจริงหรือไม่จริง</p>
+      <table class="tf-table"><thead><tr><th>รายการที่พิจารณา</th><th>จริง</th><th>ไม่จริง</th></tr></thead><tbody id="tfBody"></tbody></table>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-22";
+  const SCENARIO_NAME = "ระบบตรวจการลอกการบ้านด้วย AI";
+  const MAX_SCORE = 4;
+  const $ = (id) => document.getElementById(id);
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    $("guardScreen").hidden = false;
+    $("mainScreen").style.display = "none";
+  }
+
+  // ---------- อวตารตัวละคร (ภาพวาดจากโค้ด ไม่ใช้รูปถ่ายจริง) ----------
+  const SKINS = ["#f7d6b8", "#ecbf94", "#d39a6d", "#a97550"];
+  function figure(l) {
+    const skin = l.skin, hair = l.hair, sh = l.shirt || "#ffffff";
+    let back = "", front = "";
+    const cap = `<path d="M43 45 Q42 26 60 26 Q78 26 77 45 Q72 34 60 34 Q48 34 43 45Z" fill="${hair}"/>`;
+    if (l.style === 1) {
+      back = `<path d="M41 52 Q37 24 60 24 Q83 24 79 52 L79 66 Q74 68 71 60 L49 60 Q46 68 41 66Z" fill="${hair}"/>`;
+      front = `<path d="M44 42 Q60 28 76 42 Q60 35 44 42Z" fill="${hair}"/>`;
+    } else if (l.style === 2) front = cap + `<path d="M75 36 Q96 40 90 68 Q86 52 76 48Z" fill="${hair}"/>`;
+    else if (l.style === 3) front = cap + `<circle cx="60" cy="22" r="7" fill="${hair}"/>`;
+    else if (l.style === 4) front = `<path d="M43 46 Q41 25 62 26 Q80 27 77 46 Q74 35 56 36 Q48 37 43 46Z" fill="${hair}"/>`;
+    else front = cap;
+    const torso = `<rect x="55" y="60" width="10" height="9" fill="${skin}"/><path d="M40 70 Q60 62 80 70 L83 114 L37 114Z" fill="${sh}" stroke="#cfd8dc" stroke-width="1"/><path d="M52 66 L60 78 L68 66 L64 64 L60 70 L56 64Z" fill="#fff" stroke="#cfd8dc" stroke-width=".8"/>`;
+    const head = `<circle cx="43" cy="48" r="3.2" fill="${skin}"/><circle cx="77" cy="48" r="3.2" fill="${skin}"/><circle cx="60" cy="46" r="17" fill="${skin}"/>`;
+    const face = `<circle cx="53.5" cy="47" r="1.9" fill="#2b2b2b"/><circle cx="66.5" cy="47" r="1.9" fill="#2b2b2b"/><ellipse cx="49" cy="53" rx="3" ry="1.8" fill="#f08a8a" opacity=".35"/><ellipse cx="71" cy="53" rx="3" ry="1.8" fill="#f08a8a" opacity=".35"/><path d="M54 54 Q60 59.5 66 54" fill="none" stroke="#7a3b2e" stroke-width="1.6" stroke-linecap="round"/>`;
+    return back + torso + head + front + face;
+  }
+  function avatarSVG(look) {
+    return `<svg viewBox="30 20 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="30" y="20" width="60" height="60" fill="${look.bg}"/>${figure(look)}</svg>`;
+  }
+
+  const FEATURES = [{"k": "acc", "name": "ความแม่นยำ", "desc": "ระบบจับการลอกจริงได้ครบ และตั้งเกณฑ์ไวพอจะเห็นงานที่คล้ายกันมาก (ยิ่งไว ยิ่งแจ้งเตือนงานที่คล้ายกันเพียงบางส่วนด้วย)"}, {"k": "priv", "name": "ความเป็นส่วนตัว", "desc": "จำกัดการเก็บเนื้อหางานและข้อความที่นักเรียนพิมพ์ เช่น ลบข้อความหลังตรวจเสร็จและไม่ส่งงานออกนอกโรงเรียน"}, {"k": "spd", "name": "ความเร็ว", "desc": "ตรวจงานและแจ้งผลครูได้ทันทีที่นักเรียนส่งงาน ไม่ต้องรอข้ามวัน"}, {"k": "trn", "name": "ความโปร่งใส", "desc": "นักเรียนเห็นว่าระบบเทียบกับงานใด ส่วนไหนที่ซ้ำ และคำนวณเปอร์เซ็นต์ความเสี่ยงอย่างไร"}, {"k": "fair", "name": "ความเป็นธรรม", "desc": "นักเรียนมีโอกาสชี้แจงก่อนถูกตัดสินว่าลอกงานหรือถูกหักคะแนน"}, {"k": "hum", "name": "การดูแลโดยมนุษย์", "desc": "ครูอ่านและตรวจซ้ำทุกกรณีที่ระบบสงสัย ก่อนตัดสินหรือแจ้งผู้ปกครอง"}];
+  const LOOKS = {
+    aom:  { skin: SKINS[0], hair: "#17171b", style: 1, shirt: "#fff3c4", bg: "#d9d3f3" },
+    por:  { skin: SKINS[1], hair: "#4b2f1b", style: 2, shirt: "#fbe1f0", bg: "#ffe3a3" },
+    meen: { skin: SKINS[2], hair: "#2a1c12", style: 4, shirt: "#cfe5ff", bg: "#cdebd4" },
+  };
+  const cfgPerspectives = false;
+  const PERSP_NAME = { student: "นักเรียน", teacher: "ครู", parent: "ผู้ปกครอง", admin: "เจ้าหน้าที่ธุรการ" };
+
+  document.querySelectorAll("[data-avatar]").forEach((el) => { el.innerHTML = avatarSVG(LOOKS[el.dataset.avatar]); });
+
+  // ===================================================================
+  // เครื่องตรวจคำสำคัญและรูปแบบข้อความ (Keyword & Pattern Matching)
+  // น้ำหนัก w: คำหลัก = 1 (พอเป็นหลักฐาน), คำสนับสนุน = 0.5 (ต้องมี 2 คำ)
+  // neg: 0 = ไม่ตรวจการปฏิเสธ, 1 = ตัดทิ้งถ้ามี “ไม่ต้อง/ไม่จำเป็น/ไม่ควร” นำหน้า, 2 = ตัดทิ้งถ้ามี “ไม่/ไม่ได้/มิ” นำหน้า
+  // ===================================================================
+  function normalizeText(t) {
+    const digits = "๐๑๒๓๔๕๖๗๘๙";
+    return String(t)
+      .replace(/[๐-๙]/g, (d) => digits.indexOf(d))
+      .replace(/[\s\u200b\u200c\u200d\u00a0.,;:!?"'“”‘’()\[\]{}\-–—_\/\\]/g, "")
+      .toLowerCase()
+      .replace(/เช็ค/g, "เช็ก")
+      .replace(/อนุญาติ/g, "อนุญาต");
+  }
+  function isNegated(norm, idx, level) {
+    if (!level) return false;
+    const before = norm.slice(Math.max(0, idx - 8), idx);
+    return level === 2
+      ? /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร|ไม่ได้|ไม่|มิ)$/.test(before)
+      : /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร)$/.test(before);
+  }
+  function scorePatterns(norm, patterns) {
+    let sum = 0; const hits = [];
+    patterns.forEach((p) => {
+      const re = new RegExp(p.re.source, "g"); let m;
+      while ((m = re.exec(norm))) {
+        if (isNegated(norm, m.index, p.neg || 0)) continue;
+        sum += p.w; hits.push(m[0]); break;
+      }
+    });
+    return { hit: sum >= 1, sum, hits };
+  }
+  // ตรวจว่ามีการกล่าวถึงคำใดคำหนึ่งโดยไม่มีคำปฏิเสธ/คัดค้านอยู่ใกล้ๆ (ใช้ตรวจว่า “หยิบข้อมูลที่ผิดมาใช้เป็นข้อสรุป”)
+  function adopts(norm, tokenRe, doubtRe, win) {
+    const re = new RegExp(tokenRe.source, "g"); let m;
+    while ((m = re.exec(norm))) {
+      const w = norm.slice(Math.max(0, m.index - win), m.index + m[0].length + win);
+      if (!doubtRe.test(w)) return true;
+    }
+    return false;
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+    } catch (err) { console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err); }
+  }
+  function checksHTML(parts) {
+    return `<ul class="checks">${parts.map((p) => `<li class="${p.ok ? "yes" : "no"}">${p.ok ? "✓" : "✗"} ${p.label}</li>`).join("")}</ul>`;
+  }
+
+  // GRADING-START
+
+  const FEATURE_RE = {
+    acc: /ความแม่นยำ|แม่นยำ|ความแม่น/,
+    priv: /ความเป็นส่วนตัว|ส่วนตัว/,
+    spd: /ความเร็ว|ความรวดเร็ว/,
+    trn: /ความโปร่งใส|โปร่งใส/,
+    fair: /ความเป็นธรรม|ความยุติธรรม|เป็นธรรม|ยุติธรรม/,
+    hum: /การดูแลโดยมนุษย์|ดูแลโดยมนุษย์|ดูแลโดยครู|ครูตรวจซ้ำ|ให้ครูตรวจ|คนตรวจซ้ำ|มนุษย์ตรวจ|ครูคุย/,
+  };
+  const TRADEOFF = /เพราะ|เพื่อ|แลก|ยอม|จึง|เนื่องจาก|ทำให้|ถึงแม้|แม้|ดังนั้น/;
+  const IMPACT = /ต้อง|เสียเวลา|ผิดพลาด|จำผิด|ถูก(ระบุ|กล่าวหา|หัก|แจ้ง|เรียก|เข้าใจ)|ขาดเรียน|แถว|รอ|ช้า|ไม่ได้(ชี้แจง|อธิบาย|ตรวจ)|หลุดรอด|ไม่มี(โอกาส|ครู|ใคร|ช่อง)|คะแนน|โดน|เข้าใจผิด/;
+  const BROAD_IMPACT = /คน(อาจ|ที่)?|โดน|ถูก|เข้าใจผิด|เสียหาย|ผลกระทบ|นักเรียน/;
+  function featuresIn(n) { return Object.keys(FEATURE_RE).filter((k) => FEATURE_RE[k].test(n)); }
+
+  // kind: "face" (ข้อ 46) หรือ "plag" (ข้อ 49)
+  function gradeAlloc(snap, text, kind) {
+    const total = snap ? Object.values(snap.alloc).reduce((a, b) => a + b, 0) : 0;
+    const complete = total === 12;
+    const n = normalizeText(text);
+    const mentioned = featuresIn(n);
+    const reduced = snap ? mentioned.filter((k) => snap.alloc[k] <= 1) : [];
+    const groupRe = kind === "plag"
+      ? /(นักเรียน|เด็ก)ที่(เรียนพิเศษ|ใช้(ai|เอไอ|แชตบอต|แชทบอท)|ทำเอง|ลอก|คิดเอง|ส่ง)|เรียนพิเศษที่เดียวกัน|ใช้ai|นักเรียนที่.{2,}|กลุ่มนักเรียน|นักเรียนกลุ่ม/
+      : /(นักเรียน|เด็ก)ที่.{2,}|เด็ก(ใส่แว่น|คลุมผม)|ผู้ปกครอง|ครูเวร|เจ้าหน้าที่ธุรการ|พี่น้อง|แฝด|นักเรียนกลุ่ม/;
+    const group = groupRe.test(n), tradeoff = TRADEOFF.test(n), impact = IMPACT.test(n), broad = BROAD_IMPACT.test(n);
+    let score = 0;
+    if (complete && n.length >= 12) {
+      if (reduced.length >= 2 && group && impact && tradeoff) score = 2;
+      else if (reduced.length >= 1 || (mentioned.length >= 1 && broad && tradeoff)) score = 1;
+    }
+    return { score, complete, reduced, mentioned, group, tradeoff, impact };
+  }
+
+  // ----- ข้อ 2 (ข้อ 50): จริง/ไม่จริง 4 ข้อ -----
+  const TF_ITEMS = [
+    { text: "การตั้งเกณฑ์ความไวสูงสุดช่วยจับการลอกได้ครบทุกกรณีโดยไม่มีผลเสียใด ๆ", truth: false },
+    { text: "การตั้งเกณฑ์ที่ไวเกินไปอาจทำให้นักเรียนที่เรียนพิเศษที่เดียวกันถูกกล่าวหาว่าลอกงานทั้งที่ไม่ได้ลอก", truth: true },
+    { text: "การเพิ่มการดูแลโดยมนุษย์ เช่น ให้ครูตรวจซ้ำทุกกรณีที่ระบบสงสัย มักทำให้ครูต้องใช้เวลามากขึ้นในการตรวจงาน", truth: true },
+    { text: "ไม่ว่าจะตั้งเกณฑ์อย่างไร ระบบก็จะแยกแยะการใช้ AI ช่วยเรียบเรียงประโยคออกจากการลอกได้อย่างสมบูรณ์แบบเสมอ", truth: false },
+  ];
+  function gradeTF(ans) {
+    const correct = TF_ITEMS.map((it, i) => ans[i] === it.truth);
+    const n = correct.filter(Boolean).length;
+    return { score: n === 4 ? 2 : n === 3 ? 1 : 0, correct, n };
+  }
+
+  // GRADING-END
+
+
+  const NARR_RULES = [
+    { id: "fair-low-acc-high", test: (v) => v.fair <= 1 && v.acc >= 4, text: "ปอเรียนพิเศษที่เดียวกับฟ้าจนเขียนกรอบความคิดคล้ายกัน ระบบให้ความเสี่ยง 88% และแจ้งครูทันที ครูหักคะแนนก่อนที่ปอจะมีโอกาสอธิบายว่าสองคนเรียนพิเศษที่เดียวกัน เธอรู้สึกว่าถูกมองว่าเป็นคนโกงทั้งที่เขียนเอง" },
+    { id: "hum-low-acc-mid", test: (v) => v.hum <= 1 && v.acc >= 3, text: "ภูมิใช้ AI ช่วยเรียบเรียงประโยคแต่คิดเนื้อหาเอง ระบบแจ้งว่ามีความเสี่ยง และครูซึ่งไม่มีเวลาอ่านซ้ำเชื่อเปอร์เซ็นต์ตามที่ระบบรายงาน ภูมิจึงถูกเรียกพบโดยไม่มีใครอ่านงานจริงก่อน" },
+    { id: "fair-hum-high", test: (v) => v.fair >= 3 && v.hum >= 3, text: "เมื่อระบบสงสัยงานของปอกับฟ้า ครูอ้อมเรียกทั้งสองคนมาคุยก่อนตัดสิน เมื่อทราบว่าเรียนพิเศษที่เดียวกันจึงไม่หักคะแนน นักเรียนที่ใช้ AI เรียบเรียงประโยคอย่างภูมิก็ได้อธิบายวิธีทำงานของตัวเอง แต่ครูต้องใช้เวลาคุยกับนักเรียนหลายคนหลังเลิกเรียน" },
+    { id: "trn-low", test: (v) => v.trn <= 1, text: "นิ่มได้รับแจ้งว่างานของเธอเสี่ยงลอก แต่ไม่รู้ว่าระบบเทียบกับงานของใคร ส่วนไหนซ้ำ หรือคำนวณเปอร์เซ็นต์อย่างไร เธอจึงโต้แย้งไม่ได้เพราะไม่รู้ว่าต้องแก้ข้อกล่าวหาอะไร" },
+    { id: "spd-low-hum-high", test: (v) => v.spd <= 1 && v.hum >= 3, text: "ครูอ้อมอ่านและตรวจซ้ำงานทุกชิ้นที่ระบบสงสัยด้วยตนเอง ปอกับฟ้าได้รับการสอบถามก่อนตัดสินและไม่ถูกหักคะแนน แต่ผลตรวจงานทั้งห้องล่าช้าเป็นสัปดาห์ นักเรียนที่ทำงานเองรอคะแนนนานกว่าเดิม" },
+    { id: "acc-low", test: (v) => v.acc <= 1, text: "มานะกับสมศรีคัดลอกงานกันจริง แต่ระบบตั้งเกณฑ์หลวมมากจนไม่แจ้งเตือนครู นักเรียนที่ทำงานเองอย่างแพรรู้สึกว่าไม่ยุติธรรมเมื่อได้คะแนนเท่าคนที่ลอก และเริ่มคิดว่าไม่คุ้มที่จะตั้งใจทำเอง" },
+    { id: "priv-low", test: (v) => v.priv <= 1, text: "ระบบเก็บงานเขียนและร่างข้อความทั้งหมดของนักเรียนไว้ในฐานข้อมูลของบริษัทภายนอกโดยไม่ระบุเวลาลบ ภูมิที่เคยพิมพ์เรื่องปัญหาครอบครัวในงานเรียงความเริ่มกังวลว่าเนื้อหาส่วนตัวของเขาจะถูกนำไปใช้ที่อื่น" },
+    { id: "priv-high-trn-low", test: (v) => v.priv >= 4 && v.trn <= 2, text: "ระบบลบเนื้อหางานทิ้งทันทีหลังตรวจ นักเรียนสบายใจเรื่องข้อมูลส่วนตัว แต่เมื่อนิ่มโต้แย้งผลทีหลัง ไม่มีเนื้อหาให้เปิดดูซ้ำ ครูและนักเรียนต้องเถียงกันโดยไม่มีหลักฐานเทียบ" },
+    { id: "spd-high-hum-low", test: (v) => v.spd >= 4 && v.hum <= 2, text: "ระบบแจ้งผลทันทีที่ส่งงานและครูได้รายการเสี่ยงตั้งแต่เช้า แต่ครูไม่มีเวลาอ่านซ้ำ นักเรียนที่ถูกแจ้งผิดอย่างภูมิรู้ผลหักคะแนนก่อนจะมีโอกาสพบครู" },
+    { id: "trn-high", test: (v) => v.trn >= 4, text: "ระบบไฮไลต์ข้อความที่ซ้ำและบอกว่าเทียบกับงานใด ปอเห็นว่าส่วนที่ซ้ำคือกรอบความคิดที่เรียนจากครูพิเศษคนเดียวกัน จึงอธิบายให้ครูเข้าใจได้ชัด ส่วนมานะที่คัดลอกจริงไม่สามารถปฏิเสธเมื่อเห็นย่อหน้าที่ซ้ำกันทุกคำ" },
+    { id: "balanced", test: () => true, text: "การจัดสรรแบบกระจายทำให้ระบบจับการลอกชัดเจนได้บางกรณีเท่านั้น งานของปอกับฟ้าบางครั้งถูกแจ้งแต่ได้ชี้แจงบ้าง ส่วนงานของกอไก่กับขอไข่ที่ใช้แชตบอตเดียวกันอาจหลุดรอดไปบางครั้ง ไม่มีด้านใดได้ทรัพยากรพอจะทำได้ดีที่สุด" },
+  ];
+  function narrativeHTML() { return pickRule(st.alloc).text; }
+  const SAMPLES = [{"name": "งานของมานะ–สมศรี", "sim": 96, "cause": "คัดลอกจากกันจริง", "copy": true}, {"name": "งานของกอไก่–ขอไข่", "sim": 91, "cause": "ให้แชตบอตตัวเดียวกันเขียนให้แล้วส่งทั้งสองคน", "copy": true}, {"name": "งานของปอ–ฟ้า", "sim": 88, "cause": "เรียนพิเศษที่เดียวกัน ได้กรอบความคิดคล้ายกัน แต่เขียนเอง", "copy": false}, {"name": "งานของภูมิ", "sim": 74, "cause": "ใช้ AI ช่วยเรียบเรียงประโยค แต่คิดเนื้อหาเอง", "copy": false}, {"name": "งานของนิ่ม", "sim": 62, "cause": "ใช้หนังสือเรียนเล่มเดียวกัน จึงใช้ศัพท์ซ้ำกับเพื่อน", "copy": false}, {"name": "งานของแพร", "sim": 45, "cause": "ทำเองทั้งหมด ไม่คล้ายงานใคร", "copy": false}];
+  function renderSamples() {
+    const v = st.alloc;
+    const threshold = Math.max(40, 100 - 6 * v.acc);
+    $("sampleBody").innerHTML = SAMPLES.map((s) => {
+      const flagged = s.sim >= threshold;
+      let outcome;
+      if (flagged && s.copy) outcome = '<span class="good">ระบบจับได้</span>';
+      else if (flagged) outcome = (v.fair >= 2 || v.hum >= 3)
+        ? '<span class="good">ถูกแจ้งเตือน แต่ได้ชี้แจงก่อนตัดสิน</span>'
+        : '<span class="low">ถูกแจ้งครูและหักคะแนนโดยไม่มีโอกาสชี้แจง</span>';
+      else if (s.copy) outcome = '<span class="low">หลุดรอด ระบบไม่แจ้งเตือน</span>';
+      else outcome = "ไม่ถูกแจ้งเตือน";
+      return `<tr><td>${s.name}</td><td>${s.sim}%</td><td>${s.cause}</td><td>${outcome}</td></tr>`;
+    }).join("");
+    $("sampleNote").textContent = `เกณฑ์แจ้งเตือนครูภายใต้การจัดสรรนี้: ความคล้ายตั้งแต่ ${threshold}% ขึ้นไป`;
+  }
+
+
+  // ===================================================================
+  // เครื่องมือจัดสรรชิปทรัพยากร
+  // ===================================================================
+  const TOTAL = 12;
+  const KEYS = FEATURES.map((f) => f.k);
+  const START = { acc: 2, priv: 2, spd: 2, trn: 2, fair: 2, hum: 2 };
+  const nowISO = () => new Date().toISOString();
+  const st = { alloc: { ...START }, moves: [], states: [], persp: "student", viewed: ["student"], snaps: {}, resets: 0 };
+  const sum = (a) => KEYS.reduce((s, k) => s + a[k], 0);
+  const fname = (k) => FEATURES.find((f) => f.k === k).name;
+  const allocText = (a) => FEATURES.map((f) => `${f.name} ${a[f.k]} ชิป`).join(" · ");
+
+  function recordState() { if (sum(st.alloc) === TOTAL) st.states.push({ t: nowISO(), alloc: { ...st.alloc } }); }
+
+  function move(from, to) {
+    if (from === to) return;
+    if (from !== "pool" && st.alloc[from] <= 0) return;
+    if (to === "pool" && from === "pool") return;
+    if (from === "pool" && sum(st.alloc) >= TOTAL) return;
+    if (from !== "pool") st.alloc[from]--;
+    if (to !== "pool") st.alloc[to]++;
+    st.moves.push({ t: nowISO(), from, to, alloc: { ...st.alloc } });
+    recordState();
+    render();
+  }
+
+  const chipEl = (src) => {
+    const c = document.createElement("span");
+    c.className = "chip"; c.draggable = true; c.setAttribute("aria-hidden", "true");
+    c.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/plain", src); e.dataTransfer.effectAllowed = "move"; });
+    return c;
+  };
+  function dropTarget(el, target) {
+    el.addEventListener("dragover", (e) => { e.preventDefault(); el.classList.add("over"); });
+    el.addEventListener("dragleave", () => el.classList.remove("over"));
+    el.addEventListener("drop", (e) => { e.preventDefault(); el.classList.remove("over"); const src = e.dataTransfer.getData("text/plain"); if (src) move(src, target); });
+  }
+
+  function buildBoxes() {
+    const g = $("fgrid"); g.innerHTML = "";
+    FEATURES.forEach((f) => {
+      const box = document.createElement("div"); box.className = "fbox"; box.dataset.k = f.k;
+      box.innerHTML = `<h4>${f.name}</h4><p>${f.desc}</p><div class="fbox__chips"></div>
+        <div class="fbox__ctl"><button type="button" data-d="-1" aria-label="ลดชิป ${f.name}">−</button><span class="fbox__num"></span><button type="button" data-d="1" aria-label="เพิ่มชิป ${f.name}">+</button></div>`;
+      box.querySelector('[data-d="-1"]').addEventListener("click", () => move(f.k, "pool"));
+      box.querySelector('[data-d="1"]').addEventListener("click", () => move("pool", f.k));
+      dropTarget(box, f.k);
+      g.appendChild(box);
+    });
+  }
+  dropTarget($("poolRow"), "pool");
+
+  // GRADING-START-NARR
+  function pickRule(v) {
+    for (const r of NARR_RULES) if (r.test(v)) return r;
+    return NARR_RULES[NARR_RULES.length - 1];
+  }
+  // GRADING-END-NARR
+
+  function changedMind() {
+    const cur = st.alloc, out = []; const seen = new Set();
+    st.states.forEach((s) => {
+      const key = JSON.stringify(s.alloc);
+      if (seen.has(key) || key === JSON.stringify(cur)) return;
+      const moved = KEYS.reduce((n, k) => n + Math.max(0, s.alloc[k] - cur[k]), 0);
+      if (moved >= 2) { seen.add(key); out.push(s.alloc); }
+    });
+    return out;
+  }
+
+  function render() {
+    const pool = TOTAL - sum(st.alloc);
+    $("leftCount").textContent = `เหลือ ${pool} ชิป`;
+    const row = $("poolRow"); row.innerHTML = "";
+    for (let i = 0; i < pool; i++) row.appendChild(chipEl("pool"));
+    if (!pool) row.innerHTML = '<span style="font-size:12.5px;color:#5c655f;">ไม่มีชิปเหลือในแถวบน ลดชิปจากช่องใดช่องหนึ่งหรือลากชิปออกมาเพื่อย้ายใหม่</span>';
+    document.querySelectorAll(".fbox").forEach((box) => {
+      const k = box.dataset.k, n = st.alloc[k];
+      const holder = box.querySelector(".fbox__chips"); holder.innerHTML = "";
+      for (let i = 0; i < n; i++) holder.appendChild(chipEl(k));
+      box.querySelector(".fbox__num").textContent = `${n} ชิป`;
+      box.querySelector('[data-d="-1"]').disabled = n <= 0;
+      box.querySelector('[data-d="1"]').disabled = pool <= 0;
+    });
+    $("narr").innerHTML = narrativeHTML();
+    if (typeof renderSamples === "function") renderSamples();
+    $("traceBody").innerHTML = traceHTML();
+    renderSnaps();
+  }
+
+  function traceHTML() {
+    const cm = changedMind();
+    const lines = [`<p>จำนวนครั้งที่ย้ายชิปทั้งหมด: <b>${st.moves.length}</b></p>`];
+    lines.push(`<p>การจัดสรรที่เคยลองแล้วเปลี่ยนใจ (ต่างจากปัจจุบันตั้งแต่ 2 ชิปขึ้นไป): <b>${cm.length}</b> แบบ</p>`);
+    if (cm.length) lines.push(`<p style="font-size:11.5px;color:#5c655f;">${cm.slice(-4).map((a) => KEYS.map((k) => a[k]).join("-")).join(" · ")} (ลำดับ: ${FEATURES.map((f) => f.name).join("-")})</p>`);
+    if (cfgPerspectives) lines.push(`<p>มุมมองที่เคยเปิดดู: ${st.viewed.map((p) => PERSP_NAME[p]).join(", ")}</p>`);
+    return lines.join("");
+  }
+
+  $("resetBtn").addEventListener("click", () => {
+    if (!window.confirm("คืนชิปทั้งหมดกลับสู่การจัดสรรเริ่มต้นและล้างร่องรอยกระบวนการ?")) return;
+    st.alloc = { ...START }; st.moves = []; st.states = []; st.persp = "student"; st.viewed = ["student"]; st.snaps = {}; st.resets++;
+    $("panelReason").value = "";
+    syncPersp(); render();
+  });
+
+  function syncPersp() { document.querySelectorAll(".persp button").forEach((b) => b.classList.toggle("on", b.dataset.p === st.persp)); }
+  document.querySelectorAll(".persp button").forEach((b) => b.addEventListener("click", () => {
+    st.persp = b.dataset.p; if (!st.viewed.includes(st.persp)) st.viewed.push(st.persp);
+    syncPersp(); render();
+  }));
+
+  // ---------- บันทึกการจัดสรรเป็นคำตอบ ----------
+  function snapText(s) {
+    if (!s) return "ยังไม่ได้บันทึก กดปุ่ม “ใช้ค่านี้เป็นคำตอบ” เพื่อบันทึกการจัดสรรปัจจุบัน";
+    const left = TOTAL - sum(s.alloc);
+    return `${allocText(s.alloc)}${left ? ` · <b>ยังเหลือ ${left} ชิป (จัดสรรไม่ครบ 12 ชิป)</b>` : ""}${cfgPerspectives ? ` · มุมมองขณะบันทึก: ${PERSP_NAME[s.persp]}` : ""}`;
+  }
+  function renderSnaps() {
+    document.querySelectorAll("[data-snaprec]").forEach((el) => {
+      const s = st.snaps[el.dataset.snaprec];
+      el.innerHTML = snapText(s);
+      el.classList.toggle("warn", !!s && TOTAL - sum(s.alloc) > 0);
+    });
+  }
+  document.querySelectorAll("[data-snap]").forEach((b) => b.addEventListener("click", () => {
+    const slot = b.dataset.snap;
+    if (slot === "q47b" && st.persp !== "parent") { alert("รอบสองต้องบันทึกในมุมมอง “ผู้ปกครอง” กรุณากดปุ่มสลับมุมมองเป็นผู้ปกครองในแผงจำลองก่อน"); return; }
+    st.snaps[slot] = { alloc: { ...st.alloc }, persp: st.persp, t: nowISO() };
+    const target = b.dataset.fill; // ช่องข้อความที่จะเติมเหตุผลจากแผงให้ (ถ้ายังว่าง)
+    if (target && !$(target).value.trim() && $("panelReason").value.trim()) $(target).value = $("panelReason").value.trim();
+    renderSnaps();
+  }));
+
+  buildBoxes(); render();
+
+  const tfAns = [null, null, null, null];
+  function renderTF() {
+    $("tfBody").innerHTML = TF_ITEMS.map((it, i) => `<tr><td>${it.text}</td>
+      <td class="c"><input type="radio" name="tf${i}" value="1" aria-label="ข้อ ${i + 1} จริง" /></td>
+      <td class="c"><input type="radio" name="tf${i}" value="0" aria-label="ข้อ ${i + 1} ไม่จริง" /></td></tr>`).join("");
+    document.querySelectorAll('#tfBody input[type="radio"]').forEach((r) => r.addEventListener("change", () => {
+      const i = Number(r.name.replace("tf", "")); tfAns[i] = r.value === "1";
+    }));
+  }
+  async function handleSubmit() {
+    const st2 = $("quizStatus"), btn = $("submitBtn");
+    const t49 = ($("q49Why").value + " " + $("q49Who").value).trim();
+    if (!st.snaps.q49) { st2.textContent = "ข้อ 1: กรุณากดปุ่ม “ใช้ค่านี้เป็นคำตอบ” เพื่อบันทึกการจัดสรรชิป"; return; }
+    if (!$("q49Why").value.trim() || !$("q49Who").value.trim()) { st2.textContent = "ข้อ 1: กรุณาเขียนคุณสมบัติที่ยอมให้ลดลงและกลุ่มนักเรียนที่ได้รับผลให้ครบทั้งสองช่อง"; return; }
+    if (tfAns.some((a) => a === null)) { st2.textContent = "ข้อ 2: กรุณาเลือกจริงหรือไม่จริงให้ครบทั้ง 4 ข้อความ"; return; }
+    btn.disabled = true; st2.style.color = "#5c655f"; st2.textContent = "กำลังตรวจคะแนน...";
+
+    const r1 = gradeAlloc(st.snaps.q49, t49, "plag");
+    const r2 = gradeTF(tfAns);
+    const total = r1.score + r2.score;
+    await saveToSheet({
+      studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: total, max_score: MAX_SCORE,
+      details: {
+        q1: { score: r1.score, allocation: st.snaps.q49.alloc, text: t49 },
+        q2: { score: r2.score, answers: tfAns, correct_count: r2.n },
+        sim_log: { move_count: st.moves.length, moves: st.moves.map((m) => ({ t: m.t, from: m.from, to: m.to })), changed_mind: changedMind(), resets: st.resets },
+      },
+    });
+    show({ r1, r2, total });
+  }
+  function show(d) {
+    $("quizSection").hidden = true; $("resultSection").hidden = false;
+    $("resultTotal").textContent = `${d.total} / ${MAX_SCORE}`;
+    const r1 = d.r1, r2 = d.r2;
+    const q1Reason = !r1.complete ? "จัดสรรชิปไม่ครบ 12 ชิป จึงไม่ได้คะแนน" : r1.score === 2 ? "ระบุคุณสมบัติที่ยอมให้ลดลงอย่างน้อย 2 อย่างอย่างจงใจ พร้อมกลุ่มนักเรียนที่เจาะจงและผลกระทบที่เป็นรูปธรรม"
+      : r1.score === 1 ? "ระบุการลดหรือผู้ได้รับผลได้บางส่วน ยังไม่ครบสองคุณสมบัติหรือยังไม่เจาะจงกลุ่มนักเรียน" : "ยังไม่อธิบายว่าอะไรลดลงอย่างจงใจหรือใครได้รับผลกระทบ";
+    const q1Checks = [
+      { ok: r1.complete, label: "จัดสรรชิปครบ 12 ชิป" },
+      { ok: r1.reduced.length >= 2, label: `ระบุคุณสมบัติที่ลดลง (ชิป ≤ 1) อย่างน้อย 2 อย่าง (พบ ${r1.reduced.length}: ${r1.reduced.map(fname).join(", ") || "—"})` },
+      { ok: r1.group, label: "ระบุกลุ่มนักเรียนที่ได้รับผลอย่างเจาะจง (เช่น เรียนพิเศษที่เดียวกัน ใช้ AI ช่วยเรียบเรียง)" },
+      { ok: r1.impact, label: "อธิบายผลกระทบที่เป็นรูปธรรม" },
+      { ok: r1.tradeoff, label: "อธิบายเหตุผลของการแลกเปลี่ยน" },
+    ];
+    const tfRows = TF_ITEMS.map((it, i) => ({ ok: r2.correct[i], label: `${it.text} → เฉลย: ${it.truth ? "จริง" : "ไม่จริง"} (คุณตอบ: ${tfAns[i] ? "จริง" : "ไม่จริง"})` }));
+    $("resultBreakdown").innerHTML = `
+      <div class="result__item"><div class="result__item-head"><span>ข้อ 1 — จัดสรรชิปและสิ่งที่ยอมลดลง</span><span>${r1.score} / 2</span></div>
+        <div class="result__item-reason">${q1Reason}</div>${checksHTML(q1Checks)}</div>
+      <div class="result__item"><div class="result__item-head"><span>ข้อ 2 — จริงหรือไม่จริง</span><span>${r2.score} / 2</span></div>
+        <div class="result__item-reason">ตอบถูก ${r2.n} จาก 4 ข้อความ (ถูกครบ 4 ได้ 2 คะแนน ถูก 3 ได้ 1 คะแนน)</div>${checksHTML(tfRows)}</div>
+      <p class="hint" style="font-size:12px;color:#5c655f;">หมายเหตุ: ในข้อ 1 ไม่มีการจัดสรรที่ถูกที่สุด คะแนนมาจากความชัดเจนของการแลกเปลี่ยนและการเชื่อมกับตัวเลขที่จัดสรรจริง</p>`;
+    $("resultSection").scrollIntoView({ behavior: "smooth" });
+  }
+  $("submitBtn").addEventListener("click", handleSubmit);
+  renderTF();
+
+</script>
+</body>
+</html>

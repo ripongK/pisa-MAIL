@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 19: ตลาดท่าน้ำวัดโพธิ์งาม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #0a7d5c; --th-mid: #16a085; --paper: #f2f6f4; --ink: #1a1a1a; --ink-soft: #5c655f;
+    --bubble: #ffffff; --bubble-border: #dde7e1; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #9b2c2c; --ok: #2f6b3a; --radius: 14px;
+    --r-c: #d99a12; --r-n: #2f8f5b; --r-e: #c0504d; --r-s: #4a6fa5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d3dbd6; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+  .scenario-intro { max-width: 600px; margin: 0 auto 20px; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px 18px; }
+  .scenario-intro p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--ink); }
+
+  .device-frame { width: 390px; max-width: 100%; margin: 0 auto 20px; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
+  .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
+  .device-screen { background: var(--paper); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; }
+  .content-wide { width: 100%; max-width: 760px; margin: 28px auto 0; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  /* ---------- แชท LINE ---------- */
+  .line-screen { background: #8fb785; min-height: 100%; padding-bottom: 16px; }
+  .line-head { background: #3f7d37; color: #fff; padding: 30px 14px 10px; font-size: 13px; font-weight: 700; position: sticky; top: 0; z-index: 5; }
+  .line-head small { font-weight: 400; opacity: .85; font-size: 11px; }
+  .chat-day { text-align: center; margin: 12px 0 4px; }
+  .chat-day span { display: inline-block; font-size: 10.5px; color: #fff; background: rgba(0,0,0,.22); border-radius: 999px; padding: 2px 10px; }
+  .msg { display: flex; gap: 8px; margin: 9px 10px; align-items: flex-start; }
+  .msg--me { flex-direction: row-reverse; }
+  .msg__avatar { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: #fff; }
+  .msg__avatar svg { display: block; width: 100%; height: 100%; }
+  .msg__col { max-width: 245px; }
+  .msg--me .msg__col { display: flex; flex-direction: column; align-items: flex-end; }
+  .msg__name { font-size: 10.5px; color: #f0fae9; margin: 0 0 2px 2px; }
+  .msg--me .msg__name { display: none; }
+  .msg__bubble { background: #fff; border-radius: 4px 14px 14px 14px; padding: 8px 11px; font-size: 12.5px; line-height: 1.55; }
+  .msg--me .msg__bubble { background: #a8e58b; border-radius: 14px 4px 14px 14px; }
+  .msg__time { font-size: 9.5px; color: #eaf5e4; margin-top: 2px; }
+  .sys-note { text-align: center; margin: 10px 14px; font-size: 11px; color: #fff; background: rgba(0,0,0,.25); border-radius: 10px; padding: 5px 10px; line-height: 1.5; }
+
+  /* ---------- หน้าจอแอปทดลอง ---------- */
+  .app-head { background: #7a3e1d; color: #fff; padding: 30px 16px 12px; position: sticky; top: 0; z-index: 5; }
+  .app-head b { font-size: 14px; display: block; }
+  .app-head span { font-size: 11px; opacity: .85; }
+  .app-row { display: flex; gap: 10px; background: #fff; border-bottom: 1px solid var(--bubble-border); padding: 10px 14px; align-items: center; }
+  .app-row__img { width: 76px; height: 57px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #fff4e0; }
+  .app-row__img svg { display: block; width: 100%; height: 100%; }
+  .app-row__txt { font-size: 12px; line-height: 1.55; }
+  .verdict { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-bottom: 2px; }
+  .verdict--ok { background: #dff3e6; color: var(--ok); }
+  .verdict--bad { background: #fde3e3; color: var(--danger); }
+  .app-note { padding: 12px 14px; font-size: 11px; color: var(--danger); background: #fdeeee; line-height: 1.6; }
+
+  /* ---------- ห้องทดลอง ---------- */
+  .sim { max-width: 1120px; margin: 32px auto 0; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 18px; }
+  .sim__head { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+  .sim__head h2 { font-size: 17px; margin: 0 0 4px; }
+  .sim__head p { margin: 0; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; max-width: 720px; }
+  .sim__grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 960px) { .sim__grid { grid-template-columns: 1.25fr 1fr .95fr; } }
+  .panel { border: 1px solid var(--bubble-border); border-radius: 12px; padding: 12px; background: #fafcfb; min-width: 0; }
+  .panel h3 { font-size: 14px; margin: 0 0 4px; }
+  .panel__sub { font-size: 11.5px; color: var(--ink-soft); margin: 0 0 10px; line-height: 1.5; }
+  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+  .dropzone { min-height: 150px; border: 2px dashed #b9cbc1; border-radius: 12px; padding: 8px; transition: background .12s, border-color .12s; }
+  .dropzone.over { background: #e9f6f1; border-color: var(--th-mid); }
+  .dropzone__empty { font-size: 12px; color: var(--ink-soft); text-align: center; padding: 28px 8px; line-height: 1.6; }
+  .pcard { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; overflow: hidden; cursor: grab; font-size: 11px; display: flex; flex-direction: column; }
+  .pcard.dragging { opacity: .45; }
+  .pcard svg { display: block; width: 100%; height: auto; }
+  .pcard__body { padding: 6px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .pcard__name { font-weight: 600; font-size: 11.5px; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 999px; width: fit-content; color: #fff; }
+  .tag--c { background: var(--r-c); } .tag--n { background: var(--r-n); } .tag--e { background: var(--r-e); } .tag--s { background: var(--r-s); }
+  .mini { font-family: inherit; font-size: 10.5px; border: 1px solid #b9cbc1; border-radius: 6px; padding: 4px 6px; background: #fff; cursor: pointer; width: 100%; line-height: 1.3; }
+  .mini:hover { background: #eef6f2; }
+  .sim-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .sim-actions .btn { flex: 1; min-width: 110px; padding: 10px 12px; font-size: 13.5px; }
+  .btn--train { background: var(--th-deep); color: #fff; }
+  .btn--ghost { background: transparent; border: 1px solid #9aa9a0; color: var(--ink-soft); }
+  .sim-msg { margin-top: 12px; font-size: 12.5px; line-height: 1.6; min-height: 20px; padding: 8px 10px; border-radius: 8px; background: #f0f4f2; }
+  .sim-msg--warn { background: #fdeeee; color: var(--danger); font-weight: 600; }
+  .sim-msg--ok { background: #e6f5ec; color: var(--ok); }
+
+  .barlabel { font-size: 11.5px; font-weight: 600; margin: 8px 0 4px; }
+  .bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; background: #e2e9e5; font-size: 10.5px; color: #fff; font-weight: 600; }
+  .bar span { display: flex; align-items: center; justify-content: center; white-space: nowrap; overflow: hidden; min-width: 0; }
+  .seg-c { background: var(--r-c); } .seg-n { background: var(--r-n); } .seg-e { background: var(--r-e); } .seg-s { background: var(--r-s); }
+  .bar--empty { color: var(--ink-soft); justify-content: center; align-items: center; font-weight: 400; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.tbl th, table.tbl td { border: 1px solid var(--bubble-border); padding: 5px 7px; text-align: center; }
+  table.tbl th { background: #eef4f0; font-weight: 600; }
+  table.tbl td:first-child, table.tbl th:first-child { text-align: left; }
+  .tblwrap { overflow-x: auto; }
+  .acc-big { font-weight: 700; color: var(--th-deep); }
+  .low { color: var(--danger); font-weight: 700; }
+  .good { color: var(--ok); font-weight: 700; }
+  .note-small { font-size: 11px; color: var(--ink-soft); line-height: 1.5; margin: 6px 0 0; }
+  .history { margin-top: 14px; }
+  .history h3 { font-size: 14px; margin: 0 0 6px; }
+
+  /* ---------- แบบทดสอบ ---------- */
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.6; margin: 0 0 12px; }
+  .casebox { border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #fafcfb; }
+  .casebox h3 { font-size: 13.5px; margin: 0 0 8px; }
+  .field { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; line-height: 1.5; padding: 5px 0; }
+  .field input { width: 84px; border: 1px solid var(--bubble-border); border-radius: 8px; padding: 6px 8px; font-family: inherit; font-size: 14px; text-align: right; flex-shrink: 0; }
+  .option { display: block; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13.5px; line-height: 1.55; }
+  .option input { margin-right: 8px; }
+  .option.selected { border-color: var(--th-mid); background: #e9f6f1; }
+  .qlabel { font-size: 13.5px; font-weight: 600; margin: 14px 0 8px; }
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+  .quiz__status { text-align: center; font-size: 13px; color: var(--danger); min-height: 18px; margin-top: 10px; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; gap: 8px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; }
+  .checks { list-style: none; margin: 6px 0 0; padding: 0; font-size: 12.5px; line-height: 1.7; }
+  .checks .yes { color: var(--ok); } .checks .no { color: var(--danger); }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+  :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
+
+  .tool { max-width: 1120px; margin: 32px auto 0; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 18px; }
+  .tool__head { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+  .tool__head h2 { font-size: 17px; margin: 0 0 4px; }
+  .tool__head p { margin: 0; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; max-width: 760px; }
+  .btn--ghost { background: transparent; border: 1px solid #9aa9a0; color: var(--ink-soft); }
+  .btn--primary { background: var(--th-deep); color: #fff; padding: 9px 16px; font-size: 13.5px; }
+  .btn--small { padding: 6px 11px; font-size: 12px; background: #fff; border: 1px solid #9aa9a0; color: var(--ink); border-radius: 8px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .image-bubble { padding: 4px !important; }
+  .mini-ref { border-radius: 10px; padding: 8px 10px; font-size: 10.5px; line-height: 1.55; }
+  .mini-ref.wood { background: #6b4a2f; color: #f6e7c8; border: 3px solid #3e2a18; }
+  .mini-ref.paper { background: #fffdf4; color: #2b2b2b; border: 1px solid #d9d2b8; }
+
+  .refcard { margin: 0 0 14px; border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.8; }
+  .refcard h3 { margin: 0 0 6px; font-size: 14px; }
+  .refcard.wood { background: #6b4a2f; color: #f6e7c8; border: 4px solid #3e2a18; box-shadow: inset 0 0 0 2px #8a6a45; }
+  .refcard.paper { background: #fffdf4; border: 1px solid #d9d2b8; color: #2b2b2b; }
+  .askbox { display: grid; gap: 8px; }
+  .askbox label { font-size: 13px; font-weight: 600; }
+  .askbox textarea { min-height: 54px; }
+  .asknote { font-size: 12.5px; color: #8a5a00; background: #fff4dc; border-radius: 8px; padding: 8px 10px; line-height: 1.6; display: none; }
+  .cols { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
+  @media (min-width: 900px) { .cols { grid-template-columns: repeat(3, 1fr); } }
+  .col { border: 1px solid var(--bubble-border); border-radius: 12px; padding: 10px; background: #fafcfb; min-width: 0; }
+  .col h3 { font-size: 14px; margin: 0 0 6px; }
+  .sumbar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; font-size: 11px; }
+  .sumbar span { padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .s-ok { background: #dff3e6; color: #2f6b3a; } .s-unv { background: #fff0d2; color: #8a5a00; } .s-conf { background: #fde3e3; color: #9b2c2c; } .s-none { background: #ececec; color: #555; }
+  .sent { margin-bottom: 8px; }
+  .sentbtn { display: block; width: 100%; text-align: left; font-family: inherit; font-size: 12.5px; line-height: 1.65; border: 1px solid var(--bubble-border); background: #fff; border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+  .sentbtn:hover { background: #f3f8f5; }
+  .lab-ok .sentbtn { background: #e4f5e8; border-color: #7cc58e; } .lab-unv .sentbtn { background: #fff4dc; border-color: #e3b341; } .lab-conf .sentbtn { background: #fde8e8; border-color: #d98a8a; }
+  .tagl { font-weight: 700; font-size: 11px; }
+  .lblmenu { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+  .lblmenu button { font-family: inherit; font-size: 11.5px; border-radius: 999px; padding: 4px 10px; border: 1px solid #9aa9a0; background: #fff; cursor: pointer; }
+  .lblmenu button.on { background: var(--th-deep); color: #fff; border-color: var(--th-deep); }
+  .synth, .trace { margin-top: 14px; border: 1px solid var(--bubble-border); border-radius: 12px; padding: 12px; background: #fafcfb; }
+  .synth h3, .trace h3 { font-size: 14px; margin: 0 0 6px; }
+  .trace p { margin: 3px 0; font-size: 12.5px; line-height: 1.6; }
+  .note-small { font-size: 11px; color: var(--ink-soft); line-height: 1.5; margin: 6px 0 0; }
+  .record { border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; background: #fafcfb; font-size: 13px; line-height: 1.75; margin-bottom: 10px; }
+  .record h3 { font-size: 13.5px; margin: 0 0 4px; }
+
+  .chiprow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 48px; padding: 8px 10px; border: 2px dashed #b9cbc1; border-radius: 12px; background: #fff; }
+  .chiprow.over { background: #e9f6f1; border-color: var(--th-mid); }
+  .chip { width: 26px; height: 26px; border-radius: 50%; background: #16a085; border: 2px solid #0a7d5c; cursor: grab; display: inline-block; flex-shrink: 0; }
+  .chip:active { cursor: grabbing; }
+  .left-count { font-weight: 700; color: var(--th-deep); font-size: 14px; margin: 0 0 6px; }
+  .fgrid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+  @media (min-width: 760px) { .fgrid { grid-template-columns: repeat(3, 1fr); } }
+  .fbox { border: 1px solid var(--bubble-border); border-radius: 12px; padding: 10px; background: #fff; }
+  .fbox.over { background: #e9f6f1; border-color: var(--th-mid); }
+  .fbox h4 { margin: 0 0 4px; font-size: 14px; }
+  .fbox p { margin: 0 0 8px; font-size: 11.5px; color: var(--ink-soft); line-height: 1.55; }
+  .fbox__chips { display: flex; flex-wrap: wrap; gap: 4px; min-height: 30px; margin-bottom: 8px; }
+  .fbox__ctl { display: flex; align-items: center; gap: 8px; }
+  .fbox__ctl button { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #9aa9a0; background: #fff; font-size: 18px; cursor: pointer; font-family: inherit; }
+  .fbox__ctl button:disabled { opacity: .4; cursor: not-allowed; }
+  .fbox__num { font-weight: 700; min-width: 64px; text-align: center; font-size: 13px; }
+  .persp { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+  .persp button { font-family: inherit; font-size: 13px; padding: 8px 14px; border-radius: 999px; border: 1px solid #9aa9a0; background: #fff; cursor: pointer; }
+  .persp button.on { background: var(--th-deep); color: #fff; border-color: var(--th-deep); }
+  .narr { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: #fff8e6; border: 1px solid #f0d58a; font-size: 13.5px; line-height: 1.8; }
+  .snaprec { font-size: 12.5px; background: #f0f4f2; border-radius: 8px; padding: 8px 10px; margin-top: 8px; line-height: 1.7; }
+  .snaprec.warn { background: #fdeeee; color: var(--danger); }
+  details.rubric { margin-top: 12px; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 8px 12px; background: #fafcfb; font-size: 12.5px; line-height: 1.7; }
+  details.rubric summary { cursor: pointer; font-weight: 600; }
+  .tf-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tf-table th, .tf-table td { border: 1px solid var(--bubble-border); padding: 8px 10px; }
+  .tf-table td.c { text-align: center; width: 70px; }
+  .tf-table th { background: #eef4f0; }
+  .qtable { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+  .qtable th, .qtable td { border: 1px solid var(--bubble-border); padding: 5px 7px; vertical-align: top; }
+  .qtable th { background: #eef4f0; }
+  .good { color: var(--ok); font-weight: 700; } .low { color: var(--danger); font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+  <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="scenario-intro">
+    <p>แพรว นักเรียนชั้นมัธยมศึกษาปีที่ 3 ได้รับมอบหมายให้ทำรายงานประวัติศาสตร์ท้องถิ่นเรื่องตลาดเก่าท่าน้ำวัดโพธิ์งามในจังหวัดของเธอ ก่อนเริ่มเขียนแพรวไปถ่ายรูปป้ายข้อมูลหน้าศูนย์การเรียนรู้ชุมชน ซึ่งระบุว่าตลาดแห่งนี้ก่อตั้งขึ้นเมื่อ พ.ศ. 2465 โดยการรวมตัวของพ่อค้าชาวจีนและชาวบ้านในพื้นที่ นำโดยขุนพิพัฒน์นคร กำนันตำบลในสมัยนั้น เดิมชื่อตลาดท่าน้ำบางกร่าง ก่อนเปลี่ยนชื่อตามวัดในปี 2500 ดูบทสนทนาของแพรวได้ด้านล่างนี้</p>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-frame__notch"></div>
+    <div class="device-screen">
+      <div class="line-screen">
+        <div class="line-head">💬 ครูสุดา (ครูประจำชั้น)</div>
+        <div class="chat-day"><span>วันนี้</span></div>
+        <div class="msg">
+          <div class="msg__avatar" data-avatar="suda"></div>
+          <div class="msg__col"><div class="msg__name">ครูสุดา</div><div class="msg__bubble">รายงานประวัติศาสตร์ท้องถิ่น ส่งสัปดาห์หน้านะคะ ให้เลือกตลาดเก่าในจังหวัดของตัวเอง</div></div>
+        </div>
+        <div class="msg msg--me">
+          <div class="msg__avatar" data-avatar="praew"></div>
+          <div class="msg__col"><div class="msg__bubble">หนูเลือกตลาดท่าน้ำวัดโพธิ์งามค่ะ</div><div class="msg__time">16:05</div></div>
+        </div>
+        <div class="msg msg--me">
+          <div class="msg__avatar" data-avatar="praew"></div>
+          <div class="msg__col"><div class="msg__bubble"><div class="mini-ref wood">📷 ป้ายข้อมูลศูนย์การเรียนรู้ชุมชน<br>ก่อตั้ง พ.ศ. 2465 · ขุนพิพัฒน์นคร กำนันตำบล · เดิมชื่อตลาดท่าน้ำบางกร่าง</div></div><div class="msg__time">16:12</div></div>
+        </div>
+        <div class="msg msg--me">
+          <div class="msg__avatar" data-avatar="praew"></div>
+          <div class="msg__col"><div class="msg__bubble">ถ่ายป้ายมาแล้วค่ะ ก่อนเขียนรายงานหนูจะลองถามเอไอสามตัวพร้อมกันแล้วเทียบกับป้ายนะคะ</div><div class="msg__time">16:13</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scenario-intro">
+    <p>เพื่อประหยัดเวลา แพรวเปิดแอปห้องแชทที่รวมผู้ช่วย AI สามตัวไว้ในหน้าเดียว พิมพ์คำถามเดียวกันถามพร้อมกันทั้งสามตัวว่าตลาดแห่งนี้สร้างขึ้นเมื่อใดและใครเป็นผู้ริเริ่ม เพื่อนำคำตอบไปเทียบกับป้ายข้อมูลที่ถ่ายมาก่อนตัดสินใจว่าจะเขียนอะไรลงในรายงานฉบับจริง</p>
+  </div>
+
+  <section class="tool" aria-label="ห้องแชทผู้ช่วย AI สามตัว">
+    <div class="tool__head">
+      <div>
+        <h2>ห้องแชทผู้ช่วย AI สามตัว</h2>
+        <p>พิมพ์หรือแก้คำถาม แล้วกดปุ่มถามเพื่อให้ผู้ช่วย ก ข ค ตอบพร้อมกัน จากนั้นคลิกประโยคในคำตอบเพื่อติดป้าย “ตรวจสอบได้” “ตรวจสอบไม่ได้” หรือ “ขัดแย้งกับคำตอบอื่น” โดยเทียบกับป้ายข้อมูลของศูนย์การเรียนรู้ชุมชนด้านล่าง คลิกป้ายเดิมซ้ำเพื่อถอดป้าย หรือเลือกป้ายใหม่เพื่อเปลี่ยน</p>
+      </div>
+      <button class="btn btn--ghost" id="resetBtn" type="button">เริ่มใหม่</button>
+    </div>
+    <div class="refcard wood" aria-label="ป้ายข้อมูลของศูนย์การเรียนรู้ชุมชน">
+      <h3>📷 ป้ายข้อมูลหน้าศูนย์การเรียนรู้ชุมชน (ภาพที่แพรวถ่ายมา)</h3>
+      ตลาดท่าน้ำวัดโพธิ์งาม ก่อตั้งเมื่อ พ.ศ. 2465 โดยการรวมตัวของพ่อค้าชาวจีนและชาวบ้านในพื้นที่ นำโดยขุนพิพัฒน์นคร กำนันตำบลในสมัยนั้น เดิมชื่อตลาดท่าน้ำบางกร่าง ก่อนเปลี่ยนชื่อตามวัดในปี 2500
+    </div>
+    <div class="askbox">
+      <label for="askText">คำถามถึงผู้ช่วยทั้งสาม</label>
+      <textarea id="askText" rows="2"></textarea>
+      <div><button class="btn btn--primary" id="askBtn" type="button">ถามตัวช่วย</button></div>
+      <div class="asknote" id="askNote">ต้นแบบนี้ใช้คำตอบที่เตรียมไว้ล่วงหน้า ผู้ช่วยทั้งสามจึงตอบชุดเดิมเสมอ แม้คุณจะแก้คำถามแล้ว</div>
+    </div>
+    <div id="cols" class="cols" hidden></div>
+    <div class="synth">
+      <h3>เขียนคำตอบสังเคราะห์ของตนเอง</h3>
+      <textarea id="synText" rows="4" placeholder="เขียนคำตอบของคุณว่าตลาดก่อตั้งเมื่อใดและใครเป็นผู้ริเริ่ม..."></textarea>
+      <p class="note-small">คำแนะนำ: ใช้เฉพาะประโยคที่คุณติดป้ายว่า “ตรวจสอบได้” เท่านั้น</p>
+    </div>
+    <div class="trace" aria-live="polite">
+      <h3>แผงร่องรอยกระบวนการ</h3>
+      <div id="traceBody"></div>
+      <p class="note-small">ข้อมูลนี้ใช้เป็นหลักฐานประกอบเท่านั้น</p>
+    </div>
+  </section>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 19: ตลาดท่าน้ำวัดโพธิ์งาม</h1>
+      <p>ใช้ห้องแชทด้านบนเพื่อตอบคำถามทุกข้อ</p>
+    </div>
+    <div class="quiz__card">
+      <h2>ข้อ 1 — ติดป้ายและเขียนคำตอบสังเคราะห์</h2>
+      <p class="quiz__desc">อ่านคำตอบของผู้ช่วยทั้งสามตัวในห้องแชทที่เปรียบเทียบกันเกี่ยวกับปีที่ก่อตั้งและผู้ริเริ่มตลาดท่าน้ำวัดโพธิ์งาม ติดป้ายกำกับทุกประโยคในคำตอบทั้งสามชุดว่า ตรวจสอบได้ ตรวจสอบไม่ได้ หรือขัดแย้งกับคำตอบอื่น โดยเทียบกับป้ายข้อมูลของศูนย์การเรียนรู้ชุมชนที่แพรวถ่ายมา จากนั้นเขียนคำตอบสังเคราะห์ของตนเองว่าตลาดแห่งนี้ก่อตั้งขึ้นเมื่อใด และใครเป็นผู้ริเริ่ม</p>
+      <div class="record" id="recordBox"></div>
+      <div class="qlabel">คำตอบสังเคราะห์สุดท้าย (อ้างอิงเฉพาะประโยคที่ติดป้ายว่าตรวจสอบได้)</div>
+      <textarea id="ansText" rows="5" placeholder="พิมพ์คำตอบสังเคราะห์ของคุณ หรือกดปุ่มด้านล่างเพื่อดึงจากหน้าจอจำลอง"></textarea>
+      <div style="margin-top:8px;"><button class="btn btn--small" id="pullBtn" type="button">ดึงจากหน้าจอจำลองมาใส่คำตอบ</button></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — ความมั่นใจของคำตอบกับความถูกต้อง</h2>
+      <p class="quiz__desc">ในสามคำตอบ ผู้ช่วย ก เขียนด้วยน้ำเสียงมั่นใจและลื่นไหลที่สุด ในขณะที่ผู้ช่วย ข เขียนด้วยน้ำเสียงลังเลและยอมรับว่าไม่แน่ใจในหลายจุด จงอธิบายว่าเพราะเหตุใดความมั่นใจและความลื่นไหลของคำตอบผู้ช่วย ก จึงไม่ใช่หลักฐานว่าคำตอบนั้นถูกต้อง และเพราะเหตุใดคำตอบของผู้ช่วย ข ซึ่งอาจไม่มั่นใจจึงอาจมีคุณภาพสูงกว่าในสถานการณ์นี้ โดยอ้างอิงประโยคที่ติดป้ายไว้ในข้อ 1 ประกอบคำอธิบาย</p>
+      <textarea id="q42Text" rows="6" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+    <div class="quiz__card">
+      <h2>ข้อ 3 — แหล่งอ้างอิงที่น่าสงสัย</h2>
+      <p class="quiz__desc">ผู้ช่วย ค อ้างอิงเว็บไซต์ “localarchive-center.or.th” ประกอบคำตอบเกี่ยวกับผู้ริเริ่มก่อตั้งตลาด จงอธิบายวิธีที่แพรวควรใช้ตรวจสอบว่าแหล่งอ้างอิงนี้มีอยู่จริงหรือไม่ และควรทำอย่างไรกับข้อมูลในประโยคนั้นหากตรวจสอบแล้วพบว่าเว็บไซต์ดังกล่าวไม่มีอยู่จริง</p>
+      <textarea id="q43Text" rows="6" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-19";
+  const SCENARIO_NAME = "ตลาดท่าน้ำวัดโพธิ์งาม";
+  const MAX_SCORE = 6;
+  const $ = (id) => document.getElementById(id);
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    $("guardScreen").hidden = false;
+    $("mainScreen").style.display = "none";
+  }
+
+  // ---------- อวตารตัวละคร (ภาพวาดจากโค้ด ไม่ใช้รูปถ่ายจริง) ----------
+  const SKINS = ["#f7d6b8", "#ecbf94", "#d39a6d", "#a97550"];
+  function figure(l) {
+    const skin = l.skin, hair = l.hair, sh = l.shirt || "#ffffff";
+    let back = "", front = "";
+    const cap = `<path d="M43 45 Q42 26 60 26 Q78 26 77 45 Q72 34 60 34 Q48 34 43 45Z" fill="${hair}"/>`;
+    if (l.style === 1) {
+      back = `<path d="M41 52 Q37 24 60 24 Q83 24 79 52 L79 66 Q74 68 71 60 L49 60 Q46 68 41 66Z" fill="${hair}"/>`;
+      front = `<path d="M44 42 Q60 28 76 42 Q60 35 44 42Z" fill="${hair}"/>`;
+    } else if (l.style === 2) front = cap + `<path d="M75 36 Q96 40 90 68 Q86 52 76 48Z" fill="${hair}"/>`;
+    else if (l.style === 3) front = cap + `<circle cx="60" cy="22" r="7" fill="${hair}"/>`;
+    else if (l.style === 4) front = `<path d="M43 46 Q41 25 62 26 Q80 27 77 46 Q74 35 56 36 Q48 37 43 46Z" fill="${hair}"/>`;
+    else front = cap;
+    const torso = `<rect x="55" y="60" width="10" height="9" fill="${skin}"/><path d="M40 70 Q60 62 80 70 L83 114 L37 114Z" fill="${sh}" stroke="#cfd8dc" stroke-width="1"/><path d="M52 66 L60 78 L68 66 L64 64 L60 70 L56 64Z" fill="#fff" stroke="#cfd8dc" stroke-width=".8"/>`;
+    const head = `<circle cx="43" cy="48" r="3.2" fill="${skin}"/><circle cx="77" cy="48" r="3.2" fill="${skin}"/><circle cx="60" cy="46" r="17" fill="${skin}"/>`;
+    const face = `<circle cx="53.5" cy="47" r="1.9" fill="#2b2b2b"/><circle cx="66.5" cy="47" r="1.9" fill="#2b2b2b"/><ellipse cx="49" cy="53" rx="3" ry="1.8" fill="#f08a8a" opacity=".35"/><ellipse cx="71" cy="53" rx="3" ry="1.8" fill="#f08a8a" opacity=".35"/><path d="M54 54 Q60 59.5 66 54" fill="none" stroke="#7a3b2e" stroke-width="1.6" stroke-linecap="round"/>`;
+    return back + torso + head + front + face;
+  }
+  function avatarSVG(look) {
+    return `<svg viewBox="30 20 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="30" y="20" width="60" height="60" fill="${look.bg}"/>${figure(look)}</svg>`;
+  }
+
+  const ASSISTANTS = [{"key": "a", "name": "ผู้ช่วย ก", "sentences": [{"id": "a1", "text": "ตลาดท่าน้ำวัดโพธิ์งามก่อตั้งขึ้นเมื่อ พ.ศ. 2465 ในช่วงที่การค้าทางน้ำกำลังรุ่งเรือง"}, {"id": "a2", "text": "ผู้ริเริ่มสร้างตลาดคือหลวงประเสริฐกิจ ซึ่งดำรงตำแหน่งผู้ว่าราชการจังหวัดในขณะนั้น"}, {"id": "a3", "text": "ตลาดแห่งนี้เดิมเป็นเพียงท่าเรือขนถ่ายสินค้าเล็ก ๆ ก่อนจะขยายเป็นตลาดถาวรในเวลาต่อมา"}, {"id": "a4", "text": "ปัจจุบันตลาดแห่งนี้เป็นแหล่งท่องเที่ยวเชิงวัฒนธรรมที่มีชื่อเสียงระดับประเทศ"}]}, {"key": "b", "name": "ผู้ช่วย ข", "sentences": [{"id": "b1", "text": "จากข้อมูลทั่วไป ตลาดริมน้ำแบบนี้ในภาคกลางส่วนใหญ่มักก่อตั้งขึ้นในช่วงราวปี พ.ศ. 2460 ถึง 2480 แต่ฉันไม่สามารถยืนยันปีที่แน่นอนของตลาดแห่งนี้โดยเฉพาะได้"}, {"id": "b2", "text": "ชื่อผู้ริเริ่มก่อตั้งที่แน่ชัดฉันไม่มีข้อมูลที่เชื่อถือได้เพียงพอ จึงไม่ขอระบุชื่อบุคคล เพราะเกรงว่าจะให้ข้อมูลผิดพลาด"}, {"id": "b3", "text": "สิ่งที่พอบอกได้คือตลาดริมน้ำลักษณะนี้มักเริ่มจากการรวมตัวของพ่อค้าในท้องถิ่นเพื่อขนถ่ายสินค้าทางเรือ ซึ่งสอดคล้องกับรูปแบบตลาดเก่าทั่วไปในภาคกลาง"}, {"id": "b4", "text": "แนะนำให้ตรวจสอบกับศูนย์การเรียนรู้ชุมชนหรือเทศบาลในพื้นที่โดยตรงเพื่อความถูกต้อง ก่อนนำไปเขียนรายงาน"}]}, {"key": "c", "name": "ผู้ช่วย ค", "sentences": [{"id": "c1", "text": "ตามบันทึกในหนังสือ “ประวัติศาสตร์ชุมชนริมคลองภาคกลาง” ของกรมศิลปากร ปี 2530 ตลาดท่าน้ำวัดโพธิ์งามก่อตั้งขึ้นเมื่อ พ.ศ. 2480 โดยกลุ่มพ่อค้าชาวจีน"}, {"id": "c2", "text": "ผู้ริเริ่มหลักคือขุนพิพัฒน์นคร กำนันตำบลในสมัยนั้น ตามที่ระบุไว้ในเว็บไซต์ “หอจดหมายเหตุท้องถิ่นภาคกลาง” (localarchive-center.or.th)"}, {"id": "c3", "text": "ตลาดนี้เคยเปลี่ยนชื่อมาแล้วสองครั้งก่อนจะใช้ชื่อปัจจุบัน"}, {"id": "c4", "text": "หากต้องการข้อมูลเพิ่มเติม แนะนำให้อ้างอิงงานวิจัยของมหาวิทยาลัยราชภัฏในพื้นที่ที่ตีพิมพ์เรื่องนี้โดยเฉพาะ"}]}];
+  const DEFAULT_Q = "ตลาดท่าน้ำวัดโพธิ์งามสร้างขึ้นเมื่อใด และใครเป็นผู้ริเริ่ม";
+  const LOOKS = {
+    praew: { skin: SKINS[1], hair: "#17171b", style: 2, shirt: "#fbe1f0", bg: "#ffe3a3" },
+    suda:  { skin: SKINS[0], hair: "#4b2f1b", style: 1, shirt: "#fff3c4", bg: "#d9d3f3" },
+  };
+
+  document.querySelectorAll("[data-avatar]").forEach((el) => { el.innerHTML = avatarSVG(LOOKS[el.dataset.avatar]); });
+
+  // ===================================================================
+  // เครื่องตรวจคำสำคัญและรูปแบบข้อความ (Keyword & Pattern Matching)
+  // น้ำหนัก w: คำหลัก = 1 (พอเป็นหลักฐาน), คำสนับสนุน = 0.5 (ต้องมี 2 คำ)
+  // neg: 0 = ไม่ตรวจการปฏิเสธ, 1 = ตัดทิ้งถ้ามี “ไม่ต้อง/ไม่จำเป็น/ไม่ควร” นำหน้า, 2 = ตัดทิ้งถ้ามี “ไม่/ไม่ได้/มิ” นำหน้า
+  // ===================================================================
+  function normalizeText(t) {
+    const digits = "๐๑๒๓๔๕๖๗๘๙";
+    return String(t)
+      .replace(/[๐-๙]/g, (d) => digits.indexOf(d))
+      .replace(/[\s\u200b\u200c\u200d\u00a0.,;:!?"'“”‘’()\[\]{}\-–—_\/\\]/g, "")
+      .toLowerCase()
+      .replace(/เช็ค/g, "เช็ก")
+      .replace(/อนุญาติ/g, "อนุญาต");
+  }
+  function isNegated(norm, idx, level) {
+    if (!level) return false;
+    const before = norm.slice(Math.max(0, idx - 8), idx);
+    return level === 2
+      ? /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร|ไม่ได้|ไม่|มิ)$/.test(before)
+      : /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร)$/.test(before);
+  }
+  function scorePatterns(norm, patterns) {
+    let sum = 0; const hits = [];
+    patterns.forEach((p) => {
+      const re = new RegExp(p.re.source, "g"); let m;
+      while ((m = re.exec(norm))) {
+        if (isNegated(norm, m.index, p.neg || 0)) continue;
+        sum += p.w; hits.push(m[0]); break;
+      }
+    });
+    return { hit: sum >= 1, sum, hits };
+  }
+  // ตรวจว่ามีการกล่าวถึงคำใดคำหนึ่งโดยไม่มีคำปฏิเสธ/คัดค้านอยู่ใกล้ๆ (ใช้ตรวจว่า “หยิบข้อมูลที่ผิดมาใช้เป็นข้อสรุป”)
+  function adopts(norm, tokenRe, doubtRe, win) {
+    const re = new RegExp(tokenRe.source, "g"); let m;
+    while ((m = re.exec(norm))) {
+      const w = norm.slice(Math.max(0, m.index - win), m.index + m[0].length + win);
+      if (!doubtRe.test(w)) return true;
+    }
+    return false;
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+    } catch (err) { console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err); }
+  }
+  function checksHTML(parts) {
+    return `<ul class="checks">${parts.map((p) => `<li class="${p.ok ? "yes" : "no"}">${p.ok ? "✓" : "✗"} ${p.label}</li>`).join("")}</ul>`;
+  }
+
+  // GRADING-START
+
+  // ป้ายที่เหมาะสมของแต่ละประโยค (null = เป็นคำแนะนำ ติดป้ายใดก็ได้)
+  const EXPECT = { a1: ["ok"], a2: ["conf"], a3: ["unv"], a4: ["unv"], b1: ["unv"], b2: ["unv"], b3: ["ok"], b4: null, c1: ["conf"], c2: ["ok", "unv"], c3: ["conf"], c4: ["unv"] };
+  // 6 จุดสำคัญ
+  const KEYPOINTS = [
+    { label: "ผู้ช่วย ก ประโยค 1 (ก่อตั้ง พ.ศ. 2465): ตรวจสอบได้ ตรงกับป้าย", ids: ["a1"] },
+    { label: "ผู้ช่วย ก ประโยค 2 (ผู้ริเริ่มคือหลวงประเสริฐกิจ): ขัดแย้งกับป้ายและกับผู้ช่วย ค", ids: ["a2"] },
+    { label: "ผู้ช่วย ค ประโยค 1 (ก่อตั้ง พ.ศ. 2480): ขัดแย้งกับป้ายและกับผู้ช่วย ก", ids: ["c1"] },
+    { label: "ผู้ช่วย ค ประโยค 2 (ขุนพิพัฒน์นครแต่อ้างเว็บไซต์ปลอม): เนื้อหาตรวจสอบได้ว่าตรงป้าย หรือตรวจสอบไม่ได้เพราะแหล่งอ้างอิงปลอม", ids: ["c2"] },
+    { label: "ผู้ช่วย ค ประโยค 3 (เปลี่ยนชื่อสองครั้ง): ขัดแย้งกับป้ายที่ระบุว่าเปลี่ยนครั้งเดียว", ids: ["c3"] },
+    { label: "ผู้ช่วย ข ประโยค 1-2 (ไม่ยืนยันปีและชื่อ): ตรวจสอบไม่ได้", ids: ["b1", "b2"] },
+  ];
+  const EXCL = /ไม่(ถูก|ตรง|ใช้|นำ|เชื่อ|ใช่|น่าเชื่อ|สอดคล้อง)|ผิด|ขัดแย้ง|ปลอม|ไม่มีอยู่จริง|คัดออก|ตัดออก/;
+
+  function gradeQ41(labels, text) {
+    const n = normalizeText(text);
+    const points = KEYPOINTS.map((kp) => ({ label: kp.label, ok: kp.ids.every((id) => EXPECT[id] && EXPECT[id].includes(labels[id])) }));
+    const L = points.filter((p) => p.ok).length;
+    const hasYear = /2465/.test(n);
+    const hasName = /ขุนพิพัฒน์|พิพัฒน์นคร/.test(n);
+    const badAdopt = adopts(n, /2480|หลวงประเสริฐ/, EXCL, 70);
+    const fakeTrust = adopts(n, /หอจดหมายเหตุ|localarchive/, /ปลอม|ไม่มีอยู่จริง|ตรวจสอบ|ไม่เชื่อ|สงสัย|ไม่มีจริง|ไม่ควรอ้าง|ไม่อ้างอิง/, 70);
+    let score = 0;
+    if (L >= 5 && hasYear && hasName && !badAdopt && !fakeTrust) score = 2;
+    else if (L >= 2 || (hasYear && hasName && !badAdopt)) score = 1;
+    return { score, L, points, hasYear, hasName, badAdopt, fakeTrust };
+  }
+
+  // ----- ข้อ 2: ความมั่นใจ ≠ ความถูกต้อง -----
+  const Q42_A = [
+    { re: /(มั่นใจ|ลื่นไหล|เขียนดี|ตอบดี|น้ำเสียง|ละเอียด|สำนวน|ภาษาดี).{0,25}(ไม่(ได้)?(ใช่|แปลว่า|เท่ากับ|หมายความ|รับประกัน|ได้ถูก)|ไม่ใช่หลักฐาน|ไม่ถูกต้องเสมอ|ไม่ถูกเสมอ|ไม่การันตี|ผิดได้|ผิดก็ได้)/, w: 1 },
+    { re: /ความ(ลื่นไหล|มั่นใจ).{0,25}(เรื่องของ|เกี่ยวกับ)(รูปแบบ|ภาษา|วิธี)|(รูปแบบ|สำนวน)ภาษา.{0,30}ไม่เกี่ยว|พิสูจน์ได้ว่า.{0,12}มั่นใจ/, w: 1 },
+    { re: /มั่นใจ.{0,14}ไม่มั่นใจ|ไม่มั่นใจ.{0,14}มั่นใจ|ตอบมั่นใจแต่|เขียนดีแต่/, w: 0.5 },
+  ];
+  const Q42_C = [
+    { re: /ผู้ช่วยข.{0,40}(ไม่แน่ใจ|ไม่มีข้อมูล|ยอมรับ|ไม่ขอระบุ|ไม่เดา|ไม่สามารถยืนยัน|บอกว่าไม่รู้|ไม่ยืนยัน).{0,60}(ปลอดภัย|ดีกว่า|น่าเชื่อถือ|คุณภาพ|ประโยชน์|ไม่ถูกชักนำ|ไม่เข้าใจผิด|ไม่หลงเชื่อ|ต้องไปตรวจสอบ)|(ปลอดภัยกว่า|คุณภาพสูงกว่า|น่าเชื่อถือกว่า|มีประโยชน์กว่า|ดีกว่า).{0,40}ผู้ช่วยข|ผู้ช่วยข.{0,30}(ปลอดภัยกว่า|คุณภาพสูงกว่า|น่าเชื่อถือกว่า|มีประโยชน์กว่า|ดีกว่า)/, w: 1 },
+    { re: /ผู้ช่วยข.{0,20}(ไม่แน่ใจ|ไม่มีข้อมูล|ไม่ขอระบุ)/, w: 0.5 },
+  ];
+  const Q42_E = /หลวงประเสริฐ|ผู้ว่า(ราชการ)?จังหวัด|2480|ชื่อผู้ริเริ่ม.{0,12}ผิด|ผิด.{0,12}ชื่อผู้ริเริ่ม|ผู้ริเริ่มผิด|ไม่แน่ใจเรื่อง(ปี|ชื่อ)|ไม่มีข้อมูลเพียงพอ|ไม่ขอระบุ|ไม่สามารถยืนยัน(ปี|ชื่อ)|ไม่ยืนยัน(ปี|ชื่อ)|ประโยคที่2/;
+  const Q42_FORBID = /ควรเชื่อ(ผู้ช่วย)?ก|เชื่อ(ผู้ช่วย)?กเพราะ|ผู้ช่วยกน่าเชื่อถือ(กว่า|ที่สุด)|ผู้ช่วยกดีที่สุด/;
+  function gradeQ42(text) {
+    const n = normalizeText(text);
+    const A = scorePatterns(n, Q42_A), C = scorePatterns(n, Q42_C), E = Q42_E.test(n);
+    let score = 0;
+    if (n.length >= 12) {
+      if (A.hit && C.hit && E) score = 2;
+      else if (A.hit || C.hit || A.sum + C.sum > 0) score = 1;
+      if (!A.hit && Q42_FORBID.test(n)) score = 0;
+    }
+    return { score, a: A.hit, c: C.hit, example: E, direction: A.sum + C.sum > 0 };
+  }
+
+  // ----- ข้อ 3: ตรวจแหล่งอ้างอิงที่น่าสงสัย -----
+  const Q43_V = [{ re: /ค้น(หา)?(ชื่อ)?(เว็บ|เว็บไซต์|ชื่อเว็บ|url|ที่อยู่)|พิมพ์(ที่อยู่|url|ชื่อเว็บ)|เปิด(เว็บ|เบราว์เซอร์)|เข้า(เว็บ|ไปที่เว็บ)|ลองเปิด|ค้นใน(กูเกิล|เครื่องมือค้นหา|google|อินเทอร์เน็ต)|ค้นหาด้วยกูเกิล|ตรวจสอบโดเมน|whois|ถาม(ครู|บรรณารักษ์|ผู้เชี่ยวชาญ|ห้องสมุด)|เปิดได้จริง|(เช็ก|เช็ค|ตรวจ)(ดู)?ว่า.{0,14}(มีจริง|มีอยู่จริง)|(เว็บ|เว็บไซต์).{0,12}(มีอยู่จริง|มีจริง|เปิดไม่ได้|หาไม่เจอ)|มีอยู่จริงหรือไม่|มีจริงไหม/, w: 1 }];
+  const Q43_P = [{ re: /ไม่(ควร|นำ|อ้างอิง|ใช้)?(มา)?อ้างอิง|ไม่อ้างอิง|ตัด(ประโยค|ข้อมูล|ออก)|ลบ(ประโยค|ออก)|ไม่ใช้(ข้อมูล|ประโยค)|หาแหล่ง(อื่น|ที่)|แหล่งอื่น|ยืนยัน(จาก|กับ|ชื่อ|อีกครั้ง)|สอบถามศูนย์|ศูนย์การเรียนรู้|เทศบาล|ป้ายข้อมูล|ไม่(ต้อง)?เชื่อ|ไม่เชื่อถือ/, w: 1 }];
+  const Q43_N = /ไม่ต้อง(ตรวจ|เช็ก|ค้น)|น่าเชื่อถือเพราะมี(การ)?อ้างอิง|เชื่อได้เลย|เชื่อถือได้เพราะ/;
+  function gradeQ43(text) {
+    const n = normalizeText(text);
+    const V = scorePatterns(n, Q43_V).hit, P = scorePatterns(n, Q43_P).hit;
+    let score = 0;
+    if (n.length >= 10 && !Q43_N.test(n)) score = V && P ? 2 : (V || P ? 1 : 0);
+    return { score, method: V, action: P, noCheck: Q43_N.test(n) };
+  }
+
+  // GRADING-END
+
+  // ===================================================================
+  // เครื่องมือติดป้ายคำตอบของผู้ช่วย AI
+  // ===================================================================
+  const LABELS = {
+    ok: { text: "ตรวจสอบได้" },
+    unv: { text: "ตรวจสอบไม่ได้" },
+    conf: { text: "ขัดแย้งกับคำตอบอื่น" },
+  };
+  const SHORT = { a: "ก", b: "ข", c: "ค" };
+  const state = { asked: false, labels: {}, openId: null, log: [], changeCount: 0, order: [], resets: 0, asks: 0, askEdited: false };
+  const nowISO = () => new Date().toISOString();
+  const ALL_IDS = ASSISTANTS.flatMap((a) => a.sentences.map((s) => s.id));
+  const shortName = (id) => `${SHORT[id[0]]}${id.slice(1)}`;
+  const fullName = (id) => `ผู้ช่วย ${SHORT[id[0]]} ประโยค ${id.slice(1)}`;
+
+  $("askText").value = DEFAULT_Q;
+
+  function countsFor(a) {
+    const c = { ok: 0, unv: 0, conf: 0, none: 0 };
+    a.sentences.forEach((s) => { const l = state.labels[s.id]; c[l || "none"]++; });
+    return c;
+  }
+
+  function renderCols() {
+    const wrap = $("cols");
+    wrap.hidden = !state.asked;
+    if (!state.asked) { wrap.innerHTML = ""; renderTrace(); renderRecord(); return; }
+    wrap.innerHTML = ASSISTANTS.map((a) => {
+      const c = countsFor(a);
+      const sents = a.sentences.map((s) => {
+        const l = state.labels[s.id] || null;
+        const menu = state.openId === s.id
+          ? `<div class="lblmenu" role="group" aria-label="เลือกป้าย">${Object.keys(LABELS).map((k) => `<button type="button" data-set="${s.id}|${k}" class="${l === k ? "on" : ""}">${LABELS[k].text}</button>`).join("")}</div>`
+          : "";
+        return `<div class="sent ${l ? "lab-" + l : ""}"><button type="button" class="sentbtn" data-open="${s.id}">${s.text}${l ? ` <span class="tagl">[${LABELS[l].text}]</span>` : ""}</button>${menu}</div>`;
+      }).join("");
+      return `<div class="col"><h3>${a.name}</h3>
+        <div class="sumbar"><span class="s-ok">ตรวจสอบได้ ${c.ok}</span><span class="s-unv">ตรวจสอบไม่ได้ ${c.unv}</span><span class="s-conf">ขัดแย้ง ${c.conf}</span><span class="s-none">ยังไม่ติดป้าย ${c.none}</span></div>
+        ${sents}</div>`;
+    }).join("");
+    wrap.querySelectorAll("[data-open]").forEach((b) => b.addEventListener("click", () => {
+      state.openId = state.openId === b.dataset.open ? null : b.dataset.open;
+      renderCols();
+    }));
+    wrap.querySelectorAll("[data-set]").forEach((b) => b.addEventListener("click", () => {
+      const [id, k] = b.dataset.set.split("|");
+      setLabel(id, k);
+    }));
+    renderTrace(); renderRecord();
+  }
+
+  function setLabel(id, k) {
+    const from = state.labels[id] || null;
+    const to = from === k ? null : k;
+    if (to === null) delete state.labels[id]; else state.labels[id] = to;
+    state.log.push({ t: nowISO(), id, from, to });
+    if (from !== null) state.changeCount++;
+    if (from === null && to !== null && !state.order.includes(id)) state.order.push(id);
+    state.openId = null;
+    renderCols();
+  }
+
+  function renderTrace() {
+    const labeled = ALL_IDS.filter((id) => state.labels[id]).length;
+    const per = ASSISTANTS.map((a) => { const c = countsFor(a); return `${a.name}: ได้ ${c.ok} / ไม่ได้ ${c.unv} / ขัดแย้ง ${c.conf}`; }).join(" · ");
+    $("traceBody").innerHTML = `
+      <p>ติดป้ายแล้ว <b>${labeled}</b> จาก ${ALL_IDS.length} ประโยค</p>
+      <p>${per}</p>
+      <p>เปลี่ยนหรือถอดป้ายจากประโยคเดิม <b>${state.changeCount}</b> ครั้ง</p>
+      <p>ลำดับประโยคที่ถูกติดป้ายก่อน-หลัง: ${state.order.length ? state.order.map(shortName).join(" → ") : "ยังไม่มี"}</p>
+      <p>ความยาวคำตอบสังเคราะห์: ${$("synText").value.length} ตัวอักษร</p>`;
+  }
+
+  function labelListText() {
+    const out = [];
+    Object.keys(LABELS).forEach((k) => {
+      const ids = ALL_IDS.filter((id) => state.labels[id] === k);
+      out.push(`<div class="row"><b>${LABELS[k].text}</b> (${ids.length}): ${ids.length ? ids.map(fullName).join(", ") : "—"}</div>`);
+    });
+    const none = ALL_IDS.filter((id) => !state.labels[id]);
+    out.push(`<div class="row"><b>ยังไม่ติดป้าย</b> (${none.length}): ${none.length ? none.map(fullName).join(", ") : "—"}</div>`);
+    return out.join("");
+  }
+  function renderRecord() {
+    const box = $("recordBox");
+    if (box) box.innerHTML = "<h3>บันทึกป้ายล่าสุดจากหน้าจอจำลอง</h3>" + labelListText();
+  }
+
+  $("askBtn").addEventListener("click", () => {
+    state.asked = true; state.asks++;
+    const edited = $("askText").value.trim() !== DEFAULT_Q;
+    state.askEdited = state.askEdited || edited;
+    $("askNote").style.display = edited ? "block" : "none";
+    renderCols();
+  });
+  $("synText").addEventListener("input", renderTrace);
+  $("resetBtn").addEventListener("click", () => {
+    if (!window.confirm("ล้างคำตอบที่แสดง ป้ายทั้งหมด และข้อความสังเคราะห์กลับสู่สถานะเริ่มต้น?")) return;
+    state.asked = false; state.labels = {}; state.openId = null; state.order = []; state.changeCount = 0; state.resets++;
+    state.log.push({ t: nowISO(), reset: true });
+    $("synText").value = ""; $("askText").value = DEFAULT_Q; $("askNote").style.display = "none";
+    renderCols();
+  });
+  $("pullBtn").addEventListener("click", () => {
+    $("ansText").value = $("synText").value;
+    renderTrace();
+  });
+  renderCols();
+
+  function sentenceTable(expectLabel) {
+    const rows = ASSISTANTS.flatMap((a) => a.sentences.map((s) => {
+      const mine = state.labels[s.id];
+      const exp = EXPECT[s.id];
+      const ok = exp === null || exp.includes(mine);
+      const expText = exp === null ? "ได้ทุกป้าย (เป็นคำแนะนำ ไม่ใช่ข้อเท็จจริง)" : exp.map((k) => LABELS[k].text).join(" หรือ ");
+      return `<tr><td>${fullName(s.id)}</td><td>${mine ? LABELS[mine].text : "—"}</td><td class="${ok ? "good" : "low"}">${expText}</td></tr>`;
+    })).join("");
+    return `<details class="rubric"><summary>ดูป้ายที่นักเรียนติดเทียบกับป้ายที่เหมาะสม</summary><div class="tblwrap"><table class="qtable"><thead><tr><th>ประโยค</th><th>ป้ายที่ติด</th><th>ป้ายที่เหมาะสม</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
+  }
+  function keyPointOk(kp) { return kp.ids.every((id) => EXPECT[id] && EXPECT[id].includes(state.labels[id])); }
+
+  async function handleSubmit() {
+    const st = $("quizStatus"), btn = $("submitBtn");
+    const q41 = $("ansText").value.trim(), q42 = $("q42Text").value.trim(), q43 = $("q43Text").value.trim();
+    if (!state.asked) { st.textContent = "ข้อ 1: กรุณากดถามผู้ช่วยในห้องแชทเพื่อแสดงคำตอบก่อน"; return; }
+    const un = ALL_IDS.filter((id) => !state.labels[id]);
+    if (un.length) { st.textContent = `ข้อ 1: ยังมี ${un.length} ประโยคที่ไม่ได้ติดป้าย (ต้องติดป้ายให้ครบทุกประโยค)`; return; }
+    if (!q41) { st.textContent = "ข้อ 1: กรุณาเขียนคำตอบสังเคราะห์"; return; }
+    if (!q42) { st.textContent = "กรุณาตอบข้อ 2"; return; }
+    if (!q43) { st.textContent = "กรุณาตอบข้อ 3"; return; }
+    btn.disabled = true; st.style.color = "#5c655f"; st.textContent = "กำลังตรวจคะแนน...";
+
+    const r1 = gradeQ41(state.labels, q41), r2 = gradeQ42(q42), r3 = gradeQ43(q43);
+    const total = r1.score + r2.score + r3.score;
+    await saveToSheet({
+      studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: total, max_score: MAX_SCORE,
+      details: {
+        q1: { score: r1.score, labels: state.labels, key_points_correct: r1.L, text: q41 },
+        q2: { score: r2.score, text: q42 },
+        q3: { score: r3.score, text: q43 },
+        sim_log: { labeled: ALL_IDS.length - un.length, change_count: state.changeCount, order: state.order, log: state.log, synth_length: $("synText").value.length, resets: state.resets, asks: state.asks, question_edited: state.askEdited },
+      },
+    });
+    show({ r1, r2, r3, total });
+  }
+  function show(d) {
+    $("quizSection").hidden = true; $("resultSection").hidden = false;
+    $("resultTotal").textContent = `${d.total} / ${MAX_SCORE}`;
+    const r1 = d.r1;
+    const q1Reason = r1.score === 2 ? "ติดป้ายถูกอย่างน้อย 5 จาก 6 จุดสำคัญ และสังเคราะห์ว่าก่อตั้ง พ.ศ. 2465 โดยขุนพิพัฒน์นคร โดยไม่หยิบข้อมูลที่ขัดแย้งหรือแหล่งปลอมมาใช้"
+      : r1.badAdopt ? "คำตอบสังเคราะห์ยังหยิบข้อมูลที่ผิดหรือขัดแย้งกับป้าย (ปี 2480 หรือหลวงประเสริฐกิจ) มาใช้เป็นข้อสรุป"
+      : r1.fakeTrust ? "คำตอบสังเคราะห์ถูกต้อง แต่ยังอ้างเว็บไซต์ที่ไม่มีอยู่จริงโดยไม่ตั้งข้อสงสัย"
+      : r1.score === 1 ? "ติดป้ายถูกบางส่วน หรือคำตอบสังเคราะห์ยังไม่ครบทั้งปีที่ก่อตั้งและผู้ริเริ่ม" : "ติดป้ายถูกน้อยและคำตอบสังเคราะห์ยังไม่ตรงกับป้ายข้อมูล";
+    const q1Checks = r1.points.concat([
+      { ok: r1.hasYear, label: "คำตอบสังเคราะห์ระบุปีที่ก่อตั้ง พ.ศ. 2465" },
+      { ok: r1.hasName, label: "คำตอบสังเคราะห์ระบุผู้ริเริ่มคือขุนพิพัฒน์นคร กำนันตำบล" },
+      { ok: !r1.badAdopt && !r1.fakeTrust, label: "ไม่ใช้ข้อมูลที่ขัดแย้งหรือเว็บไซต์ปลอมเป็นข้อสรุป" },
+    ]);
+    const r2 = d.r2;
+    const q2Reason = r2.score === 2 ? "อธิบายครบว่าความมั่นใจไม่ใช่หลักฐานความถูกต้อง และคำตอบที่ยอมรับความไม่รู้ปลอดภัยกว่า พร้อมอ้างประโยคประกอบ"
+      : r2.score === 1 ? "อธิบายได้บางส่วน ขาดใจความอีกข้อหรือขาดการอ้างอิงประโยคจริงประกอบ" : "ยังไม่ได้อธิบายว่าทำไมความมั่นใจและความลื่นไหลจึงไม่ใช่หลักฐานความถูกต้อง";
+    const r3 = d.r3;
+    const q3Reason = r3.noCheck ? "คำตอบเห็นว่าไม่ต้องตรวจสอบเพราะมีการอ้างอิง ซึ่งยังไม่ถูกต้อง การมีชื่อแหล่งอ้างอิงไม่ได้แปลว่าน่าเชื่อถือ"
+      : r3.score === 2 ? "ระบุวิธีตรวจสอบที่ทำได้จริง และข้อปฏิบัติที่ถูกต้องเมื่อพบว่าแหล่งอ้างอิงปลอม" : r3.score === 1 ? "ระบุได้เพียงวิธีตรวจสอบหรือข้อปฏิบัติอย่างใดอย่างหนึ่ง" : "ยังไม่ระบุวิธีตรวจสอบหรือข้อปฏิบัติที่ชัดเจน";
+    $("resultBreakdown").innerHTML = `
+      <div class="result__item"><div class="result__item-head"><span>ข้อ 1 — ติดป้ายและสังเคราะห์คำตอบ</span><span>${r1.score} / 2</span></div>
+        <div class="result__item-reason">${q1Reason} (ติดป้ายถูก ${r1.L} จาก 6 จุดสำคัญ)</div>${checksHTML(q1Checks)}${sentenceTable()}</div>
+      <div class="result__item"><div class="result__item-head"><span>ข้อ 2 — ความมั่นใจกับความถูกต้อง</span><span>${r2.score} / 2</span></div>
+        <div class="result__item-reason">${q2Reason}</div>${checksHTML([{ ok: r2.a, label: "อธิบายว่าความมั่นใจและความลื่นไหลไม่ใช่หลักฐานว่าถูกต้อง" }, { ok: r2.c, label: "อธิบายว่าผู้ช่วย ข ที่ยอมรับความไม่รู้ปลอดภัยหรือมีคุณภาพกว่า" }, { ok: r2.example, label: "ยกตัวอย่างประโยคจริงประกอบ" }])}</div>
+      <div class="result__item"><div class="result__item-head"><span>ข้อ 3 — ตรวจสอบแหล่งอ้างอิงที่น่าสงสัย</span><span>${r3.score} / 2</span></div>
+        <div class="result__item-reason">${q3Reason}</div>${checksHTML([{ ok: r3.method, label: "มีวิธีตรวจสอบที่ทำได้จริง เช่น ค้นหาหรือเปิดเว็บไซต์ ถามครูบรรณารักษ์" }, { ok: r3.action, label: "ข้อปฏิบัติเมื่อพบว่าปลอม: ไม่อ้างอิง ตัดประโยคออก หรือหาแหล่งอื่นยืนยัน" }])}</div>`;
+    $("resultSection").scrollIntoView({ behavior: "smooth" });
+  }
+  $("submitBtn").addEventListener("click", handleSubmit);
+
+</script>
+</body>
+</html>
