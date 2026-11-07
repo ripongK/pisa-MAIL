@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 2: แชทบอทสายการบินกับตั๋วงานศพ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #0b3d66; --th-mid: #1f6fb2; --paper: #eef2f6; --ink: #1a1d22; --ink-soft: #5a6270;
+    --bubble: #ffffff; --bubble-border: #dde3ea; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #c0392b; --ok: #2f6b3a; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #cfd6dd; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+  .scenario-intro { max-width: 760px; margin: 0 auto 20px; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 18px 20px; }
+  .scenario-intro p { margin: 0 0 12px; font-size: 13.5px; line-height: 1.8; color: var(--ink); }
+  .scenario-intro p:last-child { margin-bottom: 0; }
+  .scenario-intro blockquote { margin: 10px 0; padding: 10px 14px; border-left: 3px solid var(--th-mid); background: #f3f7fb; font-size: 13px; line-height: 1.7; font-style: italic; color: var(--th-deep); }
+
+  .case-wrap { max-width: 900px; margin: 0 auto 20px; }
+  .case-wrap img { width: 100%; border-radius: 10px; display: block; box-shadow: 0 10px 26px rgba(0,0,0,.18); }
+
+  .content-wide { width: 100%; max-width: 760px; margin: 0 auto; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 12px; }
+
+  .q-match-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .q-match-table th, .q-match-table td { border: 1px solid var(--bubble-border); padding: 8px; text-align: center; vertical-align: middle; }
+  .q-match-table th { background: #eaf0f8; font-size: 11.5px; }
+  .q-match-table td:first-child { text-align: right; font-size: 12.5px; line-height: 1.5; }
+  .q-match-table input[type="radio"] { width: 18px; height: 18px; cursor: pointer; }
+
+  .option { display: block; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13px; line-height: 1.5; }
+  .option input { margin-right: 8px; }
+  .option.selected { border-color: var(--th-mid); background: #eaf2fa; }
+
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+
+  .quiz__status { text-align: center; font-size: 13px; color: var(--ink-soft); min-height: 18px; margin-top: 10px; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+</style>
+</head>
+<body>
+
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+  <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="scenario-intro">
+    <p>ในวิชาหน้าที่พลเมือง ครูมอบหมายให้นักเรียนทำงานกลุ่มหัวข้อ "ใครควรรับผิดชอบเมื่อปัญญาประดิษฐ์ให้ข้อมูลผิด" กลุ่มของ "พิม" เลือกศึกษาคดีจริงคดีหนึ่งที่เกิดในประเทศแคนาดา และสรุปข้อเท็จจริงจากคำวินิจฉัยได้ดังนี้</p>
+    <p>เดือนพฤศจิกายน 2565 ชายคนหนึ่งสูญเสียคุณย่า เขาจำเป็นต้องบินข้ามประเทศไปงานศพอย่างเร่งด่วน ก่อนซื้อตั๋วเขาเข้าไปสอบถามแชทบอทบริการลูกค้าบนเว็บไซต์ของสายการบินว่าสายการบินมีอัตราค่าตั๋วลดหย่อนสำหรับผู้เดินทางไปงานศพหรือไม่ และต้องดำเนินการอย่างไร แชทบอทตอบว่า</p>
+    <blockquote>"หากท่านจำเป็นต้องเดินทางทันที หรือได้เดินทางไปแล้ว และต้องการยื่นตั๋วเพื่อขอรับอัตราลดหย่อนกรณีเสียชีวิต โปรดดำเนินการภายใน 90 วันนับจากวันที่ออกตั๋ว โดยกรอกแบบฟอร์มขอคืนเงินค่าตั๋วของเรา"</blockquote>
+    <p>ในคำตอบเดียวกันนั้น แชทบอทได้แนบลิงก์ไปยังหน้าเว็บไซต์นโยบายทางการของสายการบินไว้ด้วย</p>
+    <p>ชายคนนั้นเข้าใจว่าเขาสามารถซื้อตั๋วราคาเต็มไปก่อน แล้วยื่นขอลดราคาย้อนหลังได้ภายใน 90 วัน เขาจึงซื้อตั๋วไป-กลับในราคาเต็มรวม 1,630.36 ดอลลาร์แคนาดา ทั้งที่อัตราลดหย่อนกรณีเสียชีวิตอยู่ที่ประมาณ 380 ดอลลาร์แคนาดาต่อเที่ยว หลังกลับจากงานศพเขายื่นเรื่องขอคืนเงินส่วนต่างตามที่แชทบอทบอก สายการบินปฏิเสธคำขอ โดยชี้ว่าหน้าเว็บไซต์นโยบายทางการ ซึ่งเป็นหน้าเดียวกับที่แชทบอทแนบลิงก์ไว้ ระบุไว้ชัดเจนว่าไม่สามารถขออัตราลดหย่อนย้อนหลังหลังการเดินทางได้</p>
+    <p>เรื่องจึงเข้าสู่การพิจารณาของคณะตุลาการระงับข้อพิพาททางแพ่ง ในชั้นพิจารณาสายการบินต่อสู้สองประเด็น ประเด็นแรกคือลูกค้าควรตรวจสอบข้อมูลจากหน้าเว็บส่วนอื่นประกอบด้วย ประเด็นที่สองคือสายการบินอ้างว่าแชทบอทเป็น "นิติบุคคลแยกต่างหากที่ต้องรับผิดชอบต่อการกระทำของตนเอง" ตุลาการเรียกข้อต่อสู้ประเด็นที่สองว่าเป็น "ข้อเสนอที่น่าประหลาดใจ" และวินิจฉัยเมื่อวันที่ 14 กุมภาพันธ์ 2567 ว่าองค์กรมีหน้าที่ใช้ความระมัดระวังตามสมควรเพื่อให้ข้อมูลที่ตนสื่อสารออกไปถูกต้องและไม่ชวนให้เข้าใจผิด องค์กรต้องรับผิดชอบต่อข้อมูลทุกส่วนบนเว็บไซต์ของตน ไม่ว่าข้อมูลนั้นจะมาจากหน้าเว็บนิ่งหรือจากแชทบอท สายการบินจึงต้องชดใช้ค่าเสียหายรวม 812.02 ดอลลาร์แคนาดา</p>
+  </div>
+
+  <div class="case-wrap">
+    <img src="images/scenario-02-case.jpg" alt="สไลด์สรุปคำวินิจฉัยคดีแชทบอทสายการบินที่กลุ่มพิมนำเสนอ" />
+  </div>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 2: แชทบอทสายการบินกับตั๋วงานศพ</h1>
+      <p>กลุ่มของพิมต้องนำข้อสรุปจากคดีนี้ไปเขียนรายงานและนำเสนอหน้าชั้นเรียน</p>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 4 — "สรุปได้" หรือ "สรุปเกิน"?</h2>
+      <p class="quiz__desc">พิจารณาข้อสรุปแต่ละข้อว่าเป็นข้อสรุปที่ "สรุปได้จากคดีนี้" หรือ "สรุปเกินกว่าข้อมูลในคดี"</p>
+      <table class="q-match-table">
+        <tr><th style="width:55%">ข้อสรุปที่กลุ่มเสนอ</th><th>สรุปได้</th><th>สรุปเกิน</th></tr>
+        <tbody id="q1Rows"></tbody>
+      </table>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 5 — เลือกแนวปฏิบัติที่ช่วยป้องกันปัญหานี้ได้จริง</h2>
+      <p class="quiz__desc">เลือกข้อความที่เป็นแนวปฏิบัติซึ่งช่วยป้องกันปัญหาแบบเดียวกับในคดีนี้ได้จริง จำนวน 2 ข้อ เท่านั้น</p>
+      <div id="q2List"></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 6 — โต้แย้งเพื่อนที่เห็นต่าง</h2>
+      <p class="quiz__desc">เพื่อนกลุ่มอื่นแย้งว่า "ถ้าแชทบอทเป็นตัวตอบผิดเอง บริษัทก็ไม่ควรต้องรับผิด เพราะบริษัทไม่ได้ตั้งใจโกหก" จงเขียนคำตอบโต้แย้งเพื่อนคนนั้น โดยต้อง (1) อธิบายว่าเหตุใดข้อโต้แย้งนั้นจึงไม่หนักแน่น (2) อ้างเหตุผลของตุลาการในคดีนี้มาสนับสนุน และ (3) ระบุว่าหากยอมรับข้อโต้แย้งของเพื่อน จะเกิดผลอย่างไรต่อผู้บริโภคคนอื่นในอนาคต</p>
+      <textarea id="q3Text" rows="6" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-02";
+  const SCENARIO_NAME = "แชทบอทสายการบินกับตั๋วงานศพ";
+  const MAX_SCORE = 7; // q4(2) + q5(2) + q6(3)
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    document.getElementById("guardScreen").hidden = false;
+    document.getElementById("mainScreen").style.display = "none";
+  }
+
+  // ---------- ติดตามพฤติกรรมการทำแบบทดสอบ ----------
+  const pageStartTime = Date.now();
+
+  // ---------- ข้อ 4: สรุปได้ / สรุปเกิน ----------
+  const Q1_STATEMENTS = [
+    "ข้อมูลที่แชทบอทให้อาจขัดแย้งกับนโยบายทางการขององค์กรได้",
+    "องค์กรยังต้องรับผิดชอบต่อข้อมูลที่แชทบอทของตนให้แก่ลูกค้า",
+    "คำตอบที่เขียนอย่างเป็นทางการและมั่นใจ ไม่ได้รับประกันว่าข้อมูลนั้นถูกต้อง",
+    "แชทบอททุกตัวให้ข้อมูลผิดเป็นส่วนใหญ่ จึงไม่ควรใช้แชทบอทสอบถามข้อมูลใดๆ อีก",
+    "ผู้บริโภคที่ได้รับข้อมูลผิดจากแชทบอทจะได้รับเงินชดเชยเสมอไม่ว่ากรณีใดๆ เพราะเป็นความผิดของแชทบอท",
+  ];
+  const Q1_ANSWER_KEY = [true, true, true, false, false]; // true = สรุปได้
+  const q1State = new Array(Q1_STATEMENTS.length).fill(null);
+
+  function renderQ1() {
+    const tbody = document.getElementById("q1Rows");
+    tbody.innerHTML = "";
+    Q1_STATEMENTS.forEach((text, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${text}</td>
+        <td><input type="radio" name="q1-${i}" data-i="${i}" data-val="true" /></td>
+        <td><input type="radio" name="q1-${i}" data-i="${i}" data-val="false" /></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll("input[type=radio]").forEach((inp) => {
+      inp.addEventListener("change", () => { q1State[Number(inp.dataset.i)] = inp.dataset.val === "true"; });
+    });
+  }
+
+  function gradeQ1() {
+    const correctCount = q1State.filter((a, i) => a === Q1_ANSWER_KEY[i]).length;
+    let score = 0;
+    if (correctCount === 5) score = 2;
+    else if (correctCount === 4) score = 1;
+    return { score, correctCount };
+  }
+
+  // ---------- ข้อ 5: เลือก 2 ข้อจาก 6 ----------
+  const Q2_STATEMENTS = [
+    "บันทึกภาพหน้าจอบทสนทนากับแชทบอทให้เห็นทั้งข้อความและวันเวลา",
+    "ถามแชทบอทซ้ำอีกครั้งด้วยคำถามเดิม เพื่อยืนยันว่าคำตอบเหมือนเดิม",
+    "กดลิงก์ที่แชทบอทแนบมา แล้วอ่านหน้านโยบายทางการก่อนตัดสินใจจ่ายเงิน",
+    "ดูรีวิวในเว็บบอร์ดว่าลูกค้าคนอื่นเคยได้รับเงินคืนหรือไม่",
+    "เลือกใช้บริการเฉพาะบริษัทที่ไม่มีระบบแชทบอท",
+    "เชื่อคำตอบของแชทบอทได้ หากคำตอบใช้ภาษาทางการและระบุกำหนดเวลาชัดเจน",
+  ];
+  const Q2_CORRECT = [0, 2]; // ข้อ 1 และ ข้อ 3
+  const q2Checked = new Set();
+
+  function renderQ2() {
+    const container = document.getElementById("q2List");
+    container.innerHTML = "";
+    Q2_STATEMENTS.forEach((text, i) => {
+      const label = document.createElement("label");
+      label.className = "option";
+      label.innerHTML = `<input type="checkbox" value="${i}" /> ${i + 1}. ${text}`;
+      label.querySelector("input").addEventListener("change", (e) => {
+        if (e.target.checked) q2Checked.add(i); else q2Checked.delete(i);
+        label.classList.toggle("selected", e.target.checked);
+      });
+      container.appendChild(label);
+    });
+  }
+
+  function gradeQ2() {
+    const selected = Array.from(q2Checked);
+    const correctSelected = selected.filter((i) => Q2_CORRECT.includes(i)).length;
+    const totalSelected = selected.length;
+    let score = 0;
+    if (correctSelected === 2 && totalSelected === 2) score = 2;
+    else if ((totalSelected === 2 && correctSelected === 1) || (totalSelected === 1 && correctSelected === 1)) score = 1;
+    return { score, correctSelected, totalSelected };
+  }
+
+  // ---------- ข้อ 6: keyword checklist (3 องค์ประกอบ, คะแนนเต็ม 3) ----------
+  const Q3_PART_1 = ["ไม่ได้ขึ้นอยู่กับเจตนา", "ไม่ใช่เจตนา", "ความระมัดระวัง", "ประมาท", "ไม่ใช่นิติบุคคลแยก", "เป็นเครื่องมือ", "บริษัทใช้เอง", "ไม่ได้ตั้งใจ"];
+  const Q3_PART_2 = ["ข้อเสนอที่น่าประหลาดใจ", "ใช้ความระมัดระวังตามสมควร", "ไม่ชวนให้เข้าใจผิด", "รับผิดชอบต่อข้อมูลทุกส่วน", "ตุลาการ", "คำวินิจฉัย"];
+  const Q3_PART_3 = ["ผู้บริโภคในอนาคต", "ไม่มีใครรับผิดชอบ", "ไม่มีแรงจูงใจ", "โบ้ย", "ปัดความรับผิด", "เสียเปรียบ", "ไม่มีที่พึ่ง", "ลูกค้าคนอื่น"];
+
+  function containsAny(text, keywords) {
+    const lower = text.toLowerCase();
+    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
+  }
+
+  function gradeQ3(text) {
+    const has1 = containsAny(text, Q3_PART_1);
+    const has2 = containsAny(text, Q3_PART_2);
+    const has3 = containsAny(text, Q3_PART_3);
+    const count = [has1, has2, has3].filter(Boolean).length;
+    let reasoning;
+    if (count === 3) reasoning = "โต้แย้งเรื่องเจตนาได้ อ้างเหตุผลของตุลาการได้ และระบุผลกระทบต่อผู้บริโภคในอนาคตได้ครบทั้ง 3 ส่วน";
+    else if (count === 2) reasoning = "มีองค์ประกอบครบ 2 ใน 3 ส่วนที่เกณฑ์กำหนด";
+    else if (count === 1) reasoning = "มีองค์ประกอบเพียง 1 ใน 3 ส่วนที่เกณฑ์กำหนด";
+    else reasoning = "ยังไม่มีองค์ประกอบใดตามเกณฑ์ (โต้แย้งเรื่องเจตนา / อ้างเหตุผลตุลาการ / ผลต่อผู้บริโภคในอนาคต)";
+    return { score: count, reasoning };
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+    }
+  }
+
+  async function handleSubmit() {
+    const statusEl = document.getElementById("quizStatus");
+    const submitBtn = document.getElementById("submitBtn");
+    const q3_text = document.getElementById("q3Text").value.trim();
+
+    if (q1State.includes(null)) { statusEl.textContent = "กรุณาตอบข้อ 4 ให้ครบทั้ง 5 ข้อ"; return; }
+    if (q2Checked.size === 0) { statusEl.textContent = "กรุณาเลือกคำตอบข้อ 5 อย่างน้อย 1 ข้อ"; return; }
+    if (!q3_text) { statusEl.textContent = "กรุณาตอบข้อ 6"; return; }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "กำลังตรวจคะแนน...";
+
+    const q1Result = gradeQ1();
+    const q2Result = gradeQ2();
+    const q3Result = gradeQ3(q3_text);
+    const total_score = q1Result.score + q2Result.score + q3Result.score;
+
+    await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name,
+      grade: profile.grade,
+      school: profile.school,
+      scenario_id: SCENARIO_ID,
+      scenario_name: SCENARIO_NAME,
+      score: total_score,
+      max_score: MAX_SCORE,
+      details: {
+        q1: q1Result, q2: { ...q2Result, selected: Array.from(q2Checked) }, q3: { score: q3Result.score, text: q3_text },
+        behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000) },
+      },
+    });
+
+    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score });
+  }
+
+  function showResult(data) {
+    document.getElementById("quizSection").hidden = true;
+    const resultSection = document.getElementById("resultSection");
+    resultSection.hidden = false;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultBreakdown").innerHTML = `
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 4 — แยกแยะสรุปได้/สรุปเกิน</span><span>${data.q1.score} / 2</span></div>
+        <div class="result__item-reason">ตอบถูก ${data.q1.correctCount} จาก 5 ข้อ</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 5 — เลือกแนวปฏิบัติที่ถูกต้อง</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">เลือกถูก ${data.q2.correctSelected} ข้อ จากทั้งหมด ${data.q2.totalSelected} ข้อที่เลือก</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 6 — โต้แย้งอย่างมีเหตุผล</span><span>${data.q3.score} / 3</span></div>
+        <div class="result__item-reason">${data.q3.reasoning}</div>
+      </div>`;
+    resultSection.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  if (profile) { renderQ1(); renderQ2(); }
+</script>
+</body>
+</html>
