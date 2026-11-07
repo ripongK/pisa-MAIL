@@ -16,8 +16,7 @@
   body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d9d4c7; color: var(--ink); padding: 24px 16px 64px; }
   .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
   .guard a { color: var(--teal-deep); font-weight: 600; }
-  
-  .back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+
   /* กรอบจำลองหน้าจอสมาร์ทโฟนสำหรับส่วนแชท — เนื้อหาเลื่อนขึ้นลงได้ภายในกรอบ ไม่ขยายตามความสูงหน้าจอจริง */
   .device-frame {
     width: 390px; max-width: 100%;
@@ -114,8 +113,7 @@
 </div>
 
 <div id="mainScreen">
-  <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
-  <div class="scenario-intro">
+
  <div class="device-frame">
   <div class="device-frame__notch"></div>
   <div class="device-screen">
@@ -151,7 +149,7 @@
             <span class="video-card__badge">ข่าวภาษาอังกฤษ · สถานีโทรทัศน์สาธารณะ</span>
           </div>
           <div class="video-card__caption">
-            "CYSTALLUM AI" แพลตฟอร์มลงทุนใหม่ รับประกันกำไรคืน 5 เท่า — สัมภาษณ์นักธุรกิจชื่อดัง 2 คน
+            "CRYSTALLUM AI" แพลตฟอร์มลงทุนใหม่ รับประกันกำไรคืน 5 เท่า — สัมภาษณ์นักธุรกิจชื่อดัง 2 คน
           </div>
         </button>
         <div class="msg__meta">จากเพจ "ข่าวเศรษฐกิจรายวัน" · 👍 1,247</div>
@@ -179,6 +177,7 @@
     <div class="modal__sheet">
       <button class="modal__close" data-close="videoModal" type="button">✕</button>
       <video
+        id="clipVideo"
         controls
         preload="metadata"
         poster="videos/scenario-01-poster.jpg"
@@ -201,8 +200,8 @@
       <p class="search-engine__hint">ผลการค้นหา 4 รายการ ที่ต้นข้าวพบระหว่างตรวจสอบ</p>
 
       <div class="result-card">
-        <div class="result-card__source">🎬 NNTV World Archive</div>
-        <div class="result-card__title">ภาพเคลื่อนไหวชุดเดียวกันนี้มาจากรายงานข่าวของสถานี NNTV World เมื่อวันที่ 28 กุมภาพันธ์ 2556</div>
+        <div class="result-card__source">🎬 NHK World Archive</div>
+        <div class="result-card__title">ภาพเคลื่อนไหวชุดเดียวกันนี้มาจากรายงานข่าวของสถานี NHK World เมื่อวันที่ 28 กุมภาพันธ์ 2556</div>
         <div class="result-card__desc">เป็นข่าวเรื่องการสร้างที่อยู่อาศัยช่วยผู้ประสบภัยน้ำท่วม ไม่มีเนื้อหาเรื่องการลงทุนเลย</div>
       </div>
       <div class="result-card">
@@ -268,7 +267,7 @@
   // ===================================================================
   // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
   // ===================================================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
   const SCENARIO_ID = "scenario-01";
   const SCENARIO_NAME = "คลิปสัมภาษณ์การลงทุน";
   const MAX_SCORE = 7; // q1(2) + q2(2) + q3(3)
@@ -284,9 +283,15 @@
     document.getElementById("mainScreen").style.display = "none";
   }
 
+  // ---------- ติดตามพฤติกรรมการทำแบบทดสอบ ----------
+  const pageStartTime = Date.now();
+  const evidenceOpened = new Set();
+  let videoPlayed = false;
+  let videoWatchedSeconds = 0;
+
   // ---------- ข้อ 1 ----------
   const Q1_STATEMENTS = [
-    "ภาพเคลื่อนไหวชุดเดียวกันนี้มาจากรายงานข่าวของ NNTV World ปี 2556 ที่เป็นข่าวเรื่องที่อยู่อาศัยผู้ประสบภัยน้ำท่วม",
+    "ภาพเคลื่อนไหวชุดเดียวกันนี้มาจากรายงานข่าวของ NHK World ปี 2556 ที่เป็นข่าวเรื่องที่อยู่อาศัยผู้ประสบภัยน้ำท่วม",
     "ผู้ประกาศข่าวในคลิปยืนยันเองว่าไม่เคยทำงานให้สถานีที่ปรากฏโลโก้ในคลิป",
     "ศูนย์ตรวจสอบข้อเท็จจริงของสถานีที่ถูกแอบอ้างเผยแพร่รายงานยืนยันว่าคลิปเป็นของปลอม",
     "เครื่องมือตรวจจับสื่อสังเคราะห์ระบุความเป็นไปได้ร้อยละ 72.3 ว่าคลิปสร้างด้วย AI",
@@ -359,8 +364,8 @@
 
   // ---------- ข้อ 3: ปรนัย 4 ตัวเลือก (แทนข้ออัตนัยเดิม) ----------
   const Q3_OPTIONS = [
-    { id: "a", score: 3, text: "ป้าครับ/ค่ะ ผมลองค้นดูแล้วเจอว่าคลิปนี้จริงๆ มาจากข่าวเก่าของ NNTV ปี 2556 เรื่องผู้ประสบภัยน้ำท่วมครับ ไม่ใช่ข่าวการลงทุนเลย อาจมีคนเอาคลิปเก่ามาตัดต่อหลอกลวง ป้ายังไม่ควรโอนเงินไปก่อนนะครับ เดี๋ยวผมลองหารายละเอียดเพิ่มแล้วจะมาเล่าให้ฟังอีกทีครับ" },
-    { id: "b", score: 2, text: "ป้าก็เชื่อง่ายจัง คลิปนี้ปลอมชัดๆ เอามาจากข่าวน้ำท่วมเก่าปี 2556 ของ NNTV ไม่เกี่ยวกับการลงทุนเลย อย่าเพิ่งโอนเงินเด็ดขาดนะ" },
+    { id: "a", score: 3, text: "ป้าครับ/ค่ะ ผมลองค้นดูแล้วเจอว่าคลิปนี้จริงๆ มาจากข่าวเก่าของ NHK ปี 2556 เรื่องผู้ประสบภัยน้ำท่วมครับ ไม่ใช่ข่าวการลงทุนเลย อาจมีคนเอาคลิปเก่ามาตัดต่อหลอกลวง ป้ายังไม่ควรโอนเงินไปก่อนนะครับ เดี๋ยวผมลองหารายละเอียดเพิ่มแล้วจะมาเล่าให้ฟังอีกทีครับ" },
+    { id: "b", score: 2, text: "ป้าก็เชื่อง่ายจัง คลิปนี้ปลอมชัดๆ เอามาจากข่าวน้ำท่วมเก่าปี 2556 ของ NHK ไม่เกี่ยวกับการลงทุนเลย อย่าเพิ่งโอนเงินเด็ดขาดนะ" },
     { id: "c", score: 2, text: "ป้าครับ ผมว่าคลิปนี้น่าจะไม่จริงนะครับ ป้ายังไม่ควรโอนเงินไปก่อนนะครับ เดี๋ยวลองถามคนอื่นดูอีกทีครับ" },
     { id: "d", score: 0, text: "ป้าครับ ถ้าป้าอยากลองก็ลองดูน้อยๆ ก่อนก็ได้ครับ เผื่อได้กำไรจริงๆ" },
   ];
@@ -394,15 +399,19 @@
   }
 
   // ---------- Modal ----------
-  function openModal(id) { document.getElementById(id).hidden = false; }
+  function openModal(id) { document.getElementById(id).hidden = false; evidenceOpened.add(id); }
   function closeModal(id) { document.getElementById(id).hidden = true; }
   document.getElementById("openVideoBtn").addEventListener("click", () => openModal("videoModal"));
   document.getElementById("openSearchBtn").addEventListener("click", () => openModal("searchModal"));
   document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
 
+  const clipVideo = document.getElementById("clipVideo");
+  clipVideo.addEventListener("play", () => { videoPlayed = true; });
+  clipVideo.addEventListener("timeupdate", () => { videoWatchedSeconds = Math.max(videoWatchedSeconds, clipVideo.currentTime); });
+
   // ---------- ส่งผลไป Google Sheet ----------
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("xxxxxxxxx")) return; // ยังไม่ตั้งค่า URL
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return; // ยังไม่ตั้งค่า URL
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
@@ -441,7 +450,15 @@
       scenario_name: SCENARIO_NAME,
       score: total_score,
       max_score: MAX_SCORE,
-      details: { q1: q1Result, q2: { score: q2Result.score, text: q2_text }, q3: { score: q3Result.score, selected: q3Selected } },
+      details: {
+        q1: q1Result, q2: { score: q2Result.score, text: q2_text }, q3: { score: q3Result.score, selected: q3Selected },
+        behavior: {
+          time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
+          evidence_opened: Array.from(evidenceOpened),
+          video_played: videoPlayed,
+          video_watched_sec: Math.round(videoWatchedSeconds),
+        },
+      },
     });
 
     showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score });

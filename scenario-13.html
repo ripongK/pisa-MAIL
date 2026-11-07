@@ -209,7 +209,7 @@
   // ===================================================================
   // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
   // ===================================================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
   const SCENARIO_ID = "scenario-13";
   const SCENARIO_NAME = "การตั้งค่าความเป็นส่วนตัวแอป";
   const MAX_SCORE = 4; // q1(2) + q2(2)
@@ -223,6 +223,10 @@
     document.getElementById("guardScreen").hidden = false;
     document.getElementById("mainScreen").style.display = "none";
   }
+
+  // ---------- ติดตามพฤติกรรมการทำแบบทดสอบ ----------
+  const pageStartTime = Date.now();
+  let privacyToggleClicks = 0;
 
   // ---------- หน้าตั้งค่าความเป็นส่วนตัว (แตะสวิตช์ได้ เพื่อความสมจริง ไม่มีผลต่อคะแนน) ----------
   const PRIVACY_ITEMS = [
@@ -247,7 +251,7 @@
         </div>
         <div class="toggle ${item.on ? "on" : ""}"><div class="toggle__knob"></div></div>
       `;
-      row.querySelector(".toggle").addEventListener("click", function () { this.classList.toggle("on"); });
+      row.querySelector(".toggle").addEventListener("click", function () { this.classList.toggle("on"); privacyToggleClicks++; });
       container.appendChild(row);
     });
   }
@@ -342,7 +346,13 @@
       scenario_name: SCENARIO_NAME,
       score: total_score,
       max_score: MAX_SCORE,
-      details: { q1: { ...q1Result, selected: q1Selected }, q2: { score: q2Result.score, text: q2_text } },
+      details: {
+        q1: { ...q1Result, selected: q1Selected }, q2: { score: q2Result.score, text: q2_text },
+        behavior: {
+          time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
+          privacy_toggle_clicks: privacyToggleClicks,
+        },
+      },
     });
 
     showResult({ q1: q1Result, q2: q2Result, total_score });

@@ -16,7 +16,7 @@
   body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #ccccca; color: var(--ink); padding: 24px 16px 64px; }
   .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
   .guard a { color: var(--th-deep); font-weight: 600; }
-.back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+
   .back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: #3a3a3a; text-decoration: none; }
 
   /* หน้าต่างแบบ Mac สำหรับจำลองจอคอมพิวเตอร์เล่นเกม */
@@ -239,7 +239,7 @@
   // ===================================================================
   // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
   // ===================================================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
   const SCENARIO_ID = "scenario-05";
   const SCENARIO_NAME = "คลิปรีวิวเกมพร้อมป้ายโฆษณาแจกสกิน (Skin) ฟรี";
   const MAX_SCORE = 4; // q1(2) + q2(2)
@@ -253,6 +253,9 @@
     document.getElementById("guardScreen").hidden = false;
     document.getElementById("mainScreen").style.display = "none";
   }
+
+  // ---------- ติดตามพฤติกรรมการทำแบบทดสอบ ----------
+  const pageStartTime = Date.now();
 
   // ---------- ข้อ 1: ตารางจับคู่ ----------
   const Q1_STATEMENTS = [
@@ -375,7 +378,10 @@
       scenario_name: SCENARIO_NAME,
       score: total_score,
       max_score: MAX_SCORE,
-      details: { q1: q1Result, q2: { ...q2Result, selected: q2Selected } },
+      details: {
+        q1: q1Result, q2: { ...q2Result, selected: q2Selected },
+        behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000) },
+      },
     });
 
     showResult({ q1: q1Result, q2: q2Result, total_score });

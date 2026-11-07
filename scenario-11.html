@@ -22,11 +22,9 @@
   .scenario-intro { max-width: 600px; margin: 0 auto 18px; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px 18px; }
   .scenario-intro p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--ink); }
 
-  /* รูปภาพเท่ากับกรอบแบบทดสอบ (.quiz__card): 760px สูงสุด − padding 32px ซ้าย-ขวา = 696px */
-  .phone-frame { width: calc(100% - 32px); max-width: 696px; margin: 0 auto 6px; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 34px rgba(0,0,0,.22); }
+  .phone-frame { width: 340px; max-width: 100%; margin: 0 auto 6px; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 34px rgba(0,0,0,.22); }
   .phone-frame img { width: 100%; display: block; }
-  .phone-caption { width: calc(100% - 32px); max-width: 696px; margin: 0 auto 22px; text-align: center; font-size: 12px; color: var(--ink-soft); }
-  @media (min-width: 640px) { .phone-frame, .phone-caption { width: calc(100% - 64px); } }
+  .phone-caption { max-width: 340px; margin: 0 auto 22px; text-align: center; font-size: 12px; color: var(--ink-soft); }
 
   .content-wide { width: 100%; max-width: 760px; margin: 0 auto; }
   @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
@@ -140,7 +138,7 @@
   // ===================================================================
   // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
   // ===================================================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
   const SCENARIO_ID = "scenario-11";
   const SCENARIO_NAME = "สองบัญชี หนึ่งแฟ้มสะสมผลงาน";
   const MAX_SCORE = 6; // q1(2) + q2(2) + q3(2)
@@ -154,6 +152,9 @@
     document.getElementById("guardScreen").hidden = false;
     document.getElementById("mainScreen").style.display = "none";
   }
+
+  // ---------- ติดตามพฤติกรรมการทำแบบทดสอบ ----------
+  const pageStartTime = Date.now();
 
   // ---------- ข้อ 1: เลือกได้หลายข้อ (checkbox) ----------
   const Q1_STATEMENTS = [
@@ -295,7 +296,10 @@
       scenario_name: SCENARIO_NAME,
       score: total_score,
       max_score: MAX_SCORE,
-      details: { q1: { ...q1Result, selected: Array.from(q1Checked) }, q2: { score: q2Result.score, text: q2_text }, q3: { ...q3Result, selected: q3Selected } },
+      details: {
+        q1: { ...q1Result, selected: Array.from(q1Checked) }, q2: { score: q2Result.score, text: q2_text }, q3: { ...q3Result, selected: q3Selected },
+        behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000) },
+      },
     });
 
     showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score });

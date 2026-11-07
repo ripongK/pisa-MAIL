@@ -16,8 +16,7 @@
   body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d6d9d0; color: var(--ink); padding: 24px 16px 64px; }
   .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
   .guard a { color: var(--th-deep); font-weight: 600; }
-  
-.back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+
   .device-frame { width: 390px; max-width: 100%; margin: 0 auto; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
   .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
   .device-screen { background: var(--paper); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; }
@@ -104,7 +103,7 @@
 </div>
 
 <div id="mainScreen">
-  <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
  <div class="device-frame">
   <div class="device-frame__notch"></div>
   <div class="device-screen">
@@ -142,7 +141,7 @@
             <tr><td>จุดเก็บตัวอย่าง 5</td><td>2.03</td><td>16</td></tr>
             <tr><td>จุดเก็บตัวอย่าง 6</td><td>1.0</td><td>15</td></tr>
           </table>
-          <div class="table-card__flag">⚠ JaeSee LAB วันที่ตรวจ 29/02/2026  ตรวจโดย‼️ เจ้าหน้าที่ ติดต่อ เจ๊ศรี tel: 099 11234500 ต่อ 77 </div>
+          <div class="table-card__flag">⚠ ไม่มีชื่อห้องแล็บ ไม่มีวันที่ตรวจ ไม่มีลายเซ็น/ตราประทับ และมุมภาพถูกเบลอ</div>
         </div>
       </div>
     </div>
@@ -227,7 +226,7 @@
   // ===================================================================
   // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
   // ===================================================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
   const SCENARIO_ID = "scenario-03";
   const SCENARIO_NAME = "ข้อความเตือนภัยในกลุ่มไลน์พร้อมภาพตารางผลตรวจ";
   const MAX_SCORE = 2; // ข้อเดียว: เต็ม 2 / บางส่วน 1 / ไม่ได้คะแนน 0
@@ -241,6 +240,10 @@
     document.getElementById("guardScreen").hidden = false;
     document.getElementById("mainScreen").style.display = "none";
   }
+
+  // ---------- ติดตามพฤติกรรมการทำแบบทดสอบ ----------
+  const pageStartTime = Date.now();
+  const evidenceOpened = new Set();
 
   // ---------- ข้อ 1: ตารางจับคู่ ควรเผยแพร่ / ไม่ควรเผยแพร่ ----------
   const Q1_STATEMENTS = [
@@ -281,7 +284,7 @@
     return { score, correctCount };
   }
 
-  function openModal(id) { document.getElementById(id).hidden = false; }
+  function openModal(id) { document.getElementById(id).hidden = false; evidenceOpened.add(id); }
   function closeModal(id) { document.getElementById(id).hidden = true; }
   document.getElementById("openSearchBtn").addEventListener("click", () => openModal("searchModal"));
   document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
@@ -320,7 +323,13 @@
       scenario_name: SCENARIO_NAME,
       score: total_score,
       max_score: MAX_SCORE,
-      details: { q1: q1Result },
+      details: {
+        q1: q1Result,
+        behavior: {
+          time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
+          evidence_opened: Array.from(evidenceOpened),
+        },
+      },
     });
 
     showResult({ q1: q1Result, total_score });

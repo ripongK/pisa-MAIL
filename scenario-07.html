@@ -16,7 +16,7 @@
   body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d4d0c8; color: var(--ink); padding: 24px 16px 64px; }
   .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
   .guard a { color: var(--th-deep); font-weight: 600; }
-.back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
+
   .device-frame { width: 390px; max-width: 100%; margin: 0 auto; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
   .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
   .device-screen { background: var(--paper); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; }
@@ -96,7 +96,7 @@
 </div>
 
 <div id="mainScreen">
- <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
  <div class="device-frame">
   <div class="device-frame__notch"></div>
   <div class="device-screen">
@@ -201,7 +201,7 @@
   // ===================================================================
   // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
   // ===================================================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
   const SCENARIO_ID = "scenario-07";
   const SCENARIO_NAME = "คลิป TikTok สูตรน้ำมะนาวผสมเกลือดีทอกซ์";
   const MAX_SCORE = 6; // q1(2) + q2(2) + q3(2)
@@ -216,15 +216,21 @@
     document.getElementById("mainScreen").style.display = "none";
   }
 
+  // ---------- ติดตามพฤติกรรมการทำแบบทดสอบ ----------
+  const pageStartTime = Date.now();
+  const evidenceOpened = new Set();
+  let unmutedVideo = false;
+
   // ---------- เสียงวิดีโอ TikTok ----------
   const ttVideo = document.getElementById("ttVideo");
   const muteBtn = document.getElementById("muteBtn");
   muteBtn.addEventListener("click", () => {
     ttVideo.muted = !ttVideo.muted;
     muteBtn.textContent = ttVideo.muted ? "🔇" : "🔊";
+    if (!ttVideo.muted) unmutedVideo = true;
   });
 
-  function openModal(id) { document.getElementById(id).hidden = false; }
+  function openModal(id) { document.getElementById(id).hidden = false; evidenceOpened.add(id); }
   function closeModal(id) { document.getElementById(id).hidden = true; }
   document.getElementById("openSearchBtn").addEventListener("click", () => openModal("searchModal"));
   document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
@@ -343,7 +349,7 @@
   }
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("xxxxxxxx")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
@@ -382,7 +388,14 @@
       scenario_name: SCENARIO_NAME,
       score: total_score,
       max_score: MAX_SCORE,
-      details: { q1: { ...q1Result, selected: q1Selected }, q2: { ...q2Result, selected: q2Selected }, q3: { score: q3Result.score, text: q3_text } },
+      details: {
+        q1: { ...q1Result, selected: q1Selected }, q2: { ...q2Result, selected: q2Selected }, q3: { score: q3Result.score, text: q3_text },
+        behavior: {
+          time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
+          evidence_opened: Array.from(evidenceOpened),
+          unmuted_video: unmutedVideo,
+        },
+      },
     });
 
     showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score });
