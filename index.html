@@ -68,10 +68,10 @@
   .btn--primary { background: var(--navy); color: #fff; width: 100%; }
   .form-msg { font-size: 12.5px; color: #9b3b3b; margin-top: 6px; min-height: 16px; }
 
-  .summary { display: flex; gap: 14px; margin-bottom: 4px; }
-  .summary__box { flex: 1; background: #f8f7f2; border-radius: 12px; padding: 14px; text-align: center; }
-  .summary__num { font-size: 24px; font-weight: 700; color: var(--navy); }
-  .summary__label { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+  .summary { display: flex; gap: 8px; margin-bottom: 4px; }
+  .summary__box { flex: 1; background: #f8f7f2; border-radius: 12px; padding: 12px 6px; text-align: center; min-width: 0; }
+  .summary__num { font-size: 19px; font-weight: 700; color: var(--navy); white-space: nowrap; }
+  .summary__label { font-size: 10.5px; color: var(--ink-soft); margin-top: 2px; }
 
   .scenario-list { display: flex; flex-direction: column; gap: 8px; }
   .scenario-item {
@@ -139,6 +139,10 @@
           <div class="summary__num" id="totalScore">0</div>
           <div class="summary__label">คะแนนรวม</div>
         </div>
+        <div class="summary__box">
+          <div class="summary__num" id="totalPercent">0%</div>
+          <div class="summary__label">คิดเป็นร้อยละ</div>
+        </div>
       </div>
       <p class="hint" id="loadingNote">กำลังโหลดความก้าวหน้า...</p>
     </div>
@@ -157,8 +161,7 @@
   // ===================================================================
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
 
-  // รายชื่อ 22 สถานการณ์ — ตอนนี้เปิดใช้ครบทั้ง 22 รายการ (ready: true) ไฟล์ scenario-01.html ถึง scenario-22.html ต้องอยู่โฟลเดอร์เดียวกับไฟล์นี้
-  // หากต้องการปิดสถานการณ์ใดชั่วคราว ให้เปลี่ยน ready เป็น false ของรายการนั้น
+  // รายชื่อ 22 สถานการณ์ — เพิ่มไฟล์ใหม่ได้โดยเปลี่ยน ready:true เมื่อไฟล์ scenario-XX.html พร้อมใช้งาน
   const SCENARIOS = [
     { id: "scenario-01", title: "คลิปสัมภาษณ์การลงทุน", file: "scenario-01.html", ready: true },
     { id: "scenario-02", title: "แชทบอทสายการบินกับตั๋วงานศพ", file: "scenario-02.html", ready: true },
@@ -204,6 +207,7 @@
     listEl.innerHTML = "";
     let doneCount = 0;
     let totalScore = 0;
+    let totalMaxScore = 0;
 
     SCENARIOS.forEach((sc, idx) => {
       const record = progressRecords.find((r) => r.scenario_id === sc.id);
@@ -216,9 +220,11 @@
         badgeHtml = `<span class="badge badge--soon">เร็วๆ นี้</span>`;
         btn.disabled = true;
       } else if (record) {
-        badgeHtml = `<span class="badge badge--done">ทำแล้ว ${record.score}/${record.max_score}</span>`;
+        const scorePct = record.max_score ? Math.round((Number(record.score) / Number(record.max_score)) * 100) : 0;
+        badgeHtml = `<span class="badge badge--done">ทำแล้ว ${record.score}/${record.max_score} (${scorePct}%)</span>`;
         doneCount++;
         totalScore += Number(record.score) || 0;
+        totalMaxScore += Number(record.max_score) || 0;
       } else {
         badgeHtml = `<span class="badge badge--todo">ยังไม่ทำ</span>`;
       }
@@ -240,6 +246,7 @@
 
     document.getElementById("doneCount").textContent = `${doneCount} / 22`;
     document.getElementById("totalScore").textContent = totalScore;
+    document.getElementById("totalPercent").textContent = totalMaxScore ? `${Math.round((totalScore / totalMaxScore) * 100)}%` : "0%";
   }
 
   function openScenario(sc, existingRecord) {
