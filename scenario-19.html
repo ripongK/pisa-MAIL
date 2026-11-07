@@ -353,6 +353,53 @@
     $("mainScreen").style.display = "none";
   }
 
+  // ---------- ติดตามพฤติกรรมการทำแบบทดสอบ (เก็บใน details.behavior รูปแบบเดียวกับ scenario-01) ----------
+  // time_spent_sec = เวลาตั้งแต่โหลดหน้าเสร็จถึงกดส่งคำตอบ · evidence_opened = เครื่องมือ/หลักฐานที่นักเรียนเปิดใช้ก่อนส่ง
+  // evidence_before_answer = เปิดดูหลักฐานก่อนเริ่มตอบหรือไม่ (บ่งชี้ว่าตรวจสอบจริงหรือเดาส่งๆ)
+  // สถานการณ์นี้ไม่มีคลิปวิดีโอหรือเสียง จึงบันทึก video_played = false และ video_watched_sec = 0 (media_available = false)
+  let pageStartTime = Date.now();
+  window.addEventListener("load", () => { pageStartTime = Date.now(); });
+  const evidenceOpened = new Set();
+  let firstEvidenceAt = null, firstAnswerAt = null;
+  let hiddenMs = 0, hiddenSince = null;
+  const videoPlayed = false, videoWatchedSeconds = 0;
+  function markEvidence(name) { evidenceOpened.add(name); if (firstEvidenceAt === null) firstEvidenceAt = Date.now(); }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) hiddenSince = Date.now();
+    else if (hiddenSince !== null) { hiddenMs += Date.now() - hiddenSince; hiddenSince = null; }
+  });
+  (function trackAnswerStart() {
+    const q = document.getElementById("quizSection");
+    if (!q) return;
+    ["input", "change"].forEach((ev) => q.addEventListener(ev, () => { if (firstAnswerAt === null) firstAnswerAt = Date.now(); }));
+  })();
+  document.querySelectorAll("details.rubric").forEach((d) => d.addEventListener("toggle", () => { if (d.open) markEvidence("rubric_opened"); }));
+  (function trackReferenceCards() {
+    if (!("IntersectionObserver" in window)) return;
+    document.querySelectorAll(".refcard").forEach((el) => {
+      let timer = null;
+      new IntersectionObserver((entries) => entries.forEach((e) => {
+        if (e.isIntersecting && e.intersectionRatio >= 0.5) { if (!timer) timer = setTimeout(() => markEvidence("reference_card_viewed"), 1500); }
+        else if (timer) { clearTimeout(timer); timer = null; }
+      }), { threshold: [0, 0.5, 1] }).observe(el);
+    });
+  })();
+  function collectBehavior() {
+    const now = Date.now();
+    const hidden = hiddenMs + (hiddenSince !== null ? now - hiddenSince : 0);
+    return {
+      time_spent_sec: Math.round((now - pageStartTime) / 1000),
+      active_time_sec: Math.max(0, Math.round((now - pageStartTime - hidden) / 1000)),
+      evidence_opened: Array.from(evidenceOpened),
+      evidence_before_answer: firstEvidenceAt !== null && (firstAnswerAt === null || firstEvidenceAt <= firstAnswerAt),
+      first_answer_sec: firstAnswerAt === null ? null : Math.round((firstAnswerAt - pageStartTime) / 1000),
+      video_played: videoPlayed,
+      video_watched_sec: videoWatchedSeconds,
+      media_available: false,
+    };
+  }
+
+
   // ---------- อวตารตัวละคร (ภาพวาดจากโค้ด ไม่ใช้รูปถ่ายจริง) ----------
   const SKINS = ["#f7d6b8", "#ecbf94", "#d39a6d", "#a97550"];
   function figure(l) {
@@ -592,6 +639,7 @@
   }
 
   $("askBtn").addEventListener("click", () => {
+    markEvidence("assistants_asked");
     state.asked = true; state.asks++;
     const edited = $("askText").value.trim() !== DEFAULT_Q;
     state.askEdited = state.askEdited || edited;
@@ -641,6 +689,7 @@
       studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
       scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: total, max_score: MAX_SCORE,
       details: {
+        behavior: collectBehavior(),
         q1: { score: r1.score, labels: state.labels, key_points_correct: r1.L, text: q41 },
         q2: { score: r2.score, text: q42 },
         q3: { score: r3.score, text: q43 },

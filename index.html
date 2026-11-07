@@ -155,7 +155,7 @@
   // ===================================================================
   // ใส่ URL ของ Google Apps Script Web App (จบด้วย /exec) ที่นี่
   // ===================================================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
 
   // รายชื่อ 22 สถานการณ์ — ตอนนี้เปิดใช้ครบทั้ง 22 รายการ (ready: true) ไฟล์ scenario-01.html ถึง scenario-22.html ต้องอยู่โฟลเดอร์เดียวกับไฟล์นี้
   // หากต้องการปิดสถานการณ์ใดชั่วคราว ให้เปลี่ยน ready เป็น false ของรายการนั้น
@@ -255,7 +255,7 @@
 
   async function fetchProgress(studentKey) {
     const loadingNote = document.getElementById("loadingNote");
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec")) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) {
       loadingNote.textContent = "ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL — ระบบจะยังไม่เก็บ/อ่านความก้าวหน้าข้ามการใช้งาน (ดูวิธีตั้งค่าใน Code.gs)";
       return;
     }

@@ -421,6 +421,53 @@
     document.getElementById("mainScreen").style.display = "none";
   }
 
+  // ---------- ติดตามพฤติกรรมการทำแบบทดสอบ (เก็บใน details.behavior รูปแบบเดียวกับ scenario-01) ----------
+  // time_spent_sec = เวลาตั้งแต่โหลดหน้าเสร็จถึงกดส่งคำตอบ · evidence_opened = เครื่องมือ/หลักฐานที่นักเรียนเปิดใช้ก่อนส่ง
+  // evidence_before_answer = เปิดดูหลักฐานก่อนเริ่มตอบหรือไม่ (บ่งชี้ว่าตรวจสอบจริงหรือเดาส่งๆ)
+  // สถานการณ์นี้ไม่มีคลิปวิดีโอหรือเสียง จึงบันทึก video_played = false และ video_watched_sec = 0 (media_available = false)
+  let pageStartTime = Date.now();
+  window.addEventListener("load", () => { pageStartTime = Date.now(); });
+  const evidenceOpened = new Set();
+  let firstEvidenceAt = null, firstAnswerAt = null;
+  let hiddenMs = 0, hiddenSince = null;
+  const videoPlayed = false, videoWatchedSeconds = 0;
+  function markEvidence(name) { evidenceOpened.add(name); if (firstEvidenceAt === null) firstEvidenceAt = Date.now(); }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) hiddenSince = Date.now();
+    else if (hiddenSince !== null) { hiddenMs += Date.now() - hiddenSince; hiddenSince = null; }
+  });
+  (function trackAnswerStart() {
+    const q = document.getElementById("quizSection");
+    if (!q) return;
+    ["input", "change"].forEach((ev) => q.addEventListener(ev, () => { if (firstAnswerAt === null) firstAnswerAt = Date.now(); }));
+  })();
+  document.querySelectorAll("details.rubric").forEach((d) => d.addEventListener("toggle", () => { if (d.open) markEvidence("rubric_opened"); }));
+  (function trackReferenceCards() {
+    if (!("IntersectionObserver" in window)) return;
+    document.querySelectorAll(".refcard").forEach((el) => {
+      let timer = null;
+      new IntersectionObserver((entries) => entries.forEach((e) => {
+        if (e.isIntersecting && e.intersectionRatio >= 0.5) { if (!timer) timer = setTimeout(() => markEvidence("reference_card_viewed"), 1500); }
+        else if (timer) { clearTimeout(timer); timer = null; }
+      }), { threshold: [0, 0.5, 1] }).observe(el);
+    });
+  })();
+  function collectBehavior() {
+    const now = Date.now();
+    const hidden = hiddenMs + (hiddenSince !== null ? now - hiddenSince : 0);
+    return {
+      time_spent_sec: Math.round((now - pageStartTime) / 1000),
+      active_time_sec: Math.max(0, Math.round((now - pageStartTime - hidden) / 1000)),
+      evidence_opened: Array.from(evidenceOpened),
+      evidence_before_answer: firstEvidenceAt !== null && (firstAnswerAt === null || firstEvidenceAt <= firstAnswerAt),
+      first_answer_sec: firstAnswerAt === null ? null : Math.round((firstAnswerAt - pageStartTime) / 1000),
+      video_played: videoPlayed,
+      video_watched_sec: videoWatchedSeconds,
+      media_available: false,
+    };
+  }
+
+
   // ===================================================================
   // ภาพวาดจำลอง (SVG สร้างด้วยโค้ด ไม่ใช้รูปถ่ายจริง)
   // ===================================================================
@@ -562,6 +609,7 @@
     renderAll();
   }
   function withdrawConsent(id) {
+    markEvidence("lab_withdraw_consent");
     const c = CARD_BY_ID[id];
     if (!c || !c.consent || sim.locked.has(id)) return;
     const wasIn = sim.inSet.includes(id);
@@ -573,6 +621,7 @@
   }
 
   function train() {
+    markEvidence("lab_train");
     if (sim.inSet.length === 0) { say("ยังไม่มีการ์ดในชุดข้อมูลฝึก กรุณาเพิ่มการ์ดอย่างน้อย 1 ใบก่อนกดฝึกระบบ", "warn"); return; }
     const cards = sim.inSet.map((id) => CARD_BY_ID[id]);
     const k = counts(cards);
@@ -910,6 +959,7 @@
       score: total_score,
       max_score: MAX_SCORE,
       details: {
+        behavior: collectBehavior(),
         q1: { score: q1Result.score, selected: q1Selected, record: r.rec, text: q1_text },
         q2: { score: q2Result.score, text: q2_text },
         sim_log: {
