@@ -16,7 +16,7 @@
   body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d6d1de; color: var(--ink); padding: 24px 16px 64px; }
   .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
   .guard a { color: var(--th-deep); font-weight: 600; }
-
+.back-link { display: block; width: fit-content; margin: 0 auto 14px; font-size: 13px; color: var(--th-deep); text-decoration: none; font-weight: 600; }
   .device-frame { width: 390px; max-width: 100%; margin: 0 auto; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
   .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
   .device-screen { background: var(--paper); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; }
@@ -92,7 +92,7 @@
 </div>
 
 <div id="mainScreen">
-
+  <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
  <div class="device-frame">
   <div class="device-frame__notch"></div>
   <div class="device-screen">
