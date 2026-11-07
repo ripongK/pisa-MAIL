@@ -97,6 +97,14 @@
   .result h1 { font-size: 19px; margin-bottom: 10px; }
   .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
   .result__breakdown { text-align: left; }
+  .result__percent { font-size: 14.5px; color: var(--ink-soft); margin: -10px 0 20px; }
+  .result__percent b { color: var(--th-deep); font-size: 19px; }
+  .behavior-card { background: #f6f5f2; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 14px; margin-top: 18px; text-align: left; }
+  .behavior-card h3 { font-size: 13.5px; margin: 0 0 10px; }
+  .behavior-row { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; padding: 6px 0; border-bottom: 1px solid var(--bubble-border); }
+  .behavior-row:last-child { border-bottom: none; }
+  .behavior-row span:first-child { color: var(--ink-soft); }
+  .behavior-row span:last-child { font-weight: 600; text-align: right; }
   .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
   .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
   .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
@@ -226,7 +234,12 @@
   <section class="result" id="resultSection" hidden>
     <h1>ผลคะแนนของคุณ</h1>
     <div class="result__total" id="resultTotal"></div>
+    <div class="result__percent" id="resultPercent"></div>
     <div class="result__breakdown" id="resultBreakdown"></div>
+    <div class="behavior-card">
+      <h3>📊 ข้อมูลกระบวนการทำแบบทดสอบ</h3>
+      <div id="behaviorRows"></div>
+    </div>
     <a href="index.html" style="text-decoration:none;">
       <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
     </a>
@@ -239,7 +252,7 @@
   // ===================================================================
   // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
   // ===================================================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
   const SCENARIO_ID = "scenario-05";
   const SCENARIO_NAME = "คลิปรีวิวเกมพร้อมป้ายโฆษณาแจกสกิน (Skin) ฟรี";
   const MAX_SCORE = 4; // q1(2) + q2(2)
@@ -384,7 +397,45 @@
       },
     });
 
-    showResult({ q1: q1Result, q2: q2Result, total_score });
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000) } });
+  }
+
+  // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
+  function renderBehaviorHtml(b) {
+    const rows = [];
+    if (b.time_spent_sec != null) {
+      const m = Math.floor(b.time_spent_sec / 60), s = b.time_spent_sec % 60;
+      rows.push(`<div class="behavior-row"><span>⏱ เวลาที่ใช้ทำข้อสอบ</span><span>${m} นาที ${s} วินาที</span></div>`);
+    }
+    if (b.evidence_opened) {
+      const opened = b.evidence_opened.length > 0;
+      rows.push(`<div class="behavior-row"><span>🔍 เปิดดูหลักฐาน/ข้อมูลก่อนตอบ</span><span>${opened ? "เปิดดูแล้ว (" + b.evidence_opened.length + " ครั้ง)" : "ไม่ได้เปิดดู"}</span></div>`);
+    }
+    if (b.video_played != null) {
+      rows.push(`<div class="behavior-row"><span>🎬 เล่นวิดีโอ</span><span>${b.video_played ? "เล่นแล้ว (" + Math.round(b.video_watched_sec || 0) + " วินาที)" : "ไม่ได้เล่น"}</span></div>`);
+    }
+    if (b.audio_played != null) {
+      rows.push(`<div class="behavior-row"><span>🔊 ฟังเสียง</span><span>${b.audio_played ? "ฟังแล้ว (" + Math.round(b.audio_listened_sec || 0) + " วินาที)" : "ไม่ได้ฟัง"}</span></div>`);
+    }
+    if (b.unmuted_video != null) {
+      rows.push(`<div class="behavior-row"><span>🔊 เปิดเสียงคลิป</span><span>${b.unmuted_video ? "เปิดเสียงแล้ว" : "ไม่ได้เปิดเสียง"}</span></div>`);
+    }
+    if (b.compared_images != null) {
+      rows.push(`<div class="behavior-row"><span>🔁 เทียบภาพต้นฉบับ/AI</span><span>${b.compared_images ? "เทียบแล้ว" : "ไม่ได้เทียบ"}</span></div>`);
+    }
+    if (b.privacy_toggle_clicks != null) {
+      rows.push(`<div class="behavior-row"><span>🎚️ กดสวิตช์ตั้งค่า</span><span>${b.privacy_toggle_clicks} ครั้ง</span></div>`);
+    }
+    if (b.scrolled_gam_feed != null) {
+      rows.push(`<div class="behavior-row"><span>📱 เลื่อนดูจอแก้ม</span><span>${b.scrolled_gam_feed ? "เลื่อนดูแล้ว" : "ไม่ได้เลื่อนดู"}</span></div>`);
+    }
+    if (b.scrolled_por_feed != null) {
+      rows.push(`<div class="behavior-row"><span>📱 เลื่อนดูจอปอ</span><span>${b.scrolled_por_feed ? "เลื่อนดูแล้ว" : "ไม่ได้เลื่อนดู"}</span></div>`);
+    }
+    if (b.transcript_opened != null) {
+      rows.push(`<div class="behavior-row"><span>📝 เปิดบทถอดความ</span><span>${b.transcript_opened ? "เปิดดูแล้ว" : "ไม่ได้เปิดดู"}</span></div>`);
+    }
+    return rows.join("") || `<div class="behavior-row"><span>ไม่มีข้อมูลกระบวนการสำหรับสถานการณ์นี้</span></div>`;
   }
 
   function showResult(data) {
@@ -392,6 +443,8 @@
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
     document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 1 — สังเกตสัญญาณอันตราย</span><span>${data.q1.score} / 2</span></div>
