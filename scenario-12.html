@@ -391,7 +391,7 @@
       max_score: MAX_SCORE,
       details: {
         q1: { ...q1Result, selected: Array.from(q1Checked) },
-        q2: { ...q2Result, selected: q2Selected, reason: q2_reason },
+        q2: { ...q2Result, selected: q2Selected, reason: q2_reason, text: q2_reason },
         q3: { score: q3Result.score, text: q3_text },
         behavior: {
           time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
