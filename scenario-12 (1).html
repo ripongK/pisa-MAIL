@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>สถานการณ์ที่ 12: คลิปเสียงหลอกยาย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --th-deep: #6b1e2e; --th-mid: #a8324a; --paper: #f5eeee; --ink: #1a1a1a; --ink-soft: #5c5556;
+    --bubble: #ffffff; --bubble-border: #e8dcdc; --accent: #a8601f; --accent-soft: #f3e0cc;
+    --danger: #9b2c2c; --ok: #2f6b3a; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", -apple-system, "Segoe UI", sans-serif; background: #d9d0d0; color: var(--ink); padding: 24px 16px 64px; }
+  .guard { max-width: 480px; margin: 60px auto; text-align: center; padding: 0 20px; }
+  .guard a { color: var(--th-deep); font-weight: 600; }
+
+  .scenario-intro { max-width: 760px; margin: 0 auto 20px; background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 18px 20px; }
+  .scenario-intro p { margin: 0; font-size: 13.5px; line-height: 1.85; color: var(--ink); }
+
+  .device-frame { width: 390px; max-width: 100%; margin: 0 auto; padding: 12px 12px 18px; background: #141414; border-radius: 38px; box-shadow: 0 24px 50px rgba(0,0,0,.35); position: relative; }
+  .device-frame__notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 20px; background: #141414; border-radius: 0 0 14px 14px; z-index: 6; }
+  .device-screen { background: linear-gradient(180deg,#2a1a1f,#120a0c); border-radius: 26px; overflow-y: auto; height: min(640px, 72vh); position: relative; -webkit-overflow-scrolling: touch; color: #fff; }
+  .content-wide { width: 100%; max-width: 760px; margin: 28px auto 0; }
+  @media (min-width: 640px) { .quiz, .result { padding-left: 32px; padding-right: 32px; } }
+
+  .call-screen { padding: 36px 24px 24px; text-align: center; }
+  .call-screen__label { font-size: 12.5px; color: #d8b9bf; margin-bottom: 6px; }
+  .call-screen__number { font-size: 19px; font-weight: 700; letter-spacing: .5px; margin-bottom: 4px; }
+  .call-screen__flag { display: inline-block; font-size: 11px; background: rgba(168,50,74,.35); color: #ffb3c0; padding: 3px 10px; border-radius: 999px; margin-bottom: 18px; }
+  .call-screen__avatar { width: 84px; height: 84px; border-radius: 50%; background: #3a2a2e; display: flex; align-items: center; justify-content: center; font-size: 34px; margin: 0 auto 18px; }
+  .call-screen__status { font-size: 12.5px; color: #d8b9bf; margin-bottom: 26px; }
+
+  .player-card { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 16px; padding: 18px; }
+  .player-card__row { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 14px; }
+  .player-card__play { width: 52px; height: 52px; border-radius: 50%; background: var(--th-mid); color: #fff; border: none; font-size: 18px; cursor: pointer; }
+  .player-card__time { font-size: 11px; color: #d8b9bf; display: flex; justify-content: space-between; margin-top: 6px; }
+  .player-bar { height: 5px; background: rgba(255,255,255,.18); border-radius: 999px; overflow: hidden; cursor: pointer; }
+  .player-bar__fill { height: 100%; background: var(--th-mid); width: 0%; }
+
+  .transcript-toggle { margin-top: 18px; font-size: 12px; color: #d8b9bf; background: transparent; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  .transcript-box { margin-top: 14px; text-align: left; background: rgba(0,0,0,.25); border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.8; color: #e9dada; }
+  .transcript-box p { margin: 0 0 8px; }
+  .transcript-box b { color: #ffb3c0; }
+
+  .quiz { padding: 28px 16px 40px; border-top: 8px solid var(--th-deep); }
+  .quiz__intro h1 { font-size: 19px; margin: 0 0 6px; }
+  .quiz__intro p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; }
+  .quiz__card { background: #fff; border: 1px solid var(--bubble-border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .quiz__card h2 { font-size: 15.5px; margin: 0 0 8px; }
+  .quiz__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 12px; }
+
+  .option { display: block; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13px; line-height: 1.5; }
+  .option input { margin-right: 8px; }
+  .option.selected { border-color: var(--th-mid); background: #fbeef1; }
+
+  .order-row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .order-row__text { flex: 1; font-size: 13px; line-height: 1.5; }
+  .order-row select { padding: 7px 8px; border-radius: 8px; border: 1px solid var(--bubble-border); font-family: inherit; font-size: 13px; }
+
+  textarea { width: 100%; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; resize: vertical; }
+
+  .quiz__status { text-align: center; font-size: 13px; color: var(--ink-soft); min-height: 18px; margin-top: 10px; }
+  .btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn--submit { display: block; width: 100%; background: var(--th-deep); color: #fff; padding: 14px; font-size: 15px; margin-top: 6px; }
+  .btn--submit:disabled { opacity: .55; cursor: not-allowed; }
+  .result { padding: 32px 18px 48px; text-align: center; }
+  .result h1 { font-size: 19px; margin-bottom: 10px; }
+  .result__total { font-size: 42px; font-weight: 700; color: var(--th-deep); margin-bottom: 20px; }
+  .result__breakdown { text-align: left; }
+  .result__item { background: #fff; border: 1px solid var(--bubble-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+</style>
+</head>
+<body>
+
+<div id="guardScreen" class="guard" hidden>
+  <p>กรุณาเข้าสู่ระบบจากหน้าหลักก่อนทำแบบทดสอบ</p>
+  <a href="index.html">‹ กลับไปหน้าหลัก</a>
+</div>
+
+<div id="mainScreen">
+
+  <a href="index.html" style="display:block; width:fit-content; margin:0 auto 14px; font-size:13px; color:var(--th-deep); text-decoration:none; font-weight:600;">‹ กลับไปหน้าหลัก</a>
+
+  <div class="scenario-intro">
+    <p>คุณยายทองสุข อายุ 68 ปี อาศัยอยู่คนเดียวในบ้านไม้ชั้นเดียวกลางสวนมะม่วงที่จังหวัดสุพรรณบุรี ลูกชายคนเดียวชื่อบุญเลิศและลูกสะใภ้ย้ายไปทำงานที่กรุงเทพฯ มาแล้วกว่าสิบปี ทุกปิดเทอมจะส่งหลานชายคนโตชื่อ "ต้นกล้า" หรือที่คนในบ้านเรียกกันสั้นๆ ว่า "ต้น" อายุ 16 ปี มาอยู่กับยายที่ต่างจังหวัดเสมอ ต้นเป็นเด็กร่าเริงชอบเล่นกีตาร์และอัดคลิปร้องเพลงลงติ๊กต็อกกับยูทูบเป็นประจำ มีผู้ติดตามหลักพันคน คลิปล่าสุดที่ต้นร้องเพลง "เธอผู้ไม่แพ้ใคร" มีคนดูมากกว่าสองหมื่นครั้งภายในสัปดาห์เดียว และยายเองก็เปิดฟังซ้ำแล้วซ้ำเล่าเพราะคิดถึงเสียงหลาน</p>
+    <p style="margin-top:10px;">บ่ายวันอังคารขณะยายทองสุขกำลังนั่งพักดูละครหลังข่าวอยู่ในห้องนั่งเล่น โทรศัพท์บ้านเครื่องเก่าที่ใช้เบอร์เดิมมากว่าสิบปีก็ดังขึ้นกะทันหัน หมายเลขที่ปรากฏบนจอเป็นเบอร์แปลกที่มีรหัสประเทศนำหน้าไม่คุ้นตา แต่ยายไม่ทันสังเกตเพราะสายตาเริ่มไม่ดีและรีบคว้าหูโทรศัพท์ขึ้นรับทันที ด้วยความเป็นห่วงว่าอาจเป็นเรื่องด่วนของคนในครอบครัวที่อยู่ไกล เสียงปลายสายเป็นเสียงเด็กหนุ่มพูดสั่นเครือคล้ายเสียงต้นมากจนยายแทบไม่ทันตั้งข้อสงสัยเลยสักนิด ลองฟังคลิปเสียงบทสนทนาทั้งหมดด้านล่างนี้</p>
+  </div>
+
+ <div class="device-frame">
+  <div class="device-frame__notch"></div>
+  <div class="device-screen">
+
+    <div class="call-screen">
+      <div class="call-screen__label">สายเรียกเข้า</div>
+      <div class="call-screen__number">+1 (947) 302-xxxx</div>
+      <div class="call-screen__flag">⚠ เบอร์ต่างประเทศ ไม่บันทึกชื่อผู้ติดต่อ</div>
+      <div class="call-screen__avatar">📞</div>
+      <div class="call-screen__status" id="callStatus">กำลังสนทนา — 00:00</div>
+
+      <div class="player-card">
+        <div class="player-card__row">
+          <button class="player-card__play" id="playBtn" type="button">▶</button>
+        </div>
+        <div class="player-bar" id="playerBar"><div class="player-bar__fill" id="playerFill"></div></div>
+        <div class="player-card__time"><span id="timeNow">0:00</span><span id="timeTotal">1:28</span></div>
+        <audio id="callAudio" src="audio/scenario-12.mp3" preload="metadata"></audio>
+        <button class="transcript-toggle" id="transcriptBtn" type="button">แสดงบทสนทนา (ถอดความ)</button>
+        <div class="transcript-box" id="transcriptBox" hidden>
+          <p><b>เสียงคล้ายต้น:</b> ยายครับ... ผมโดนรถชนตอนกลับจากโรงเรียนกวดวิชา ตอนนี้อยู่โรงพยาบาลเอกชนแถวรังสิต หมอบอกว่าต้องผ่าตัดด่วนภายในเที่ยงนี้ไม่งั้นอาจมีอันตราย</p>
+          <p><i>(มีเสียงบี๊บถี่ๆ คล้ายเครื่องมือแพทย์และเสียงคนพูดจอแจแทรกเป็นระยะ)</i></p>
+          <p><b>เสียงคล้ายต้น:</b> ขากรรไกรบวมจากแรงกระแทกและต้องใส่ท่อช่วยหายใจ เลยพูดไม่ค่อยชัดครับยาย... ยายอย่าเพิ่งบอกแม่เด็ดขาดนะครับ แม่กำลังประชุมงานสำคัญอยู่ ถ้ารู้เรื่องนี้จะยิ่งเสียใจหนักกว่าเดิม</p>
+          <p><b>เสียงชายอีกคน (อ้างเป็นคนขับรถพยาบาล):</b> กรุณาโอนเงินค่ามัดจำก่อนผ่าตัดจำนวน 45,000 บาท เข้าบัญชีนี้ครับ ต้องโอนให้เสร็จภายใน 15 นาทีเท่านั้น ไม่เช่นนั้นคิวห้องผ่าตัดจะหลุดไปให้คนไข้รายอื่นแทน</p>
+          <p><b>เสียงคล้ายต้น:</b> ยายรีบโอนเลยนะครับ ผมเจ็บมากแล้ว</p>
+          <p><i>(สายตัดกะทันหันราวกับแบตเตอรี่หมด)</i></p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+ </div>
+
+  <div class="content-wide">
+  <section class="quiz" id="quizSection">
+    <div class="quiz__intro">
+      <h1>สถานการณ์ที่ 12: คลิปเสียงหลอกยาย</h1>
+      <p>หลานสาวข้างบ้านชื่อปุยฝ้ายเดินมาเห็นยายมือสั่นหน้าซีด และชวนให้ยายลองโทรกลับไปหาต้นด้วยเบอร์เดิม ผลคือต้นตัวจริงปลอดภัยดี ไม่มีอุบัติเหตุใดๆ เกิดขึ้นเลย</p>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 1 — กลวิธีของมิจฉาชีพ</h2>
+      <p class="quiz__desc">จากคลิปเสียงที่ยายทองสุขได้รับ กลวิธีใดบ้างที่มิจฉาชีพใช้เพื่อสร้างความน่าเชื่อถือและเร่งให้ยายตัดสินใจอย่างรวดเร็ว (เลือกคำตอบที่ถูกต้อง)</p>
+      <div id="q1List"></div>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 2 — เรียงลำดับสิ่งที่ควรทำทันทีหลังวางสาย</h2>
+      <p class="quiz__desc">เลือกลำดับ 1-4 ของสิ่งที่ยายทองสุขควรทำทันทีหลังวางสาย เพื่อความปลอดภัยของทั้งตนเองและหลาน พร้อมระบุเหตุผลประกอบสั้นๆ</p>
+      <div id="q2Rows"></div>
+      <textarea id="q2Reason" rows="3" placeholder="ระบุเหตุผลประกอบการเรียงลำดับของคุณ..." style="margin-top:10px;"></textarea>
+    </div>
+
+    <div class="quiz__card">
+      <h2>ข้อ 3 — แนวทางป้องกันระยะยาว</h2>
+      <p class="quiz__desc">เสนอแนวทางป้องกันระยะยาวสำหรับครอบครัวของยายทองสุข เพื่อลดโอกาสถูกหลอกด้วยเสียงโคลนแบบนี้อีกในอนาคต ให้ครอบคลุม 3 ประเด็น: (1) วิธีตรวจสอบตัวตนที่ทำได้จริงในสถานการณ์ฉุกเฉิน (2) การปรับพฤติกรรมการโพสต์คลิปเสียงต้นฉบับของหลาน (3) ข้อตกลงร่วมกันในครอบครัวที่ใช้ได้ทุกครั้งเมื่อมีเหตุขอเงินฉุกเฉิน</p>
+      <textarea id="q3Text" rows="5" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
+    </div>
+
+    <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
+    <p class="quiz__status" id="quizStatus"></p>
+  </section>
+
+  <section class="result" id="resultSection" hidden>
+    <h1>ผลคะแนนของคุณ</h1>
+    <div class="result__total" id="resultTotal"></div>
+    <div class="result__breakdown" id="resultBreakdown"></div>
+    <a href="index.html" style="text-decoration:none;">
+      <button class="btn back-btn" type="button">‹ กลับไปหน้าหลัก</button>
+    </a>
+  </section>
+  </div>
+
+</div>
+
+<script>
+  // ===================================================================
+  // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
+  // ===================================================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const SCENARIO_ID = "scenario-12";
+  const SCENARIO_NAME = "คลิปเสียงหลอกยาย";
+  const MAX_SCORE = 6; // q1(2) + q2(2) + q3(2)
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
+    catch (e) { return null; }
+  }
+  const profile = loadProfile();
+  if (!profile) {
+    document.getElementById("guardScreen").hidden = false;
+    document.getElementById("mainScreen").style.display = "none";
+  }
+
+  // ---------- ติดตามพฤติกรรมการทำแบบทดสอบ ----------
+  const pageStartTime = Date.now();
+  let audioPlayed = false;
+  let audioWatchedSeconds = 0;
+  let transcriptOpened = false;
+
+  // ---------- เครื่องเล่นเสียงคลิปหลอกลวง ----------
+  const audio = document.getElementById("callAudio");
+  const playBtn = document.getElementById("playBtn");
+  const playerBar = document.getElementById("playerBar");
+  const playerFill = document.getElementById("playerFill");
+  const timeNowEl = document.getElementById("timeNow");
+  const timeTotalEl = document.getElementById("timeTotal");
+  const callStatus = document.getElementById("callStatus");
+
+  function formatTime(sec) {
+    if (!isFinite(sec) || sec < 0) sec = 0;
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  audio.addEventListener("loadedmetadata", () => { timeTotalEl.textContent = formatTime(audio.duration); });
+  audio.addEventListener("timeupdate", () => {
+    audioWatchedSeconds = Math.max(audioWatchedSeconds, audio.currentTime);
+    timeNowEl.textContent = formatTime(audio.currentTime);
+    callStatus.textContent = "กำลังสนทนา — " + formatTime(audio.currentTime);
+    if (audio.duration) playerFill.style.width = (audio.currentTime / audio.duration * 100) + "%";
+  });
+  audio.addEventListener("play", () => { playBtn.textContent = "⏸"; audioPlayed = true; });
+  audio.addEventListener("pause", () => { playBtn.textContent = "▶"; });
+  audio.addEventListener("ended", () => { playBtn.textContent = "▶"; callStatus.textContent = "สายตัดแล้ว"; });
+
+  playBtn.addEventListener("click", () => { if (audio.paused) audio.play(); else audio.pause(); });
+  playerBar.addEventListener("click", (e) => {
+    if (!audio.duration) return;
+    const rect = playerBar.getBoundingClientRect();
+    audio.currentTime = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1) * audio.duration;
+  });
+
+  document.getElementById("transcriptBtn").addEventListener("click", () => {
+    const box = document.getElementById("transcriptBox");
+    box.hidden = !box.hidden;
+    if (!box.hidden) transcriptOpened = true;
+  });
+
+  // ---------- ข้อ 1: เลือกได้หลายข้อ ----------
+  const Q1_STATEMENTS = [
+    "ใช้เบอร์โทรที่ขึ้นต้นด้วยรหัสประเทศทั้งที่อ้างว่าหลานรักษาตัวอยู่ในไทย",
+    "สร้างความกดดันด้านเวลา อ้างว่าต้องโอนภายใน 15 นาทีก่อนคิวผ่าตัดหลุด",
+    "ส่งภาพต้นนอนอยู่บนเตียงโรงพยาบาลมาให้ยายดูทางแอปแชตเพื่อยืนยันเรื่องนี้",
+    "ขอให้ยายเก็บเรื่องไว้เป็นความลับ ห้ามบอกแม่ของต้นซึ่งประชุมงานอยู่",
+    "บอกชื่อแพทย์เจ้าของไข้และเลขห้องผ่าตัดให้ยายจดไว้เพื่อให้ดูมีรายละเอียด",
+    "อธิบายล่วงหน้าว่าเสียงพูดเพี้ยนเพราะขากรรไกรบวมและใส่ท่อช่วยหายใจ",
+  ];
+  const Q1_CORRECT = [1, 3, 5]; // ข้อ 2, 4, 6
+  const q1Checked = new Set();
+
+  function renderQ1() {
+    const container = document.getElementById("q1List");
+    container.innerHTML = "";
+    Q1_STATEMENTS.forEach((text, i) => {
+      const label = document.createElement("label");
+      label.className = "option";
+      label.innerHTML = `<input type="checkbox" value="${i}" /> ${i + 1}. ${text}`;
+      label.querySelector("input").addEventListener("change", (e) => {
+        if (e.target.checked) q1Checked.add(i); else q1Checked.delete(i);
+        label.classList.toggle("selected", e.target.checked);
+      });
+      container.appendChild(label);
+    });
+  }
+
+  function gradeQ1() {
+    const selected = Array.from(q1Checked);
+    const correctSelected = selected.filter((i) => Q1_CORRECT.includes(i)).length;
+    const wrongSelected = selected.filter((i) => !Q1_CORRECT.includes(i)).length;
+    let score = 0;
+    if (correctSelected === 3 && wrongSelected === 0) score = 2;
+    else if ((correctSelected === 2 && wrongSelected === 0) || (correctSelected === 3 && wrongSelected === 1)) score = 1;
+    return { score, correctSelected, wrongSelected };
+  }
+
+  // ---------- ข้อ 2: เรียงลำดับ ----------
+  const Q2_ITEMS = [
+    { key: "ค", text: "แจ้งพ่อแม่ของต้นในกลุ่มไลน์ครอบครัวทันทีเพื่อช่วยกันตรวจสอบเรื่องที่เกิดขึ้น", correctPos: 3 },
+    { key: "ก", text: "วางสายทันทีโดยไม่โอนเงินหรือให้ข้อมูลบัญชีธนาคารเพิ่มเติมแก่ผู้โทร", correctPos: 1 },
+    { key: "ง", text: "โทรแจ้งสายด่วนตำรวจไซเบอร์ 1441 ก่อนดำเนินการใดๆ ต่อ", correctPos: 4 },
+    { key: "ข", text: "โทรกลับหาต้นด้วยเบอร์เดิมที่บันทึกไว้ในสมุดโทรศัพท์ ไม่ใช่เบอร์ที่เพิ่งโทรเข้ามา", correctPos: 2 },
+  ];
+  const q2Selected = {};
+
+  function renderQ2() {
+    const container = document.getElementById("q2Rows");
+    container.innerHTML = "";
+    Q2_ITEMS.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "order-row";
+      row.innerHTML = `
+        <div class="order-row__text">${item.text}</div>
+        <select data-key="${item.key}">
+          <option value="">ลำดับ</option>
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+        </select>
+      `;
+      row.querySelector("select").addEventListener("change", (e) => {
+        q2Selected[item.key] = e.target.value ? Number(e.target.value) : null;
+      });
+      container.appendChild(row);
+    });
+  }
+
+  function gradeQ2() {
+    const correctCount = Q2_ITEMS.filter((item) => q2Selected[item.key] === item.correctPos).length;
+    let score = 0;
+    if (q2Selected["ก"] === 1) {
+      score = correctCount === 4 ? 2 : 1;
+    }
+    return { score, correctCount };
+  }
+  function q2IsComplete() { return Q2_ITEMS.every((item) => q2Selected[item.key] != null); }
+  function q2HasDuplicates() {
+    const vals = Q2_ITEMS.map((item) => q2Selected[item.key]).filter((v) => v != null);
+    return new Set(vals).size !== vals.length;
+  }
+
+  // ---------- ข้อ 3: keyword checklist (3 องค์ประกอบ) ----------
+  const Q3_PART_A = ["รหัสลับ", "คำถามลับ", "โทรกลับ", "เบอร์เดิม", "ยืนยันตัวตน", "คำถามประจำครอบครัว", "สัญญาณลับ"];
+  const Q3_PART_B = ["โพสต์", "เปิดสาธารณะ", "จำกัดผู้ชม", "ความเป็นส่วนตัว", "ตั้งค่าความเป็นส่วนตัว", "ไม่เปิดสาธารณะ", "เฉพาะผู้ติดตาม", "ล็อกบัญชี"];
+  const Q3_PART_C = ["ตกลงกัน", "ข้อตกลง", "เช็คกับ", "ยืนยันจากคนอื่น", "โทรเช็ค", "สองคน", "ปรึกษา", "ห้ามโอน"];
+
+  function containsAny(text, keywords) {
+    const lower = text.toLowerCase();
+    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
+  }
+
+  function gradeQ3(text) {
+    const hasA = containsAny(text, Q3_PART_A);
+    const hasB = containsAny(text, Q3_PART_B);
+    const hasC = containsAny(text, Q3_PART_C);
+    const count = [hasA, hasB, hasC].filter(Boolean).length;
+    let score = 0, reasoning;
+    if (count === 3) { score = 2; reasoning = "ครอบคลุมทั้งวิธีตรวจสอบตัวตน การปรับพฤติกรรมโพสต์คลิป และข้อตกลงร่วมกันในครอบครัว"; }
+    else if (count >= 1) { score = 1; reasoning = `ตอบครบ ${count} ใน 3 ประเด็นที่โจทย์กำหนด`; }
+    else { score = 0; reasoning = "ยังไม่ระบุวิธีปฏิบัติที่เป็นรูปธรรมในประเด็นใดเลย"; }
+    return { score, reasoning };
+  }
+
+  async function saveToSheet(payload) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+    }
+  }
+
+  async function handleSubmit() {
+    const statusEl = document.getElementById("quizStatus");
+    const submitBtn = document.getElementById("submitBtn");
+    const q2_reason = document.getElementById("q2Reason").value.trim();
+    const q3_text = document.getElementById("q3Text").value.trim();
+
+    if (q1Checked.size === 0) { statusEl.textContent = "กรุณาเลือกคำตอบข้อ 1 อย่างน้อย 1 ข้อ"; return; }
+    if (!q2IsComplete()) { statusEl.textContent = "กรุณาเลือกลำดับข้อ 2 ให้ครบทั้ง 4 ข้อ"; return; }
+    if (q2HasDuplicates()) { statusEl.textContent = "ข้อ 2 เลือกลำดับซ้ำกัน กรุณาตรวจสอบ"; return; }
+    if (!q2_reason) { statusEl.textContent = "กรุณาระบุเหตุผลประกอบข้อ 2"; return; }
+    if (!q3_text) { statusEl.textContent = "กรุณาตอบข้อ 3"; return; }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "กำลังตรวจคะแนน...";
+
+    const q1Result = gradeQ1();
+    const q2Result = gradeQ2();
+    const q3Result = gradeQ3(q3_text);
+    const total_score = q1Result.score + q2Result.score + q3Result.score;
+
+    await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name,
+      grade: profile.grade,
+      school: profile.school,
+      scenario_id: SCENARIO_ID,
+      scenario_name: SCENARIO_NAME,
+      score: total_score,
+      max_score: MAX_SCORE,
+      details: {
+        q1: { ...q1Result, selected: Array.from(q1Checked) },
+        q2: { ...q2Result, selected: q2Selected, reason: q2_reason },
+        q3: { score: q3Result.score, text: q3_text },
+        behavior: {
+          time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
+          audio_played: audioPlayed,
+          audio_listened_sec: Math.round(audioWatchedSeconds),
+          transcript_opened: transcriptOpened,
+        },
+      },
+    });
+
+    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score });
+  }
+
+  function showResult(data) {
+    document.getElementById("quizSection").hidden = true;
+    const resultSection = document.getElementById("resultSection");
+    resultSection.hidden = false;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultBreakdown").innerHTML = `
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 1 — กลวิธีของมิจฉาชีพ</span><span>${data.q1.score} / 2</span></div>
+        <div class="result__item-reason">เลือกถูก ${data.q1.correctSelected} จาก 3 ข้อ, เลือกข้อที่ไม่ใช่กลวิธีไป ${data.q1.wrongSelected} ข้อ</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 2 — ลำดับการรับมือ</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">เรียงลำดับถูกต้อง ${data.q2.correctCount} จาก 4 ตำแหน่ง</div>
+      </div>
+      <div class="result__item">
+        <div class="result__item-head"><span>ข้อ 3 — แนวทางป้องกันระยะยาว</span><span>${data.q3.score} / 2</span></div>
+        <div class="result__item-reason">${data.q3.reasoning}</div>
+      </div>`;
+    resultSection.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  if (profile) { renderQ1(); renderQ2(); }
+</script>
+</body>
+</html>
