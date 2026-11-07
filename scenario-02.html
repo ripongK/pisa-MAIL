@@ -319,7 +319,7 @@
   document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec")) return;
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
