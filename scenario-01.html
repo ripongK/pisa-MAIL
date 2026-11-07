@@ -268,7 +268,7 @@
   // ===================================================================
   // ใส่ URL ของ Google Apps Script Web App เดียวกับที่ใช้ในไฟล์ index.html
   // ===================================================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
   const SCENARIO_ID = "scenario-01";
   const SCENARIO_NAME = "คลิปสัมภาษณ์การลงทุน";
   const MAX_SCORE = 7; // q1(2) + q2(2) + q3(3)
@@ -402,7 +402,7 @@
 
   // ---------- ส่งผลไป Google Sheet ----------
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec")) return; // ยังไม่ตั้งค่า URL
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("xxxxxxxxx")) return; // ยังไม่ตั้งค่า URL
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
