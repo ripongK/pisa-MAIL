@@ -255,7 +255,7 @@
 
   async function fetchProgress(studentKey) {
     const loadingNote = document.getElementById("loadingNote");
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec")) {
       loadingNote.textContent = "ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL — ระบบจะยังไม่เก็บ/อ่านความก้าวหน้าข้ามการใช้งาน (ดูวิธีตั้งค่าใน Code.gs)";
       return;
     }
