@@ -157,6 +157,11 @@
   .checks .yes { color: var(--ok); } .checks .no { color: var(--danger); }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
   :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
+
+  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
+  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
+    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .pending-text { color:#8a5a00; }
 </style>
 </head>
 <body>
@@ -423,6 +428,8 @@
   const SCENARIO_ID = "scenario-15";
   const SCENARIO_NAME = "สภานักเรียนฝึกระบบตรวจชุดนักเรียนจากภาพเพื่อน";
   const MAX_SCORE = 4; // q1(2) + q2(2)
+  const ESSAY_MAX = 4;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
+  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -773,7 +780,6 @@
     });
   }
 
-  // ข้อ 1 และข้อ 2 ทั้งสองข้อเป็นอัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทน
   // (เดิมตรวจด้วย pattern matching ในไฟล์นี้ ดูคำอธิบายขั้นตอนที่ handleSubmit ด้านล่าง)
 
   // ===================================================================
@@ -837,7 +843,7 @@
 
     submitBtn.disabled = true;
     statusEl.style.color = "#5c655f";
-    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 1... (อาจใช้เวลาสักครู่)";
+    statusEl.textContent = "กำลังบันทึกคำตอบ...";
 
     const behaviorData = collectBehavior();
     const simLog = {
@@ -846,52 +852,35 @@
       drag_log: sim.dragLog,
     };
 
-    // ส่งทั้งตัวเลือกและคำอธิบายของข้อ 1 ไปให้ AI พิจารณาร่วมกัน (เกณฑ์เดิมผูกสองส่วนนี้เข้าด้วยกัน)
+    // ทั้งข้อ 1 (เลือกกรณี + อธิบายเหตุผล) และข้อ 2 เป็นอัตนัย: บันทึกอย่างเดียว ระบบไม่ตรวจ
     const q1ChoiceLabel = q1Selected === Q1_CORRECT
       ? "นักเรียนเลือก: กรณีที่ 2 (ใช้เฉพาะภาพที่เจ้าของภาพยินยอมแล้ว)"
       : "นักเรียนเลือก: กรณีที่ 1 (ใช้ภาพทั้งหมดรวมที่ไม่ได้ขออนุญาตด้วย)";
-    const q1EssayInput = q1ChoiceLabel + "\nคำอธิบายเหตุผล: " + q1_text;
 
-    const result1 = await saveToSheet({
+    const res = await saveToSheet({
       studentKey: profile.studentKey,
       name: profile.name, grade: profile.grade, school: profile.school,
       scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME,
-      max_score: MAX_SCORE, non_ai_score: 0,
-      essay_question_key: "q1",
-      raw_answers: { essayText: q1EssayInput },
-      details: { behavior: behaviorData, sim_log: simLog },
-    });
-    if (!result1 || result1.result !== "success") {
-      statusEl.textContent = "ระบบตรวจคำตอบข้อ 1 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
-      submitBtn.disabled = false;
-      return;
-    }
-    const q1Result = result1.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
-
-    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
-
-    const result2 = await saveToSheet({
-      studentKey: profile.studentKey,
-      name: profile.name, grade: profile.grade, school: profile.school,
-      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME,
-      max_score: MAX_SCORE, non_ai_score: q1Result.score,
-      essay_question_key: "q2",
-      raw_answers: { essayText: q2_text },
+      score: 0, max_score: MAX_SCORE, objective_max: OBJECTIVE_MAX,
+      essay_max: ESSAY_MAX, essay_status: "pending",
+      rubric: [
+        { q: "q1", label: "ข้อ 1 — การเลือกชุดข้อมูลฝึกและเหตุผล", score: null, max: 2, status: "pending" },
+        { q: "q2", label: "ข้อ 2 — เมื่อเพื่อนขอถอนความยินยอม", score: null, max: 2, status: "pending" },
+      ],
       details: {
         behavior: behaviorData,
-        q1: { score: q1Result.score, selected: q1Selected, record: r.rec, text: q1_text, reasoning: q1Result.reasoning },
+        q1: { selected: q1Selected, choice_label: q1ChoiceLabel, record: r.rec, text: q1_text, max: 2, status: "pending" },
+        q2: { text: q2_text, max: 2, status: "pending" },
         sim_log: simLog,
       },
     });
-    if (!result2 || result2.result !== "success") {
-      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+    if (!res || res.result !== "success") {
+      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
-    const q2Result = result2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
-    const total_score = result2.total_score != null ? result2.total_score : q1Result.score + q2Result.score;
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
+    showResult({ total_score: 0, essay_pending: true, behavior: behaviorData });
   }
 
   function checksHTML(parts) {
@@ -941,18 +930,20 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
-    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    document.getElementById("resultTotal").textContent = OBJECTIVE_MAX > 0 ? `${data.total_score} / ${OBJECTIVE_MAX}` : "รอตรวจ";
+    document.getElementById("resultPercent").innerHTML = OBJECTIVE_MAX > 0
+      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
+      : `ข้ออัตนัยทั้งหมด (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
 
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 1 — การเลือกชุดข้อมูลฝึกและเหตุผล</span><span>${data.q1.score} / 2</span></div>
-        <div class="result__item-reason">${data.q1.reasoning || ""}</div>
+        <div class="result__item-head"><span>ข้อ 1 — การเลือกชุดข้อมูลฝึกและเหตุผล</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
+        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — เมื่อเพื่อนขอถอนความยินยอม</span><span>${data.q2.score} / 2</span></div>
-        <div class="result__item-reason">${data.q2.reasoning || ""}</div>
+        <div class="result__item-head"><span>ข้อ 2 — เมื่อเพื่อนขอถอนความยินยอม</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
+        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

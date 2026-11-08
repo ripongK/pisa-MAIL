@@ -126,6 +126,11 @@
   .reveal { margin-top: 8px; font-size: 12.5px; line-height: 1.7; background: #f0f4f2; border-radius: 8px; padding: 8px 10px; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
   :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
+
+  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
+  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
+    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .pending-text { color:#8a5a00; }
 </style>
 </head>
 <body>
@@ -294,6 +299,8 @@
   const SCENARIO_ID = "scenario-17";
   const SCENARIO_NAME = "ระบบคัดกรองใบสมัครค่ายนักคิดรุ่นเยาว์";
   const MAX_SCORE = 6; // q1(2) + q2(2) + q3(2)
+  const ESSAY_MAX = 6;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
+  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -590,9 +597,7 @@
   }
 
   // GRADING-START
-  // ข้อ 1, 2, 3 เป็นอัตนัยทั้งหมด — ตรวจด้วย Gemini ที่ Code.gs แทน pattern matching เดิม
   // ยังคงฟังก์ชันตรวจสอบข้อเท็จจริงจากประวัติการทดลองของนักเรียนเองไว้ (ใช้แนบเป็นบริบท
-  // ให้ Gemini ประกอบการตรวจข้อ 2 เพื่อยืนยันว่าหลักฐานที่นักเรียนอ้างมาจากประวัติจริง)
   function normalizeText(t) {
     const digits = "๐๑๒๓๔๕๖๗๘๙";
     return String(t)
@@ -660,49 +665,37 @@
       scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, max_score: MAX_SCORE,
     };
 
-    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 1... (อาจใช้เวลาสักครู่)";
-    const r1 = await saveToSheet({
-      ...basePayload, non_ai_score: 0, essay_question_key: "q1",
-      raw_answers: { essayText: lab.planText },
-      details: { behavior: behaviorData, sim_log: simLog },
-    });
-    if (!r1 || r1.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 1 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
-    const q1 = r1.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
-
-    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
+    // ทั้ง 3 ข้อเป็นอัตนัย: บันทึกคำตอบอย่างเดียว ระบบไม่ตรวจ
     const n2 = normalizeText(q2_text);
-    const pairsCited = citedPairs(n2, lab.history);
-    const own = hasOwnEvidencePairs(lab.history);
-    const q2EssayInput = "คำตอบของนักเรียน: " + q2_text +
-      "\n\n[ข้อมูลที่ระบบตรวจสอบแล้วจากประวัติการทดลองจริงของนักเรียน] จำนวนคู่ใบสมัครที่นักเรียนอ้างอิงและยืนยันได้ว่ามีอยู่จริงในประวัติ: " + pairsCited + " คู่ | มีคู่ในประวัติที่ต่างกันเฉพาะประเภทโรงเรียน: " + (own.school ? "มี" : "ไม่มี") + " | มีคู่ในประวัติที่ต่างกันเฉพาะความยาวเรียงความ: " + (own.words ? "มี" : "ไม่มี");
-    const r2 = await saveToSheet({
-      ...basePayload, non_ai_score: q1.score, essay_question_key: "q2",
-      raw_answers: { essayText: q2EssayInput },
-      details: { behavior: behaviorData, q1: { score: q1.score, text: lab.planText, reasoning: q1.reasoning }, sim_log: simLog },
-    });
-    if (!r2 || r2.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
-    const q2 = r2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
-
-    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
+    const pairsCited = citedPairs(n2, lab.history);   // ข้อมูลประกอบสำหรับครู: จำนวนคู่ใบสมัครที่อ้างถึงจริงในประวัติ
     const q3ChoiceLabel = q3Selected === 1
       ? "นักเรียนเลือก: แจ้งผู้มีอำนาจ/ผู้จัดค่ายให้ตรวจสอบ"
       : "นักเรียนเลือก: ทางเลือกอื่นที่ไม่ใช่การแจ้งผู้มีอำนาจโดยตรง";
-    const q3EssayInput = q3ChoiceLabel + "\nคำอธิบายเหตุผล: " + q3_text;
-    const r3 = await saveToSheet({
-      ...basePayload, non_ai_score: q1.score + q2.score, essay_question_key: "q3",
-      raw_answers: { essayText: q3EssayInput },
+
+    statusEl.textContent = "กำลังบันทึกคำตอบ...";
+    const res = await saveToSheet({
+      ...basePayload, score: 0, objective_max: OBJECTIVE_MAX,
+      essay_max: ESSAY_MAX, essay_status: "pending",
+      rubric: [
+        { q: "q1", label: "ข้อ 1 — แผนการทดสอบ", score: null, max: 2, status: "pending" },
+        { q: "q2", label: "ข้อ 2 — กฎที่ซ่อนอยู่ในระบบ", score: null, max: 2, status: "pending" },
+        { q: "q3", label: "ข้อ 3 — เมื่อยืนยันแล้วว่าระบบมีอคติ", score: null, max: 2, status: "pending" },
+      ],
       details: {
         behavior: behaviorData,
-        q1: { score: q1.score, text: lab.planText, reasoning: q1.reasoning },
-        q2: { score: q2.score, text: q2_text, cited_pairs: pairsCited, reasoning: q2.reasoning },
+        q1: { text: lab.planText, max: 2, status: "pending" },
+        q2: { text: q2_text, cited_pairs: pairsCited, max: 2, status: "pending" },
+        q3: { selected: q3Selected, choice_label: q3ChoiceLabel, text: q3_text, max: 2, status: "pending" },
         sim_log: simLog,
       },
     });
-    if (!r3 || r3.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 3 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
-    const q3 = r3.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
-    const total_score = r3.total_score != null ? r3.total_score : q1.score + q2.score + q3.score;
+    if (!res || res.result !== "success") {
+      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
 
-    showResult({ q1, q2, q3, total_score, behavior: behaviorData });
+    showResult({ total_score: 0, essay_pending: true, behavior: behaviorData });
   }
 
   function checksHTML(parts) {
@@ -752,25 +745,26 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    document.getElementById("resultTotal").textContent = `${d.total_score} / ${MAX_SCORE}`;
-    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((d.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    document.getElementById("resultTotal").textContent = OBJECTIVE_MAX > 0 ? `${d.total_score} / ${OBJECTIVE_MAX}` : "รอตรวจ";
+    document.getElementById("resultPercent").innerHTML = OBJECTIVE_MAX > 0
+      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
+      : `ข้ออัตนัยทั้งหมด (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(d.behavior || {});
 
-    const q1 = d.q1, q2 = d.q2, q3 = d.q3;
 
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 1 — แผนการทดสอบ</span><span>${q1.score} / 2</span></div>
-        <div class="result__item-reason">${q1.reasoning || ""}</div>
+        <div class="result__item-head"><span>ข้อ 1 — แผนการทดสอบ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
+        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — กฎที่ซ่อนอยู่ในระบบ</span><span>${q2.score} / 2</span></div>
-        <div class="result__item-reason">${q2.reasoning || ""}</div>
+        <div class="result__item-head"><span>ข้อ 2 — กฎที่ซ่อนอยู่ในระบบ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
+        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
         <div class="reveal">เฉลยกฎของระบบ: (1) โรงเรียนสาธิต/เอกชนขนาดใหญ่ในเมืองได้โบนัส +12 คะแนนทันที (2) เรียงความทุก 50 คำได้ +8 คะแนน สูงสุด 24 คะแนนเมื่อยาว 150 คำขึ้นไป โดยไม่ประเมินคุณภาพเนื้อหา (3) จังหวัดไม่มีผลต่อคะแนน</div>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 3 — เมื่อยืนยันแล้วว่าระบบมีอคติ</span><span>${q3.score} / 2</span></div>
-        <div class="result__item-reason">${q3.reasoning || ""}</div>
+        <div class="result__item-head"><span>ข้อ 3 — เมื่อยืนยันแล้วว่าระบบมีอคติ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
+        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

@@ -223,6 +223,11 @@
   .qtable th, .qtable td { border: 1px solid var(--bubble-border); padding: 5px 7px; vertical-align: top; }
   .qtable th { background: #eef4f0; }
   .good { color: var(--ok); font-weight: 700; } .low { color: var(--danger); font-weight: 700; }
+
+  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
+  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
+    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .pending-text { color:#8a5a00; }
 </style>
 </head>
 <body>
@@ -354,6 +359,8 @@
   const SCENARIO_ID = "scenario-19";
   const SCENARIO_NAME = "ตลาดท่าน้ำวัดโพธิ์งาม";
   const MAX_SCORE = 6;
+  const ESSAY_MAX = 6;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
+  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
   const $ = (id) => document.getElementById(id);
 
   function loadProfile() {
@@ -694,22 +701,33 @@
     if (!q41) { st.textContent = "ข้อ 1: กรุณาเขียนคำตอบสังเคราะห์"; return; }
     if (!q42) { st.textContent = "กรุณาตอบข้อ 2"; return; }
     if (!q43) { st.textContent = "กรุณาตอบข้อ 3"; return; }
-    btn.disabled = true; st.style.color = "#5c655f"; st.textContent = "กำลังตรวจคะแนน...";
+    btn.disabled = true; st.style.color = "#5c655f"; st.textContent = "กำลังบันทึกคำตอบ...";
 
-    const r1 = gradeQ41(state.labels, q41), r2 = gradeQ42(q42), r3 = gradeQ43(q43);
-    const total = r1.score + r2.score + r3.score;
-    await saveToSheet({
+    const behavior = collectBehavior();
+    const res = await saveToSheet({
       studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
-      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: total, max_score: MAX_SCORE,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: 0, max_score: MAX_SCORE,
+      objective_max: OBJECTIVE_MAX, essay_max: ESSAY_MAX, essay_status: "pending",
+      rubric: [
+        { q: "q1", label: "ข้อ 1 — ติดป้ายและสังเคราะห์คำตอบ", score: null, max: 2, status: "pending" },
+        { q: "q2", label: "ข้อ 2 — ความมั่นใจกับความถูกต้อง", score: null, max: 2, status: "pending" },
+        { q: "q3", label: "ข้อ 3 — ตรวจสอบแหล่งอ้างอิงที่น่าสงสัย", score: null, max: 2, status: "pending" },
+      ],
       details: {
-        behavior: collectBehavior(),
-        q1: { score: r1.score, labels: state.labels, key_points_correct: r1.L, text: q41 },
-        q2: { score: r2.score, text: q42 },
-        q3: { score: r3.score, text: q43 },
+        behavior,
+        q1: { labels: state.labels, text: q41, max: 2, status: "pending" },
+        q2: { text: q42, max: 2, status: "pending" },
+        q3: { text: q43, max: 2, status: "pending" },
         sim_log: { labeled: ALL_IDS.length - un.length, change_count: state.changeCount, order: state.order, log: state.log, synth_length: $("synText").value.length, resets: state.resets, asks: state.asks, question_edited: state.askEdited },
       },
     });
-    show({ r1, r2, r3, total, behavior: collectBehavior() });
+    if (!res || res.result !== "success") {
+      st.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+      btn.disabled = false;
+      return;
+    }
+
+    show({ total: 0, behavior });
   }
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
   function renderBehaviorHtml(b) {
@@ -752,32 +770,18 @@
 
   function show(d) {
     $("quizSection").hidden = true; $("resultSection").hidden = false;
-    $("resultTotal").textContent = `${d.total} / ${MAX_SCORE}`;
-    $("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((d.total / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    $("resultTotal").textContent = OBJECTIVE_MAX > 0 ? `${d.total} / ${OBJECTIVE_MAX}` : "รอตรวจ";
+    $("resultPercent").innerHTML = OBJECTIVE_MAX > 0
+      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
+      : `ข้ออัตนัยทั้งหมด (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`;
     $("behaviorRows").innerHTML = renderBehaviorHtml(d.behavior || {});
-    const r1 = d.r1;
-    const q1Reason = r1.score === 2 ? "ติดป้ายถูกอย่างน้อย 5 จาก 6 จุดสำคัญ และสังเคราะห์ว่าก่อตั้ง พ.ศ. 2465 โดยขุนพิพัฒน์นคร โดยไม่หยิบข้อมูลที่ขัดแย้งหรือแหล่งปลอมมาใช้"
-      : r1.badAdopt ? "คำตอบสังเคราะห์ยังหยิบข้อมูลที่ผิดหรือขัดแย้งกับป้าย (ปี 2480 หรือหลวงประเสริฐกิจ) มาใช้เป็นข้อสรุป"
-      : r1.fakeTrust ? "คำตอบสังเคราะห์ถูกต้อง แต่ยังอ้างเว็บไซต์ที่ไม่มีอยู่จริงโดยไม่ตั้งข้อสงสัย"
-      : r1.score === 1 ? "ติดป้ายถูกบางส่วน หรือคำตอบสังเคราะห์ยังไม่ครบทั้งปีที่ก่อตั้งและผู้ริเริ่ม" : "ติดป้ายถูกน้อยและคำตอบสังเคราะห์ยังไม่ตรงกับป้ายข้อมูล";
-    const q1Checks = r1.points.concat([
-      { ok: r1.hasYear, label: "คำตอบสังเคราะห์ระบุปีที่ก่อตั้ง พ.ศ. 2465" },
-      { ok: r1.hasName, label: "คำตอบสังเคราะห์ระบุผู้ริเริ่มคือขุนพิพัฒน์นคร กำนันตำบล" },
-      { ok: !r1.badAdopt && !r1.fakeTrust, label: "ไม่ใช้ข้อมูลที่ขัดแย้งหรือเว็บไซต์ปลอมเป็นข้อสรุป" },
-    ]);
-    const r2 = d.r2;
-    const q2Reason = r2.score === 2 ? "อธิบายครบว่าความมั่นใจไม่ใช่หลักฐานความถูกต้อง และคำตอบที่ยอมรับความไม่รู้ปลอดภัยกว่า พร้อมอ้างประโยคประกอบ"
-      : r2.score === 1 ? "อธิบายได้บางส่วน ขาดใจความอีกข้อหรือขาดการอ้างอิงประโยคจริงประกอบ" : "ยังไม่ได้อธิบายว่าทำไมความมั่นใจและความลื่นไหลจึงไม่ใช่หลักฐานความถูกต้อง";
-    const r3 = d.r3;
-    const q3Reason = r3.noCheck ? "คำตอบเห็นว่าไม่ต้องตรวจสอบเพราะมีการอ้างอิง ซึ่งยังไม่ถูกต้อง การมีชื่อแหล่งอ้างอิงไม่ได้แปลว่าน่าเชื่อถือ"
-      : r3.score === 2 ? "ระบุวิธีตรวจสอบที่ทำได้จริง และข้อปฏิบัติที่ถูกต้องเมื่อพบว่าแหล่งอ้างอิงปลอม" : r3.score === 1 ? "ระบุได้เพียงวิธีตรวจสอบหรือข้อปฏิบัติอย่างใดอย่างหนึ่ง" : "ยังไม่ระบุวิธีตรวจสอบหรือข้อปฏิบัติที่ชัดเจน";
-    $("resultBreakdown").innerHTML = `
-      <div class="result__item"><div class="result__item-head"><span>ข้อ 1 — ติดป้ายและสังเคราะห์คำตอบ</span><span>${r1.score} / 2</span></div>
-        <div class="result__item-reason">${q1Reason} (ติดป้ายถูก ${r1.L} จาก 6 จุดสำคัญ)</div>${checksHTML(q1Checks)}${sentenceTable()}</div>
-      <div class="result__item"><div class="result__item-head"><span>ข้อ 2 — ความมั่นใจกับความถูกต้อง</span><span>${r2.score} / 2</span></div>
-        <div class="result__item-reason">${q2Reason}</div>${checksHTML([{ ok: r2.a, label: "อธิบายว่าความมั่นใจและความลื่นไหลไม่ใช่หลักฐานว่าถูกต้อง" }, { ok: r2.c, label: "อธิบายว่าผู้ช่วย ข ที่ยอมรับความไม่รู้ปลอดภัยหรือมีคุณภาพกว่า" }, { ok: r2.example, label: "ยกตัวอย่างประโยคจริงประกอบ" }])}</div>
-      <div class="result__item"><div class="result__item-head"><span>ข้อ 3 — ตรวจสอบแหล่งอ้างอิงที่น่าสงสัย</span><span>${r3.score} / 2</span></div>
-        <div class="result__item-reason">${q3Reason}</div>${checksHTML([{ ok: r3.method, label: "มีวิธีตรวจสอบที่ทำได้จริง เช่น ค้นหาหรือเปิดเว็บไซต์ ถามครูบรรณารักษ์" }, { ok: r3.action, label: "ข้อปฏิบัติเมื่อพบว่าปลอม: ไม่อ้างอิง ตัดประโยคออก หรือหาแหล่งอื่นยืนยัน" }])}</div>`;
+    const pendItem = (title, mx, extra) => `
+      <div class="result__item"><div class="result__item-head"><span>${title}</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
+        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม ${mx} คะแนน)</div>${extra || ""}</div>`;
+    $("resultBreakdown").innerHTML =
+      pendItem("ข้อ 1 — ติดป้ายและสังเคราะห์คำตอบ", 2, sentenceTable()) +
+      pendItem("ข้อ 2 — ความมั่นใจกับความถูกต้อง", 2) +
+      pendItem("ข้อ 3 — ตรวจสอบแหล่งอ้างอิงที่น่าสงสัย", 2);
     $("resultSection").scrollIntoView({ behavior: "smooth" });
   }
   $("submitBtn").addEventListener("click", handleSubmit);

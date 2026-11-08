@@ -223,6 +223,11 @@
   .qtable th, .qtable td { border: 1px solid var(--bubble-border); padding: 5px 7px; vertical-align: top; }
   .qtable th { background: #eef4f0; }
   .good { color: var(--ok); font-weight: 700; } .low { color: var(--danger); font-weight: 700; }
+
+  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
+  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
+    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .pending-text { color:#8a5a00; }
 </style>
 </head>
 <body>
@@ -352,6 +357,8 @@
   const SCENARIO_ID = "scenario-22";
   const SCENARIO_NAME = "ระบบตรวจการลอกการบ้านด้วย AI";
   const MAX_SCORE = 4;
+  const ESSAY_MAX = 2;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
+  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
   const $ = (id) => document.getElementById(id);
 
   function loadProfile() {
@@ -731,22 +738,32 @@
     if (!st.snaps.q49) { st2.textContent = "ข้อ 1: กรุณากดปุ่ม “ใช้ค่านี้เป็นคำตอบ” เพื่อบันทึกการจัดสรรชิป"; return; }
     if (!$("q49Why").value.trim() || !$("q49Who").value.trim()) { st2.textContent = "ข้อ 1: กรุณาเขียนคุณสมบัติที่ยอมให้ลดลงและกลุ่มนักเรียนที่ได้รับผลให้ครบทั้งสองช่อง"; return; }
     if (tfAns.some((a) => a === null)) { st2.textContent = "ข้อ 2: กรุณาเลือกจริงหรือไม่จริงให้ครบทั้ง 4 ข้อความ"; return; }
-    btn.disabled = true; st2.style.color = "#5c655f"; st2.textContent = "กำลังตรวจคะแนน...";
+    btn.disabled = true; st2.style.color = "#5c655f"; st2.textContent = "กำลังบันทึกคำตอบ...";
 
-    const r1 = gradeAlloc(st.snaps.q49, t49, "plag");
-    const r2 = gradeTF(tfAns);
-    const total = r1.score + r2.score;
-    await saveToSheet({
+    const r2 = gradeTF(tfAns);   // ข้อ 2 จริง/ไม่จริง ตรวจตามเกณฑ์
+    const behavior = collectBehavior();
+    const res = await saveToSheet({
       studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
-      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: total, max_score: MAX_SCORE,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: r2.score, max_score: MAX_SCORE,
+      objective_max: OBJECTIVE_MAX, essay_max: ESSAY_MAX, essay_status: "pending",
+      rubric: [
+        { q: "q1", label: "ข้อ 1 — จัดสรรชิปและสิ่งที่ยอมลดลง", score: null, max: 2, status: "pending" },
+        { q: "q2", label: "ข้อ 2 — จริงหรือไม่จริง", score: r2.score, max: 2 },
+      ],
       details: {
-        behavior: collectBehavior(),
-        q1: { score: r1.score, allocation: st.snaps.q49.alloc, text: t49 },
+        behavior,
+        q1: { allocation: st.snaps.q49.alloc, text: t49, max: 2, status: "pending" },
         q2: { score: r2.score, answers: tfAns, correct_count: r2.n },
         sim_log: { move_count: st.moves.length, moves: st.moves.map((m) => ({ t: m.t, from: m.from, to: m.to })), changed_mind: changedMind(), resets: st.resets },
       },
     });
-    show({ r1, r2, total, behavior: collectBehavior() });
+    if (!res || res.result !== "success") {
+      st2.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+      btn.disabled = false;
+      return;
+    }
+
+    show({ r2, total: r2.score, behavior });
   }
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
   function renderBehaviorHtml(b) {
@@ -789,26 +806,19 @@
 
   function show(d) {
     $("quizSection").hidden = true; $("resultSection").hidden = false;
-    $("resultTotal").textContent = `${d.total} / ${MAX_SCORE}`;
-    $("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((d.total / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    $("resultTotal").textContent = OBJECTIVE_MAX > 0 ? `${d.total} / ${OBJECTIVE_MAX}` : "รอตรวจ";
+    $("resultPercent").innerHTML = OBJECTIVE_MAX > 0
+      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
+      : `ข้ออัตนัยทั้งหมด (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`;
     $("behaviorRows").innerHTML = renderBehaviorHtml(d.behavior || {});
-    const r1 = d.r1, r2 = d.r2;
-    const q1Reason = !r1.complete ? "จัดสรรชิปไม่ครบ 12 ชิป จึงไม่ได้คะแนน" : r1.score === 2 ? "ระบุคุณสมบัติที่ยอมให้ลดลงอย่างน้อย 2 อย่างอย่างจงใจ พร้อมกลุ่มนักเรียนที่เจาะจงและผลกระทบที่เป็นรูปธรรม"
-      : r1.score === 1 ? "ระบุการลดหรือผู้ได้รับผลได้บางส่วน ยังไม่ครบสองคุณสมบัติหรือยังไม่เจาะจงกลุ่มนักเรียน" : "ยังไม่อธิบายว่าอะไรลดลงอย่างจงใจหรือใครได้รับผลกระทบ";
-    const q1Checks = [
-      { ok: r1.complete, label: "จัดสรรชิปครบ 12 ชิป" },
-      { ok: r1.reduced.length >= 2, label: `ระบุคุณสมบัติที่ลดลง (ชิป ≤ 1) อย่างน้อย 2 อย่าง (พบ ${r1.reduced.length}: ${r1.reduced.map(fname).join(", ") || "—"})` },
-      { ok: r1.group, label: "ระบุกลุ่มนักเรียนที่ได้รับผลอย่างเจาะจง (เช่น เรียนพิเศษที่เดียวกัน ใช้ AI ช่วยเรียบเรียง)" },
-      { ok: r1.impact, label: "อธิบายผลกระทบที่เป็นรูปธรรม" },
-      { ok: r1.tradeoff, label: "อธิบายเหตุผลของการแลกเปลี่ยน" },
-    ];
+    const r2 = d.r2;
     const tfRows = TF_ITEMS.map((it, i) => ({ ok: r2.correct[i], label: `${it.text} → เฉลย: ${it.truth ? "จริง" : "ไม่จริง"} (คุณตอบ: ${tfAns[i] ? "จริง" : "ไม่จริง"})` }));
     $("resultBreakdown").innerHTML = `
-      <div class="result__item"><div class="result__item-head"><span>ข้อ 1 — จัดสรรชิปและสิ่งที่ยอมลดลง</span><span>${r1.score} / 2</span></div>
-        <div class="result__item-reason">${q1Reason}</div>${checksHTML(q1Checks)}</div>
+      <div class="result__item"><div class="result__item-head"><span>ข้อ 1 — จัดสรรชิปและสิ่งที่ยอมลดลง</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
+        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม ${ESSAY_MAX} คะแนน)</div></div>
       <div class="result__item"><div class="result__item-head"><span>ข้อ 2 — จริงหรือไม่จริง</span><span>${r2.score} / 2</span></div>
         <div class="result__item-reason">ตอบถูก ${r2.n} จาก 4 ข้อความ (ถูกครบ 4 ได้ 2 คะแนน ถูก 3 ได้ 1 คะแนน)</div>${checksHTML(tfRows)}</div>
-      <p class="hint" style="font-size:12px;color:#5c655f;">หมายเหตุ: ในข้อ 1 ไม่มีการจัดสรรที่ถูกที่สุด คะแนนมาจากความชัดเจนของการแลกเปลี่ยนและการเชื่อมกับตัวเลขที่จัดสรรจริง</p>`;
+      <p class="hint" style="font-size:12px;color:#5c655f;">หมายเหตุ: ในข้อ 1 ไม่มีการจัดสรรที่ถูกที่สุด ครูจะพิจารณาจากความชัดเจนของการแลกเปลี่ยนและการเชื่อมกับตัวเลขที่จัดสรรจริง</p>`;
     $("resultSection").scrollIntoView({ behavior: "smooth" });
   }
   $("submitBtn").addEventListener("click", handleSubmit);
