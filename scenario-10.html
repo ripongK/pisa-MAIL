@@ -63,6 +63,11 @@
   .result__item-head { display: flex; justify-content: space-between; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
   .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
+
+  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
+  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
+    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .pending-text { color:#8a5a00; }
 </style>
 </head>
 <body>
@@ -136,6 +141,8 @@
   const SCENARIO_ID = "scenario-10";
   const SCENARIO_NAME = "บอร์ดแนะแนวอาชีพ";
   const MAX_SCORE = 4; // q1(2) + q2(2)
+  const ESSAY_MAX = 2;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
+  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -193,8 +200,7 @@
   }
   function q1IsComplete() { return Q1_LEFT.every((item) => q1Selected[item.key] != null); }
 
-  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
-
+  // ---------- ข้อ 2: อัตนัย — บันทึกข้อความลง Google Sheet ระบบไม่ตรวจ (รอการตรวจคะแนนโดยครู) ----------
   async function saveToSheet(payload) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
@@ -219,7 +225,7 @@
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
+    statusEl.textContent = "กำลังบันทึกคำตอบ...";
 
     const q1Result = gradeQ1();
     const nonAiScore = q1Result.score;
@@ -232,26 +238,32 @@
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
+      score: nonAiScore,            // คะแนนส่วนปรนัย (ตรวจตามเกณฑ์/รูบริคฝั่งหน้าเว็บ)
       max_score: MAX_SCORE,
-      non_ai_score: nonAiScore,
-      essay_question_key: "q2",
-      raw_answers: { essayText: q2_text },
+      objective_max: OBJECTIVE_MAX,
+      essay_max: ESSAY_MAX,
+      essay_status: "pending",   // อัตนัย: ไม่ตรวจโดยระบบ → รอการตรวจคะแนน
+      rubric: [
+        { q: "q1", label: "ข้อ 1 — จับคู่อาชีพกับลักษณะภาพ", score: q1Result.score, max: 2 },
+        { q: "q2", label: "ข้อ 2 — สาเหตุและวิธีจัดการอคติ", score: null, max: 2, status: "pending" },
+      ],
       details: {
+        q2: { text: q2_text, max: ESSAY_MAX, status: "pending" },
         q1: { ...q1Result, selected: q1Selected },
         behavior: behaviorData,
       },
     });
 
     if (!serverResult || serverResult.result !== "success") {
-      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
 
-    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
-    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
+    const q2Result = { score: null, pending: true, max: ESSAY_MAX, reasoning: "รอการตรวจคะแนน" };
+    const total_score = nonAiScore; // ยังไม่รวมข้ออัตนัย
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
+    showResult({ q1: q1Result, q2: q2Result, total_score, essay_pending: true, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
@@ -296,8 +308,11 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
-    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    const pend = !!data.essay_pending;
+    document.getElementById("resultTotal").textContent = pend ? `${data.total_score} / ${OBJECTIVE_MAX}` : `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = pend
+      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
+      : `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
@@ -305,8 +320,8 @@
         <div class="result__item-reason">จับคู่ถูก ${data.q1.correctCount} จาก 4 คู่</div>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — สาเหตุและวิธีจัดการอคติ</span><span>${data.q2.score} / 2</span></div>
-        <div class="result__item-reason">${data.q2.reasoning}</div>
+        <div class="result__item-head"><span>ข้อ 2 — สาเหตุและวิธีจัดการอคติ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
+        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว (เต็ม ${ESSAY_MAX} คะแนน) ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง</div>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }
