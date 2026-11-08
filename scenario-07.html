@@ -338,42 +338,20 @@
     return new Set(vals).size !== vals.length;
   }
 
-  // ---------- ข้อ 3: keyword checklist (3 องค์ประกอบ) ----------
-  const Q3_PART_A = ["เชื่อถือน้อย", "เชื่อถือกว่า", "น่าเชื่อถือ", "ขายของ", "อยากขายของ", "ไม่รู้ว่าใครเขียน", "ไม่ระบุผู้เขียน", "ไม่ระบุตัวตน", "หน่วยงานราชการ", "ผลประโยชน์ทางการค้า"];
-  const Q3_PART_B = ["ตับ", "ไต", "ขับสารพิษ", "ล้างสารพิษ", "ธรรมชาติ", "ไม่มีหลักฐาน", "กรมอนามัย"];
-  const Q3_PART_C = ["โซเดียม", "ความดัน", "แสบท้อง", "ระคายเคือง", "กระเพาะ", "เวียนหัว", "วิงเวียน", "ปวดท้อง"];
-  const Q3_ENDORSE = ["ลองก็ได้", "เผื่อได้ผล", "คนดูเยอะ", "น่าจะจริง", "น่าจะได้ผล"];
-
-  function containsAny(text, keywords) {
-    const lower = text.toLowerCase();
-    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
-  }
-
-  function gradeQ3(text) {
-    if (containsAny(text, Q3_ENDORSE)) {
-      return { score: 0, reasoning: "คำตอบดูเหมือนเห็นด้วยกับพฤติกรรมเสี่ยงหรือใช้ความนิยมเป็นเกณฑ์ตัดสิน" };
-    }
-    const hasA = containsAny(text, Q3_PART_A);
-    const hasB = containsAny(text, Q3_PART_B);
-    const hasC = containsAny(text, Q3_PART_C);
-    const count = [hasA, hasB, hasC].filter(Boolean).length;
-    let score = 0, reasoning;
-    if (count === 3) { score = 2; reasoning = "กล่าวถึงครบทั้งความน่าเชื่อถือของแหล่ง ข้อมูลขัดแย้งจากกรมอนามัย และความเสี่ยงต่อสุขภาพ"; }
-    else if (count === 2) { score = 1; reasoning = "กล่าวถึง 2 ใน 3 องค์ประกอบที่เกณฑ์กำหนด"; }
-    else { score = 0; reasoning = "ยังกล่าวถึงองค์ประกอบที่เกณฑ์กำหนดไม่ครบ (ความน่าเชื่อถือของแหล่ง / ข้อมูลจากกรมอนามัย / ความเสี่ยงต่อสุขภาพ)"; }
-    return { score, reasoning };
-  }
+  // ---------- ข้อ 3: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
-      await fetch(APPS_SCRIPT_URL, {
+      const res = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
+      return await res.json();
     } catch (err) {
       console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+      return null;
     }
   }
 
@@ -388,35 +366,44 @@
     if (!q3_text) { statusEl.textContent = "กรุณาตอบข้อ 3"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังตรวจคะแนน...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
     const q2Result = gradeQ2();
-    const q3Result = gradeQ3(q3_text);
-    const total_score = q1Result.score + q2Result.score + q3Result.score;
+    const nonAiScore = q1Result.score + q2Result.score;
+    const behaviorData = {
+      time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
+      evidence_opened: Array.from(evidenceOpened),
+      unmuted_video: unmutedVideo,
+    };
 
-    await saveToSheet({
+    const serverResult = await saveToSheet({
       studentKey: profile.studentKey,
       name: profile.name,
       grade: profile.grade,
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: total_score,
       max_score: MAX_SCORE,
+      non_ai_score: nonAiScore,
+      essay_question_key: "q3",
+      raw_answers: { essayText: q3_text },
       details: {
-        q1: { ...q1Result, selected: q1Selected }, q2: { ...q2Result, selected: q2Selected }, q3: { score: q3Result.score, text: q3_text },
-        behavior: {
-          time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
-          evidence_opened: Array.from(evidenceOpened),
-          unmuted_video: unmutedVideo,
-        },
+        q1: { ...q1Result, selected: q1Selected }, q2: { ...q2Result, selected: q2Selected },
+        behavior: behaviorData,
       },
     });
 
-    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score, behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
-          evidence_opened: Array.from(evidenceOpened),
-          unmuted_video: unmutedVideo, } });
+    if (!serverResult || serverResult.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 3 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const q3Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q3Result.score;
+
+    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------

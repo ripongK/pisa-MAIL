@@ -292,35 +292,20 @@
     return { score: q1Selected === Q1_CORRECT ? 2 : 0 };
   }
 
-  // ---------- ข้อ 2: keyword checklist (2 ประเด็น) ----------
-  const Q2_PART_A = ["สร้างขึ้นใหม่", "ไม่มีอยู่จริง", "ไม่ได้มาจริง", "ไม่มีจริง", "สร้างคน", "เติมคนเข้าไป", "ต่างจากการแต่งสี", "ไม่ได้เปลี่ยนแปลง", "แค่ปรับ", "ไม่ได้สร้าง"];
-  const Q2_PART_B = ["รายงาน", "ความน่าเชื่อถือ", "ผู้บริหาร", "ผู้ปกครอง", "ประชาสัมพันธ์", "ข้อมูลเท็จ", "คลาดเคลื่อน", "เข้าใจผิด", "โฆษณา", "สมัครนักเรียน"];
-
-  function containsAny(text, keywords) {
-    const lower = text.toLowerCase();
-    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
-  }
-
-  function gradeQ2(text) {
-    const hasA = containsAny(text, Q2_PART_A);
-    const hasB = containsAny(text, Q2_PART_B);
-    let score = 0, reasoning;
-    if (hasA && hasB) { score = 2; reasoning = "อธิบายทั้งความแตกต่างเชิงกลไก (สร้างสิ่งที่ไม่มีจริง) และผลกระทบต่อความน่าเชื่อถือเมื่อใช้ในสื่อทางการ"; }
-    else if (hasA || hasB) { score = 1; reasoning = hasA ? "อธิบายความแตกต่างเชิงกลไกได้ แต่ยังไม่ได้เชื่อมโยงผลกระทบต่อความน่าเชื่อถือ" : "ระบุผลกระทบต่อความน่าเชื่อถือได้ แต่ยังไม่ได้อธิบายความแตกต่างเชิงกลไกจากการแต่งสี/ครอบตัด"; }
-    else { score = 0; reasoning = "ยังไม่ได้อธิบายทั้งความแตกต่างเชิงกลไกและผลกระทบต่อความน่าเชื่อถือ"; }
-    return { score, reasoning };
-  }
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
-      await fetch(APPS_SCRIPT_URL, {
+      const res = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
+      return await res.json();
     } catch (err) {
       console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+      return null;
     }
   }
 
@@ -333,32 +318,42 @@
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังตรวจคะแนน...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
-    const q2Result = gradeQ2(q2_text);
-    const total_score = q1Result.score + q2Result.score;
+    const nonAiScore = q1Result.score;
+    const behaviorData = {
+      time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
+      compared_images: comparedImages,
+    };
 
-    await saveToSheet({
+    const serverResult = await saveToSheet({
       studentKey: profile.studentKey,
       name: profile.name,
       grade: profile.grade,
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: total_score,
       max_score: MAX_SCORE,
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        q1: { ...q1Result, selected: q1Selected }, q2: { score: q2Result.score, text: q2_text },
-        behavior: {
-          time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
-          compared_images: comparedImages,
-        },
+        q1: { ...q1Result, selected: q1Selected },
+        behavior: behaviorData,
       },
     });
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
-          compared_images: comparedImages, } });
+    if (!serverResult || serverResult.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
+
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------

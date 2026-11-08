@@ -629,94 +629,9 @@
   function gradeQ2() { return { score: q2Selected === Q2_CORRECT ? 1 : 0 }; }
 
   // GRADING-START
-  // ===================================================================
-  // เครื่องตรวจคำสำคัญและรูปแบบข้อความ (Keyword & Pattern Matching)
-  // น้ำหนัก w: คำหลัก = 1 (พอเป็นหลักฐาน), คำสนับสนุน = 0.5 (ต้องมี 2 คำ)
-  // neg: 0 = ไม่ตรวจการปฏิเสธ, 1 = ตัดทิ้งถ้ามี “ไม่ต้อง/ไม่จำเป็น/ไม่ควร” นำหน้า, 2 = ตัดทิ้งถ้ามี “ไม่/ไม่ได้/มิ” นำหน้า
-  // ===================================================================
-  function normalizeText(t) {
-    const digits = "๐๑๒๓๔๕๖๗๘๙";
-    return String(t)
-      .replace(/[๐-๙]/g, (d) => digits.indexOf(d))
-      .replace(/[\s\u200b\u200c\u200d\u00a0.,;:!?"'“”‘’()\[\]{}\-–—_\/\\]/g, "")
-      .toLowerCase()
-      .replace(/อีสาณ/g, "อีสาน")
-      .replace(/ถ่วงน้ำหนัก/g, "ถ่วง");
-  }
-  function isNegated(norm, idx, level) {
-    if (!level) return false;
-    const before = norm.slice(Math.max(0, idx - 8), idx);
-    return level === 2
-      ? /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร|ไม่ได้|ไม่|มิ)$/.test(before)
-      : /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร)$/.test(before);
-  }
-  function scorePatterns(norm, patterns) {
-    let sum = 0; const hits = [];
-    patterns.forEach((p) => {
-      const re = new RegExp(p.re.source, "g"); let m;
-      while ((m = re.exec(norm))) {
-        if (isNegated(norm, m.index, p.neg || 0)) continue;
-        sum += p.w; hits.push(m[0]); break;
-      }
-    });
-    return { hit: sum >= 1, hits };
-  }
-
-  // ----- ข้อ 1: คำอธิบายว่าทำไมไม่ควรดูแค่ความแม่นยำรวม -----
-  // E1 = ค่ารวมสูงได้ทั้งที่บางภูมิภาคยังต่ำ / ค่ารวมปิดบังปัญหา
-  const Q1_E1 = [
-    { re: /รวม.{0,30}(ปิดบัง|บดบัง|ซ่อน|กลบ|ไม่สะท้อน|ไม่เห็น|มองไม่เห็น|หลอก|เข้าใจผิด|ไม่บอก|ไม่พอ|ไม่ได้บอก|ตัดสินใจไม่ได้|ไม่ได้สะท้อน)/, w: 1 },
-    { re: /(ภาค|ภูมิภาค|กลุ่ม).{0,10}(ยังต่ำ|ต่ำลง|ต่ำ|ไม่ดี|แย่|ผิดบ่อย|ทายผิด|คงที่|ไม่ขยับ)/, w: 0.5 },
-    { re: /รวม.{0,10}(สูง|ดี|เพิ่ม)/, w: 0.5 },
-  ];
-  // E2 = กลไก: ภาคกลางมีข้อมูลมาก ถ่วงค่าเฉลี่ย / สัดส่วนไม่สมดุล
-  const Q1_E2 = [
-    { re: /ถ่วง|ค่าเฉลี่ย|เป็นหลัก|ส่วนใหญ่เป็น(ภาค)?กลาง|ภาคกลาง.{0,10}(เยอะ|มาก|จำนวนมาก|ส่วนใหญ่)|(ข้อมูล|ภาพ).{0,6}(ภาคกลาง|เยอะ).{0,10}(มากกว่า|เยอะกว่า)|สัดส่วน.{0,10}(ภาคกลาง|เอียง|ไม่สมดุล|ไม่เท่า)|ไม่สมดุล|เอียง|ข้อมูล(ส่วนใหญ่|เกือบทั้งหมด)/, w: 1 },
-  ];
-  // F = ข้อความต้องห้าม: เห็นว่าความแม่นยำรวมอย่างเดียวพอ
-  const Q1_F = [
-    { re: /(ความแม่นยำ)?รวม.{0,10}(อย่างเดียวก็พอ|พอแล้ว|ใช้ได้ดี|เพียงพอ)|รวมสูง(มาก)?(แล้ว)?แสดงว่า.{0,6}(ใช้ได้|ดี)|ระบบใช้ได้ดีแล้ว/, w: 1, neg: 2 },
-  ];
+  // ข้อ 1 และข้อ 3 เป็นอัตนัย — ตรวจด้วย Gemini ที่ Code.gs แทน pattern matching เดิม
+  // (ข้อ 2 เป็นปรนัยเลือกตอบ ยังตรวจด้วยกฎฝั่งหน้าเว็บตามเดิม ดูฟังก์ชัน gradeQ2 ด้านล่าง)
   const CHECK_REGIONS = ["n", "e", "s"];
-  function gradeQ1(counts, text) {
-    const accs = computeAccCounts(counts);
-    const passCount = CHECK_REGIONS.filter((k) => accs[k] >= THRESHOLD).length;
-    const n = normalizeText(text);
-    const E1 = scorePatterns(n, Q1_E1), E2 = scorePatterns(n, Q1_E2), F = scorePatterns(n, Q1_F);
-    let score = 0;
-    if (passCount === 3) score = (E1.hit && E2.hit && !F.hit && n.length >= 20) ? 2 : 1;
-    else if (passCount >= 1) score = 1;
-    return { score, passCount, accs, e1: E1.hit, e2: E2.hit, forbidden: F.hit };
-  }
-
-  // ----- ข้อ 3: ข้อเสนอเพิ่มภาพภาคกลางเท่าตัว -----
-  // W = ชี้จุดอ่อน: เพิ่มเฉพาะภาคกลางไม่ช่วยภาคอื่น / ปัญหาคือสัดส่วน
-  const Q3_W = [
-    { re: /(ระบบ|แอป|โมเดล).{0,6}(ไม่เคย|ยังไม่เคย|ไม่ได้เห็น|ไม่ได้เรียนรู้).{0,12}(ขนม)?(ภาคอื่น|ภาคเหนือ|อีสาน|ใต้|ภูมิภาคอื่น)/, w: 1 },
-    { re: /(ภาคอื่น|ภาคเหนือ|อีสาน|ใต้|ภูมิภาคอื่น).{0,16}(ไม่(ได้)?(ขยับ|ดีขึ้น|เพิ่ม|เปลี่ยน)|เหมือนเดิม|ยังต่ำ|ยังแย่|ยังทายผิด|ยังผิด|ไม่แม่น|ยังไม่แม่น)/, w: 1 },
-    { re: /(เพิ่ม|เก็บ|ถ่าย)(เฉพาะ|แต่)?(ภาพ|ขนม)?ภาคกลาง.{0,25}(ไม่ช่วย|ไม่ได้ช่วย|ไม่แก้|ไม่ทำให้|ไม่ได้แก้|ไม่มีประโยชน์|ก็ไม่)/, w: 1 },
-    { re: /ไม่ใช่(ปัญหา)?(ที่)?(จำนวน|ปริมาณ)|ภาคกลาง.{0,10}(มี|เยอะ|มาก).{0,10}(อยู่แล้ว|เพียงพอ|พอแล้ว)|ไม่ครอบคลุม/, w: 1 },
-    { re: /สัดส่วน|ไม่สมดุล|เอียง|ถ่วง/, w: 0.5 },
-    { re: /ไม่เท่า(เทียม|กัน)?|ปัญหา(ที่แท้จริง)?(คือ|อยู่ที่)/, w: 0.5 },
-  ];
-  // S = ทางแก้: เพิ่มสัดส่วนภาพภาคเหนือ อีสาน ใต้ / ทำให้สมดุล
-  const Q3_S = [
-    { re: /(เก็บ|เพิ่ม|ถ่าย|หา|ไปเก็บ|ไปหา|ไปถ่าย|รวบรวม).{0,12}(ขนม|ภาพ)?(ภาค|ภูมิภาค)?(อื่น|เหนือ|อีสาน|ใต้|ทุกภาค|ทุกภูมิภาค|ที่มีน้อย|ที่ขาด)/, w: 1 },
-    { re: /เพิ่มสัดส่วน|ให้สมดุล|ให้เท่า(กัน)?|ให้ใกล้เคียง|ให้ครบ(ทุก)?ภาค|ทุกภาค.{0,6}(เท่า|พอ|ครบ)|ปรับสัดส่วน|จำนวนเท่ากัน/, w: 1 },
-  ];
-  const Q3_AGREE = [{ re: /เห็นด้วย/, w: 1, neg: 2 }];
-  const Q3_EVID = /จากที่ลอง|จากการทดลอง|ในหน้าจอ|จากหน้าจอ|ผลการฝึก|รอบที่|จากตาราง|จากผล|ที่ทดลอง/;
-  function gradeQ3(text) {
-    const n = normalizeText(text);
-    const W = scorePatterns(n, Q3_W), S = scorePatterns(n, Q3_S), A = scorePatterns(n, Q3_AGREE);
-    let score = 0;
-    if (n.length >= 12) {
-      if (W.hit && S.hit) score = 2;
-      else if (W.hit || S.hit) score = 1;
-      if (A.hit && !W.hit && !S.hit) score = 0;
-    }
-    return { score, weakness: W.hit, solution: S.hit, evidence: Q3_EVID.test(n), agrees: A.hit };
-  }
   // GRADING-END
 
   // ===================================================================
@@ -736,12 +651,16 @@
   }
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
-      await fetch(APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
-    } catch (err) { console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err); }
+      const res = await fetch(APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+      return await res.json();
+    } catch (err) { console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err); return null; }
   }
 
+  // ข้อ 1 และข้อ 3 เป็นอัตนัย จึงเรียก Code.gs 2 รอบต่อเนื่องกัน รอบแรกตรวจข้อ 1 (ส่งคะแนน
+  // ข้อ 2 ที่ตรวจเองแล้วเป็นฐานตั้งต้น) รอบสองส่งคะแนนข้อ 1 ที่ได้ไปเป็นส่วนหนึ่งของ non_ai_score
+  // เพื่อให้คะแนนรวมสุดท้ายถูกต้องและบันทึกแถวที่มีรายละเอียดครบทุกข้อ
   async function handleSubmit() {
     const statusEl = document.getElementById("quizStatus");
     const submitBtn = document.getElementById("submitBtn");
@@ -762,27 +681,49 @@
 
     submitBtn.disabled = true;
     statusEl.style.color = "#5c655f";
-    statusEl.textContent = "กำลังตรวจคะแนน...";
 
-    const q1 = gradeQ1(r.counts, q1_text), q2 = gradeQ2(), q3 = gradeQ3(q3_text);
-    const total_score = q1.score + q2.score + q3.score;
-
-    await saveToSheet({
+    const q2 = gradeQ2();
+    const behaviorData = collectBehavior();
+    const simLog = {
+      train_count: sim.history.length,
+      rounds: sim.history.map((h) => ({ round: h.round, counts: h.n, acc: h.acc, t: h.t })),
+      drag_log: sim.dragLog,
+    };
+    const basePayload = {
       studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
-      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: total_score, max_score: MAX_SCORE,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, max_score: MAX_SCORE,
+    };
+
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 1... (อาจใช้เวลาสักครู่)";
+    const accs = computeAccCounts(r.counts);
+    const passCount = CHECK_REGIONS.filter((k) => accs[k] >= THRESHOLD).length;
+    const q1EssayInput = "คำตอบของนักเรียน: " + q1_text +
+      "\n\n[ข้อมูลที่ระบบตรวจสอบแล้วจากชุดข้อมูลฝึกจริงที่นักเรียนเลือก] จำนวนภูมิภาค (เหนือ/อีสาน/ใต้) ที่ความแม่นยำถึงเกณฑ์ 70%: " + passCount + " จาก 3 ภูมิภาค (ความแม่นยำจริง: เหนือ " + accs.n.toFixed(1) + "% อีสาน " + accs.e.toFixed(1) + "% ใต้ " + accs.s.toFixed(1) + "%)";
+    const r1 = await saveToSheet({
+      ...basePayload, non_ai_score: q2.score, essay_question_key: "q1",
+      raw_answers: { essayText: q1EssayInput },
+      details: { behavior: behaviorData, q2: { score: q2.score, selected: q2Selected }, sim_log: simLog },
+    });
+    if (!r1 || r1.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 1 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
+    const q1 = r1.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    q1.passCount = passCount; q1.accs = accs;
+
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
+    const r2 = await saveToSheet({
+      ...basePayload, non_ai_score: q2.score + q1.score, essay_question_key: "q3",
+      raw_answers: { essayText: q3_text },
       details: {
-        behavior: collectBehavior(),
-        q1: { score: q1.score, counts: r.counts, accuracy: q1.accs, text: q1_text },
+        behavior: behaviorData,
+        q1: { score: q1.score, counts: r.counts, accuracy: accs, text: q1_text, reasoning: q1.reasoning },
         q2: { score: q2.score, selected: q2Selected },
-        q3: { score: q3.score, text: q3_text },
-        sim_log: {
-          train_count: sim.history.length,
-          rounds: sim.history.map((h) => ({ round: h.round, counts: h.n, acc: h.acc, t: h.t })),
-          drag_log: sim.dragLog,
-        },
+        sim_log: simLog,
       },
     });
-    showResult({ q1, q2, q3, total_score, counts: r.counts, behavior: collectBehavior() });
+    if (!r2 || r2.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 3 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
+    const q3 = r2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = r2.total_score != null ? r2.total_score : q1.score + q2.score + q3.score;
+
+    showResult({ q1, q2, q3, total_score, counts: r.counts, behavior: behaviorData });
   }
 
   function checksHTML(parts) {
@@ -837,32 +778,12 @@
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(d.behavior || {});
 
     const a = d.q1.accs;
-    const q1Reason = d.q1.score === 2 ? "จัดองค์ประกอบให้ทั้งสามภูมิภาคถึงเกณฑ์ และอธิบายกลไกที่ความแม่นยำรวมปิดบังปัญหาได้ถูกต้อง"
-      : d.q1.passCount === 3 ? "จัดองค์ประกอบให้ทั้งสามภูมิภาคถึงเกณฑ์ได้ แต่คำอธิบายยังไม่ชัดว่าความแม่นยำรวมปิดบังปัญหาด้วยกลไกใด"
-        : d.q1.passCount >= 1 ? `ภูมิภาคเป้าหมายถึงเกณฑ์ ${d.q1.passCount} จาก 3 ภูมิภาค ยังไม่ครบ`
-          : "ชุดข้อมูลยังเอียงไปทางภาคกลาง ไม่มีภูมิภาคเป้าหมายใดถึงเกณฑ์";
-    const q1Checks = [
-      { ok: a.n >= THRESHOLD, label: `ภาคเหนือ ${a.n.toFixed(1)}% (เกณฑ์ ${THRESHOLD}%)` },
-      { ok: a.e >= THRESHOLD, label: `ภาคอีสาน ${a.e.toFixed(1)}% (เกณฑ์ ${THRESHOLD}%)` },
-      { ok: a.s >= THRESHOLD, label: `ภาคใต้ ${a.s.toFixed(1)}% (เกณฑ์ ${THRESHOLD}%)` },
-      { ok: d.q1.e1, label: "อธิบายว่าความแม่นยำรวมอาจสูงทั้งที่บางภูมิภาคยังต่ำ" },
-      { ok: d.q1.e2, label: "อธิบายกลไก: ภาคกลางมีข้อมูลมากกว่าจึงถ่วงค่าเฉลี่ย / สัดส่วนไม่สมดุล" },
-    ];
     const q2Reason = d.q2.score ? "เลือกถูกต้อง: ปัญหาอยู่ที่สัดส่วนข้อมูลของภาคอื่นที่น้อยกว่าภาคกลางมาก" : "คำตอบที่ถูกคือข้อ 4 เพราะสัดส่วนข้อมูลของภาคอื่นในชุดฝึกยังน้อยกว่าภาคกลางมาก";
-    const q3Reason = d.q3.score === 2 ? "ไม่เห็นด้วยกับข้อเสนอ ชี้จุดอ่อนได้ และเสนอทางแก้ที่ถูกทาง คือเพิ่มสัดส่วนภาพของภาคอื่น"
-      : d.q3.score === 1 ? "ตอบถูกทิศทางบางส่วน แต่ยังไม่ครบทั้งการชี้จุดอ่อนของข้อเสนอและทางแก้ที่ตรงประเด็น"
-        : "ยังไม่ได้ชี้ว่าการเพิ่มเฉพาะภาพภาคกลางไม่แก้ปัญหาของภาคอื่น และยังไม่เสนอทางแก้ที่ตรงประเด็น";
-    const q3Checks = [
-      { ok: d.q3.weakness, label: "ชี้จุดอ่อน: เพิ่มเฉพาะภาคกลางไม่ช่วยภาคอื่น / ปัญหาคือสัดส่วน" },
-      { ok: d.q3.solution, label: "เสนอทางแก้: เพิ่มสัดส่วนภาพภาคเหนือ อีสาน ใต้ ให้สมดุล" },
-      { ok: d.q3.evidence, label: "อ้างอิงผลการทดลองในหน้าจอ (เพิ่มความน่าเชื่อถือ ไม่บังคับ)" },
-    ];
 
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 1 — จัดชุดข้อมูลและอธิบายข้อจำกัดของความแม่นยำรวม</span><span>${d.q1.score} / 2</span></div>
-        <div class="result__item-reason">${q1Reason} (องค์ประกอบที่บันทึก: กลาง ${d.counts.c} เหนือ ${d.counts.n} อีสาน ${d.counts.e} ใต้ ${d.counts.s})</div>
-        ${checksHTML(q1Checks)}
+        <div class="result__item-reason">${d.q1.reasoning || ""} (ความแม่นยำที่บันทึกได้: เหนือ ${a.n.toFixed(1)}% อีสาน ${a.e.toFixed(1)}% ใต้ ${a.s.toFixed(1)}% — องค์ประกอบ: กลาง ${d.counts.c} เหนือ ${d.counts.n} อีสาน ${d.counts.e} ใต้ ${d.counts.s})</div>
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 2 — เหตุที่เพิ่มภาพภาคกลางไม่ช่วย</span><span>${d.q2.score} / 1</span></div>
@@ -870,8 +791,7 @@
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 3 — ข้อเสนอเพิ่มภาพภาคกลางเท่าตัว</span><span>${d.q3.score} / 2</span></div>
-        <div class="result__item-reason">${q3Reason}</div>
-        ${checksHTML(q3Checks)}
+        <div class="result__item-reason">${d.q3.reasoning || ""}</div>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

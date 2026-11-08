@@ -193,35 +193,20 @@
   }
   function q1IsComplete() { return Q1_LEFT.every((item) => q1Selected[item.key] != null); }
 
-  // ---------- ข้อ 2: keyword checklist (สาเหตุ + วิธีจัดการ) ----------
-  const Q2_PART_A = ["ข้อมูลที่ใช้ฝึก", "ข้อมูลฝึก", "ข้อมูลเทรน", "training data", "เหมารวมอยู่แล้ว", "เรียนรู้จาก", "ข้อมูลเดิม", "ข้อมูลที่ป้อน"];
-  const Q2_PART_B = ["ปรับพร้อมต์", "พร้อมต์ใหม่", "ตรวจสอบ", "แก้ไขภาพ", "ปรึกษาครู", "หลากหลาย", "เลือกภาพ", "คัดเลือกภาพ", "ผสมภาพ"];
-
-  function containsAny(text, keywords) {
-    const lower = text.toLowerCase();
-    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
-  }
-
-  function gradeQ2(text) {
-    const hasA = containsAny(text, Q2_PART_A);
-    const hasB = containsAny(text, Q2_PART_B);
-    let score = 0, reasoning;
-    if (hasA && hasB) { score = 2; reasoning = "ระบุทั้งสาเหตุ (ข้อมูลฝึก AI มีความเหมารวม) และวิธีจัดการที่ปฏิบัติได้จริง"; }
-    else if (hasA || hasB) { score = 1; reasoning = hasA ? "ระบุสาเหตุได้ถูกต้อง แต่ยังไม่ได้เสนอวิธีจัดการก่อนนำไปติดบอร์ด" : "เสนอวิธีจัดการได้ แต่ยังไม่ได้อธิบายว่าอคตินี้เกิดจากอะไร"; }
-    else { score = 0; reasoning = "ยังไม่ได้ระบุทั้งสาเหตุของอคติและวิธีจัดการก่อนเผยแพร่"; }
-    return { score, reasoning };
-  }
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
-      await fetch(APPS_SCRIPT_URL, {
+      const res = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
+      return await res.json();
     } catch (err) {
       console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+      return null;
     }
   }
 
@@ -234,28 +219,39 @@
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังตรวจคะแนน...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
-    const q2Result = gradeQ2(q2_text);
-    const total_score = q1Result.score + q2Result.score;
+    const nonAiScore = q1Result.score;
+    const behaviorData = { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000) };
 
-    await saveToSheet({
+    const serverResult = await saveToSheet({
       studentKey: profile.studentKey,
       name: profile.name,
       grade: profile.grade,
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: total_score,
       max_score: MAX_SCORE,
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        q1: { ...q1Result, selected: q1Selected }, q2: { score: q2Result.score, text: q2_text },
-        behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000) },
+        q1: { ...q1Result, selected: q1Selected },
+        behavior: behaviorData,
       },
     });
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000) } });
+    if (!serverResult || serverResult.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
+
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------

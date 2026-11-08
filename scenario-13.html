@@ -300,38 +300,20 @@
     return { score: q1Selected === Q1_CORRECT ? 2 : 0 };
   }
 
-  // ---------- ข้อ 2: keyword checklist (3 ส่วน) ----------
-  const Q2_PART_A = ["ปิด", "เปลี่ยน", "ฝึกโมเดล", "เก็บบันทึก", "3 ปี", "ปิดตัวเลือก", "ปิดการใช้"];
-  const Q2_PART_B = ["คนอื่นอ่าน", "เก็บไว้นาน", "พนักงาน", "ตรวจสอบ", "ความเสี่ยง", "ข้อมูลส่วนตัว", "ยินยอม", "คนอื่นเห็น"];
-  const Q2_PART_C = ["ไม่พิมพ์ชื่อ", "ขออนุญาต", "อ่านการตั้งค่า", "อ่านก่อนกด", "ระวัง", "ถามทั่วไป", "ไม่บอกชื่อจริง", "อ่านให้ดีก่อน"];
-
-  function containsAny(text, keywords) {
-    const lower = text.toLowerCase();
-    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
-  }
-
-  function gradeQ2(text) {
-    const hasA = containsAny(text, Q2_PART_A);
-    const hasB = containsAny(text, Q2_PART_B);
-    const hasC = containsAny(text, Q2_PART_C);
-    const count = [hasA, hasB, hasC].filter(Boolean).length;
-    let score = 0, reasoning;
-    if (count === 3) { score = 2; reasoning = "อธิบายครบทั้งตัวเลือกที่ควรปิด ความเสี่ยงของการพิมพ์ข้อมูลส่วนตัว และแนวทางในอนาคต"; }
-    else if (count === 2) { score = 1; reasoning = "อธิบายได้ 2 ใน 3 ส่วนที่เกณฑ์กำหนด"; }
-    else { score = 0; reasoning = "ยังอธิบายไม่ครบตามเกณฑ์ (ตัวเลือกที่ควรปิด / ความเสี่ยงต่อข้อมูลส่วนตัว / แนวทางในอนาคต)"; }
-    return { score, reasoning };
-  }
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
-      await fetch(APPS_SCRIPT_URL, {
+      const res = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
+      return await res.json();
     } catch (err) {
       console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+      return null;
     }
   }
 
@@ -344,32 +326,42 @@
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังตรวจคะแนน...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
-    const q2Result = gradeQ2(q2_text);
-    const total_score = q1Result.score + q2Result.score;
+    const nonAiScore = q1Result.score;
+    const behaviorData = {
+      time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
+      privacy_toggle_clicks: privacyToggleClicks,
+    };
 
-    await saveToSheet({
+    const serverResult = await saveToSheet({
       studentKey: profile.studentKey,
       name: profile.name,
       grade: profile.grade,
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: total_score,
       max_score: MAX_SCORE,
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        q1: { ...q1Result, selected: q1Selected }, q2: { score: q2Result.score, text: q2_text },
-        behavior: {
-          time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
-          privacy_toggle_clicks: privacyToggleClicks,
-        },
+        q1: { ...q1Result, selected: q1Selected },
+        behavior: behaviorData,
       },
     });
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
-          privacy_toggle_clicks: privacyToggleClicks, } });
+    if (!serverResult || serverResult.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
+
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------

@@ -558,81 +558,20 @@
     return { score, matched: [...matched], off, penalty, rows };
   }
 
-  // ===================================================================
-  // ข้อ 2: ตรวจคำตอบสั้นด้วยคำสำคัญ (Keyword & Pattern Matching)
-  // น้ำหนัก w: คำหลัก = 1 (พอเป็นหลักฐาน), คำสนับสนุน = 0.5 (ต้องมี 2 คำ)
-  // neg: 0 = ไม่ตรวจการปฏิเสธ, 1 = ตัดทิ้งถ้ามี “ไม่ต้อง/ไม่จำเป็น/ไม่ควร” นำหน้า
-  // ===================================================================
-  function normalizeText(t) {
-    const digits = "๐๑๒๓๔๕๖๗๘๙";
-    return String(t)
-      .replace(/[๐-๙]/g, (d) => digits.indexOf(d))
-      .replace(/[\s\u200b\u200c\u200d\u00a0.,;:!?"'“”‘’()\[\]{}\-–—_\/\\]/g, "")
-      .toLowerCase()
-      .replace(/เช็ค/g, "เช็ก")
-      .replace(/อินเตอร์เน็ต|อินเทอร์เนต|อินเตอร์เนต/g, "อินเทอร์เน็ต");
-  }
-  function isNegated(norm, idx, level) {
-    if (!level) return false;
-    return /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร)$/.test(norm.slice(Math.max(0, idx - 8), idx));
-  }
-  function scorePatterns(norm, patterns) {
-    let sum = 0; const hits = [];
-    patterns.forEach((p) => {
-      const re = new RegExp(p.re.source, "g"); let m;
-      while ((m = re.exec(norm))) {
-        if (isNegated(norm, m.index, p.neg || 0)) continue;
-        sum += p.w; hits.push(m[0]); break;
-      }
-    });
-    return { hit: sum >= 1, hits };
-  }
-
-  // วิธีตรวจสอบ 4 กลุ่ม
-  const METHODS = [
-    { id: "reverse", label: "ค้นภาพย้อนกลับ / ค้นในอินเทอร์เน็ตว่าภาพมีที่มาจากที่อื่นหรือไม่", pats: [
-      { re: /ค้น(หา)?(ภาพ|รูป)?(ด้วยภาพ|ด้วยรูป|ย้อนกลับ|ย้อนหลัง)|reverseimage|googlelens|กูเกิลเลนส์|tineye|ค้นภาพ|ค้นรูป|ค้นหาภาพ/, w: 1, neg: 1 },
-      { re: /ค้น.{0,8}(อินเทอร์เน็ต|เน็ต|กูเกิล|google|เว็บ)/, w: 1, neg: 1 },
-    ] },
-    { id: "news", label: "ตรวจกับสำนักข่าวหรือหน่วยงานทางการที่น่าเชื่อถือ", pats: [
-      { re: /สำนักข่าว|แหล่งข่าว|ข่าวที่น่าเชื่อถือ|ข่าวจากสำนัก|ข่าวทางการ|รอ(ดู|ฟัง|ติดตาม)?ข่าว|หน่วยงาน|ราชการ|เทศบาล|อบต|อบจ|ปภ|ป้องกันและบรรเทา|ผู้ว่า|นายอำเภอ|กำนัน|ผู้ใหญ่บ้าน|เพจทางการ|เว็บไซต์ทางการ|ประกาศทางการ|ตรวจสอบข่าว|โคแฟค|cofact|ชัวร์ก่อนแชร์|ตรวจสอบข้อเท็จจริง|แหล่งข้อมูลอื่น|หลายแหล่ง/, w: 1, neg: 1 },
-    ] },
-    { id: "source", label: "สอบถามผู้โพสต์หรือคนในพื้นที่ว่าใครถ่ายและภาพมาจากไหน", pats: [
-      { re: /ถาม(คน|เพื่อน|เจ้าของ|ผู้โพสต์|ผู้ส่ง|สมาชิก|ใน(กลุ่ม|พื้นที่))|ใครเป็นคนถ่าย|ใครถ่าย|ต้นทาง|ที่มาของภาพ|แหล่งที่มา|ติดต่อ.{0,8}(คน|พื้นที่|เจ้าของ)|โทร(ถาม|ไป|หา)|สอบถาม|ขอ(ดู)?(ภาพ|คลิป|วิดีโอ)ต้นฉบับ|ขอหลักฐาน/, w: 1, neg: 1 },
-    ] },
-    { id: "inspect", label: "ตรวจรายละเอียดในภาพ ป้าย สถานที่ หรือใช้เครื่องมือตรวจ", pats: [
-      { re: /(ดู|ตรวจ|สังเกต|เช็ก|เทียบ|ซูม).{0,8}(ป้าย|มือ|นิ้ว|เงา|สถานที่|รายละเอียด|ตัวอักษร|จุดผิดปกติ)|ตรวจจับai|aiตรวจ|เครื่องมือตรวจ|เมตาดาต้า|metadata|exif|ข้อมูลภาพ|googlemaps|แผนที่|streetview|สถานที่ตรง/, w: 1, neg: 1 },
-    ] },
-  ];
-  // เหตุผล/จุดประสงค์ของวิธีตรวจ (นับจำนวนครั้งที่ปรากฏ ต้องมีอย่างน้อย 2 เมื่อเสนอ 2 วิธี)
-  const REASON_MARKERS = /เพราะ|เนื่องจาก|เพื่อ|จะได้|ช่วยให้|ทำให้|ดูว่า|เช็กว่า|ตรวจว่า|ตรวจสอบว่า|ถามว่า|หรือไม่|หรือยัง|หรือเปล่า|ว่า(ใคร|จริง|เป็นภาพ|ตรง|มีที่มา)/g;
-  // แชร์ได้เลยโดยไม่ตรวจ
-  const SHARE_NOW = /แชร์(ต่อ)?ได้เลย|แชร์เลย|ไม่ต้อง(ตรวจ|เช็ก|ค้น|สอบถาม|ถาม)|ไม่จำเป็นต้อง(ตรวจ|เช็ก)/;
-
-  function gradeQ2(text) {
-    const n = normalizeText(text);
-    const found = METHODS.map((m) => ({ id: m.id, label: m.label, ok: scorePatterns(n, m.pats).hit }));
-    const methods = found.filter((f) => f.ok).length;
-    const markers = (n.match(REASON_MARKERS) || []).length;
-    const sharesNow = SHARE_NOW.test(n);
-    let score = 0;
-    if (n.length >= 20 && methods >= 1 && !(sharesNow && methods < 2)) {
-      score = methods >= 2 && markers >= 2 ? 2 : 1;
-    }
-    return { score, methods, markers, sharesNow, found };
-  }
-  // GRADING-END
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
-      await fetch(APPS_SCRIPT_URL, {
+      const res = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
+      return await res.json();
     } catch (err) {
       console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+      return null;
     }
   }
 
@@ -647,34 +586,44 @@
 
     submitBtn.disabled = true;
     statusEl.style.color = "#5c655f";
-    statusEl.textContent = "กำลังตรวจคะแนน...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradePins(tool.pins);
-    const q2Result = gradeQ2(q2_text);
-    const total_score = q1Result.score + q2Result.score;
+    const nonAiScore = q1Result.score;
+    const behaviorData = collectBehavior();
 
-    await saveToSheet({
+    const serverResult = await saveToSheet({
       studentKey: profile.studentKey,
       name: profile.name,
       grade: profile.grade,
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: total_score,
       max_score: MAX_SCORE,
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        behavior: collectBehavior(),
+        behavior: behaviorData,
         q1: {
           score: q1Result.score,
           pins: tool.pins.map((p, i) => ({ order: i + 1, x: p.x, y: p.y, reason: p.reason === null ? null : REASONS[p.reason], matched_region: q1Result.rows[i].region, correct: q1Result.rows[i].ok })),
           replace_count: tool.replaceCount, remove_count: tool.removeCount,
           first_pin_ms: tool.firstPinMs, log: tool.log,
         },
-        q2: { score: q2Result.score, text: q2_text },
       },
     });
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: collectBehavior() });
+    if (!serverResult || serverResult.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
+
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   function checksHTML(parts) {
@@ -744,10 +693,6 @@
     const penaltyNote = q1.penalty ? " และมีหมุดที่ไม่ตรงบริเวณใดเลยตั้งแต่ 2 หมุด จึงถูกหัก 1 คะแนนเพราะเป็นการชี้แบบเดาทั่วภาพ" : "";
 
     const q2 = data.q2;
-    const q2Reason = q2.score === 2 ? "เสนอวิธีตรวจสอบที่ปฏิบัติได้จริงอย่างน้อย 2 วิธี พร้อมเหตุผลประกอบ"
-      : q2.sharesNow && q2.methods < 2 ? "คำตอบให้แชร์ต่อได้โดยไม่ตรวจสอบ ซึ่งยังไม่ตอบโจทย์"
-        : q2.score === 1 ? (q2.methods >= 2 ? "เสนอได้ 2 วิธีขึ้นไป แต่ยังไม่อธิบายเหตุผลของแต่ละวิธีให้ชัด" : "เสนอวิธีตรวจสอบได้เพียง 1 วิธี")
-          : "ยังไม่พบวิธีตรวจสอบที่ปฏิบัติได้จริงก่อนแชร์ต่อ";
 
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
@@ -759,8 +704,7 @@
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 2 — การตรวจสอบก่อนแชร์ต่อ</span><span>${q2.score} / 2</span></div>
-        <div class="result__item-reason">${q2Reason}</div>
-        ${checksHTML(q2.found.map((f) => ({ ok: f.ok, label: f.label })))}
+        <div class="result__item-reason">${q2.reasoning || ""}</div>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

@@ -135,9 +135,9 @@
       <div class="transcript-label">บทถอดความคำพูดในคลิป</div>
       <div class="transcript-line"><span class="transcript-time">0:12</span><span class="transcript-text">สวัสดีครับ ผมนายแพทย์ประเสริฐ วัฒนสิน</span></div>
       <div class="transcript-line"><span class="transcript-time">0:18</span><span class="transcript-text">ผลิตภัณฑ์เสริมอาหารไวทาลิกซ์พลัสช่วยลดไขมันในเส้นเลือดได้ถึงร้อยละ 40 ภายในสองสัปดาห์</span></div>
-      <div class="transcript-line"><span class="transcript-time">0:23</span><span class="transcript-text">ผมแนะนำให้คนไข้ทุกคนของผมทานอาหารเสริมตัวนี้ ในฐานะที่ปรึกษากิตติมศักดิ์ของราชวิทยาลัยอายุรแพทย์แห่งประเทศไทย</span></div>
-      <div class="transcript-line"><span class="transcript-time">0:37</span><span class="transcript-text">ผลลัพธ์อาจแตกต่างกันในแต่ละบุคคล ผลิตภัณฑ์นี้ยังไม่ได้ผ่านการรับรองจากสำนักงานคณะกรรมการอาหารและยา ควรปรึกษาแพทย์ก่อนใช้</span></div>
-      <div class="transcript-line"><span class="transcript-time">0:56</span><span class="transcript-text">สั่งซื้อผ่านลิงก์ในคำบรรยาย รับส่วนลด 50% เฉพาะวันนี้เท่านั้น</span></div>
+      <div class="transcript-line"><span class="transcript-time">0:45</span><span class="transcript-text">ผมแนะนำให้คนไข้ทุกคนของผมทานอาหารเสริมตัวนี้ ในฐานะที่ปรึกษากิตติมศักดิ์ของราชวิทยาลัยอายุรแพทย์แห่งประเทศไทย</span></div>
+      <div class="transcript-line"><span class="transcript-time">1:12</span><span class="transcript-text">ผลลัพธ์อาจแตกต่างกันในแต่ละบุคคล ผลิตภัณฑ์นี้ยังไม่ได้ผ่านการรับรองจากสำนักงานคณะกรรมการอาหารและยา ควรปรึกษาแพทย์ก่อนใช้</span></div>
+      <div class="transcript-line"><span class="transcript-time">1:31</span><span class="transcript-text">สั่งซื้อผ่านลิงก์ในคำบรรยาย รับส่วนลด 50% เฉพาะวันนี้เท่านั้น</span></div>
     </div>
   </div>
 
@@ -305,44 +305,20 @@
     return { score, correctCount };
   }
 
-  // ---------- ข้อ 2: ตรวจด้วย keyword/pattern checklist ----------
-  const Q2_PART_A_KEYWORDS = [ // เหตุผลที่เป็นรูปธรรมว่าคลิปน่าสงสัย
-    "เสียงแปลก", "ไม่หายใจ", "เรียบ", "สม่ำเสมอผิดปกติ", "เสียงปลอม", "หาไม่เจอ", "ตรวจสอบไม่ได้",
-    "ไม่มีหลักฐาน", "ไม่รับรอง", "ไม่ผ่านการรับรอง", "อย.", "ที่ปรึกษา", "ราชวิทยาลัย", "พูดเร็ว", "ปฏิเสธความรับผิด",
-  ];
-  const Q2_PART_B_KEYWORDS = [ // ข้อเสนอแนะการกระทำที่เป็นรูปธรรมก่อนซื้อ
-    "ตรวจสอบ", "เช็ค", "ถามหมอ", "ปรึกษาแพทย์", "คลินิก", "รอก่อน", "อย่าเพิ่งซื้อ", "อย่าเพิ่งสั่ง", "ค้นชื่อ", "หาข้อมูลก่อน", "รอให้หนูเช็ค",
-  ];
-  const Q2_BUY_ENDORSE_KEYWORDS = ["ลองซื้อ", "ซื้อเลย", "กินเถอะ", "สั่งเลย"]; // เห็นด้วยกับการซื้อ = ไม่ได้คะแนน
-
-  function containsAny(text, keywords) {
-    const lower = text.toLowerCase();
-    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
-  }
-
-  function gradeQ2(text) {
-    if (containsAny(text, Q2_BUY_ENDORSE_KEYWORDS)) {
-      return { score: 0, reasoning: "คำตอบดูเหมือนเห็นด้วยกับการซื้อ แทนที่จะเตือนคุณยาย" };
-    }
-    const hasA = containsAny(text, Q2_PART_A_KEYWORDS);
-    const hasB = containsAny(text, Q2_PART_B_KEYWORDS);
-    let score = 0, reasoning;
-    if (hasA && hasB) { score = 2; reasoning = "ระบุเหตุผลที่เป็นรูปธรรมและมีข้อเสนอแนะการตรวจสอบก่อนซื้อครบถ้วน"; }
-    else if (hasA || hasB) { score = 1; reasoning = hasA ? "ระบุเหตุผลที่น่าสงสัยแล้ว แต่ยังไม่ได้เสนอแนะการกระทำก่อนซื้อ" : "มีข้อเสนอแนะแล้ว แต่ยังไม่ได้ระบุเหตุผลที่เป็นรูปธรรมจากคลิป"; }
-    else { score = 0; reasoning = "ยังไม่พบทั้งเหตุผลที่เป็นรูปธรรมและข้อเสนอแนะการตรวจสอบก่อนซื้อ"; }
-    return { score, reasoning };
-  }
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
-      await fetch(APPS_SCRIPT_URL, {
+      const res = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
+      return await res.json();
     } catch (err) {
       console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+      return null;
     }
   }
 
@@ -355,34 +331,43 @@
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังตรวจคะแนน...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
-    const q2Result = gradeQ2(q2_text);
-    const total_score = q1Result.score + q2Result.score;
+    const nonAiScore = q1Result.score;
+    const behaviorData = {
+      time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
+      audio_played: audioPlayed,
+      audio_listened_sec: Math.round(audioWatchedSeconds),
+    };
 
-    await saveToSheet({
+    const serverResult = await saveToSheet({
       studentKey: profile.studentKey,
       name: profile.name,
       grade: profile.grade,
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: total_score,
       max_score: MAX_SCORE,
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        q1: q1Result, q2: { score: q2Result.score, text: q2_text },
-        behavior: {
-          time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
-          audio_played: audioPlayed,
-          audio_listened_sec: Math.round(audioWatchedSeconds),
-        },
+        q1: q1Result,
+        behavior: behaviorData,
       },
     });
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
-          audio_played: audioPlayed,
-          audio_listened_sec: Math.round(audioWatchedSeconds), } });
+    if (!serverResult || serverResult.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
+
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------

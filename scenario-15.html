@@ -773,132 +773,8 @@
     });
   }
 
-  // GRADING-START
-  // ---------- เครื่องตรวจคำสำคัญและรูปแบบข้อความ (Keyword & Pattern Matching) ----------
-  // แต่ละรูปแบบมีน้ำหนัก w: คำหลัก = 1 (พอเป็นหลักฐานของหัวข้อนั้น), คำสนับสนุน = 0.5 (ต้องมีอย่างน้อย 2 คำ)
-  // neg: 0 = ไม่ตรวจการปฏิเสธ, 1 = ตัดทิ้งถ้ามี “ไม่ต้อง/ไม่จำเป็น/ไม่ควร” นำหน้า, 2 = ตัดทิ้งถ้ามีคำว่า “ไม่/ไม่ได้/มิ” นำหน้า
-  function normalizeText(t) {
-    const digits = "๐๑๒๓๔๕๖๗๘๙";
-    return String(t)
-      .replace(/[๐-๙]/g, (d) => digits.indexOf(d))
-      .replace(/[\s\u200b\u200c\u200d\u00a0.,;:!?"'“”‘’()\[\]{}\-–—_\/\\]/g, "")
-      .toLowerCase()
-      .replace(/ล็อค/g, "ล็อก")
-      .replace(/เทรนนิ่ง|เทรน/g, "ฝึก")
-      .replace(/อนุญาติ/g, "อนุญาต")
-      .replace(/ฝึกสอน/g, "ฝึก");
-  }
-  function isNegated(norm, idx, level) {
-    if (!level) return false;
-    const before = norm.slice(Math.max(0, idx - 8), idx);
-    return level === 2
-      ? /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร|ไม่ได้|ไม่|มิ)$/.test(before)
-      : /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร)$/.test(before);
-  }
-  function scorePatterns(norm, patterns) {
-    let sum = 0; const hits = [];
-    patterns.forEach((p) => {
-      const re = new RegExp(p.re.source, "g");
-      let m;
-      while ((m = re.exec(norm))) {
-        if (isNegated(norm, m.index, p.neg || 0)) { if (m[0].length === 0) re.lastIndex++; continue; }
-        sum += p.w; hits.push(m[0]); break;
-      }
-    });
-    return { strength: Math.min(1, sum), hit: sum >= 1, hits };
-  }
-
-  // ----- ข้อ 1 -----
-  // T = ยอมรับตรงๆ ว่าความแม่นยำต่ำกว่า/ข้อมูลน้อยกว่า เมื่อเทียบกับกรณีที่ใช้ภาพไม่ได้ขออนุญาต
-  const Q1_T = [
-    { re: /แม่นย.{0,15}(ต่ำกว่า|น้อยกว่า|ลดลง|ต่ำลง|แย่ลง|ด้อยกว่า|ไม่เท่า|ไม่สูงเท่า|ไม่ดีเท่า|ลดไป)/, w: 1 },
-    { re: /(ข้อมูล|ภาพ|ตัวอย่าง|การ์ด).{0,6}(น้อยกว่า|น้อยลง|ไม่พอ|ลดลง|น้อยกว่ากรณี)/, w: 1 },
-    { re: /(ต่ำกว่า|น้อยกว่า|ไม่เท่า|ด้อยกว่า|ไม่สูงเท่า).{0,14}(กรณีที่1|ทั้ง18|18ใบ|ไม่ได้ขออนุญาต|ภาพที่ไม่ได้|ใช้ภาพทั้งหมด)/, w: 1 },
-    { re: /เทียบกับ|เปรียบเทียบ|เมื่อเทียบ/, w: 0.5 },
-    { re: /ยอมรับ|ถึงแม้|แม้ว่า|แม้จะ|ถึงจะ|ต้องแลก|แลกกับ|ต้องเสีย|ต้องยอม/, w: 0.5 },
-    { re: /ไม่แม่น|แม่นยำน้อย|แม่นน้อย/, w: 0.5 },
-  ];
-  // R = เหตุผลด้านสิทธิ/ความยินยอมของเจ้าของภาพ
-  const Q1_R = [
-    { re: /(เคารพ|ให้เกียรติ|ปกป้อง|คุ้มครอง|รักษา).{0,8}(สิทธิ|ความเป็นส่วนตัว|เจ้าของ)/, w: 1 },
-    { re: /ละเมิด|จริยธรรม|ความเป็นส่วนตัว|สิทธิ(ของ|ส่วนบุคคล|เจ้าของ|ใน)/, w: 1 },
-    { re: /(ไม่ได้ขอ|ยังไม่ได้ขอ|ไม่ขอ|ไม่ได้รับ).{0,6}(อนุญาต|ยินยอม)/, w: 0.5 },
-    { re: /ยินยอม|อนุญาต/, w: 0.5 },
-  ];
-  // F = ข้อความต้องห้าม: เห็นว่าใช้ภาพที่ไม่ได้ขออนุญาตได้ไม่เป็นปัญหา (ตัดสิทธิ์คะแนนเต็ม)
-  const Q1_F = [
-    { re: /ไม่เห็นเป็นปัญหา|ไม่ใช่ปัญหา|ใช้ได้เลย|ไม่เป็นไรที่จะใช้|ไม่เห็นว่าผิด|ไม่ผิดอะไร/, w: 1, neg: 2 },
-  ];
-
-  function gradeQ1(choice, text) {
-    const n = normalizeText(text);
-    const T = scorePatterns(n, Q1_T), R = scorePatterns(n, Q1_R), F = scorePatterns(n, Q1_F);
-    const longEnough = n.length >= 15;
-    let score = 0;
-    if (choice === Q1_CORRECT) {
-      score = 1;
-      if (T.hit && R.hit && !F.hit && longEnough) score = 2;
-    }
-    return {
-      score, chosenCorrect: choice === Q1_CORRECT,
-      parts: [
-        { label: "เลือกชุดข้อมูลที่ใช้เฉพาะภาพซึ่งเจ้าของภาพยินยอมแล้ว (กรณีที่ 2)", ok: choice === Q1_CORRECT },
-        { label: "ยอมรับตรงไปตรงมาว่าความแม่นยำอาจต่ำกว่าหรือมีข้อมูลน้อยกว่า เมื่อเทียบกับกรณีที่ใช้ภาพที่ไม่ได้ขออนุญาต", ok: T.hit },
-        { label: "ให้เหตุผลว่าเลือกเพราะเคารพสิทธิ์และความยินยอมของเจ้าของภาพ", ok: R.hit },
-      ],
-      forbidden: F.hit,
-    };
-  }
-
-  // ----- ข้อ 2 -----
-  // P1 = สิ่งที่สังเกตเห็น: การ์ดถูกล็อกและถูกดึงออก
-  const Q2_P1 = [
-    { re: /ล็อก/, w: 1, neg: 1 },
-    { re: /ใช้(งาน)?ไม่ได้/, w: 1 },
-    { re: /(ดึง|เอา|ตัด|นำ|ถอด|ลบ).{0,8}ออก/, w: 1, neg: 1 },
-    { re: /(การ์ด|ภาพ|รูป).{0,10}(หายไป|ถูกลบ|หาย)/, w: 1 },
-    { re: /ถอนความยินยอม|ขอถอน/, w: 0.5 },
-    { re: /(ชุดข้อมูล|ชุดฝึก|ชุดข้อมูลฝึก).{0,6}(ลดลง|น้อยลง|เหลือ)|จำนวน(ภาพ|การ์ด).{0,6}(ลดลง|น้อยลง|เหลือ)/, w: 0.5 },
-  ];
-  // P2 = ระบบที่เคยฝึกไปแล้วต้องฝึกใหม่โดยไม่มีภาพนั้น ไม่ใช่แค่ลบจากคลัง
-  const Q2_P2 = [
-    { re: /ฝึก(ระบบ|โมเดล)?(ใหม่|ซ้ำ|อีกครั้ง|อีกรอบ|ตั้งแต่ต้น|รอบใหม่)/, w: 1, neg: 1 },
-    { re: /(สร้าง|ทำ)(โมเดล|ระบบ)(ใหม่|อีกครั้ง)/, w: 1, neg: 1 },
-    { re: /(ลบ|ทิ้ง|เลิกใช้|ไม่ใช้).{0,6}(โมเดล|ระบบ)(เดิม|เก่า|ที่เคยฝึก)/, w: 1 },
-    { re: /ร่องรอย|ยังจำ|ยังมีข้อมูล|ยังคง(มี|จำ|ใช้)|ยังติด|ยังเรียนรู้|ไม่ใช่แค่(ลบ|เอาออก|ดึง)/, w: 0.5 },
-    { re: /(ระบบ|โมเดล)(เดิม|เก่า|ที่เคยฝึก)/, w: 0.5 },
-    { re: /รอบใหม่|เริ่มฝึก/, w: 0.5 },
-  ];
-  // P3 = แนวทางขออนุญาตล่วงหน้าก่อนเก็บภาพในอนาคต
-  const Q2_P3 = [
-    { re: /(ขอ|ถาม)(อนุญาต|ความยินยอม|ยินยอม|เจ้าของ|ก่อน|ความเห็น|ความสมัครใจ)/, w: 1, neg: 1 },
-    { re: /แบบฟอร์ม/, w: 1 },
-    { re: /(ยินยอม|อนุญาต).{0,6}ก่อน/, w: 1, neg: 1 },
-    { re: /ก่อน(ถ่าย|เก็บ|นำ|ใช้|เอา).{0,20}(ขอ|ถาม|ยินยอม|อนุญาต|แจ้ง)/, w: 1, neg: 1 },
-    { re: /(ขอ|ถาม|แจ้ง).{0,15}ก่อน(ถ่าย|เก็บ|นำ|ใช้|เอา)/, w: 1, neg: 1 },
-    { re: /วัตถุประสงค์|บอก.{0,10}(เอาไป|นำไป|ใช้)|แจ้ง(ให้ทราบ|เจ้าของ|ล่วงหน้า)|ถอน(ได้|สิทธิ).{0,6}|ปฏิเสธ|ไม่ยินยอม/, w: 0.5 },
-  ];
-  // N = ข้อความต้องห้าม: เห็นว่าไม่ต้องทำอะไรเพิ่ม
-  const Q2_N = /ไม่(ต้อง|จำเป็น)(ต้อง)?(ทำ|แก้|ฝึก|ปรับ)(อะไร|เพิ่ม|ต่อ|ใหม่|ซ้ำ|อีก)?|ไม่มีอะไร(ต้อง|ที่ต้อง)ทำ|ไม่ต้องทำเพิ่ม/;
-
-  function gradeQ2(text) {
-    const n = normalizeText(text);
-    const P1 = scorePatterns(n, Q2_P1), P2 = scorePatterns(n, Q2_P2), P3 = scorePatterns(n, Q2_P3);
-    const saysNothing = Q2_N.test(n);
-    let count = [P1.hit, P2.hit, P3.hit].filter(Boolean).length;
-    if (n.length < 20) count = 0;
-    if (saysNothing && !P2.hit) count = 0;
-    const score = count === 3 ? 2 : count >= 1 ? 1 : 0;
-    return {
-      score, saysNothing: saysNothing && !P2.hit,
-      parts: [
-        { label: "สิ่งที่สังเกตเห็นหลังกดปุ่ม: การ์ดถูกล็อกและถูกดึงออกจากชุดข้อมูลฝึก", ok: count > 0 && P1.hit },
-        { label: "สิ่งที่ต้องทำกับระบบที่เคยฝึกไปแล้ว: ฝึกใหม่โดยไม่มีภาพนั้น ไม่ใช่แค่ลบออกจากคลัง", ok: count > 0 && P2.hit },
-        { label: "แนวทางขออนุญาตล่วงหน้าที่ชัดเจนก่อนเก็บภาพในอนาคต", ok: count > 0 && P3.hit },
-      ],
-    };
-  }
-  // GRADING-END
+  // ข้อ 1 และข้อ 2 ทั้งสองข้อเป็นอัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทน
+  // (เดิมตรวจด้วย pattern matching ในไฟล์นี้ ดูคำอธิบายขั้นตอนที่ handleSubmit ด้านล่าง)
 
   // ===================================================================
   // ตรวจความถูกต้องของช่องบันทึกผลข้อ 1
@@ -927,18 +803,24 @@
   }
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
-      await fetch(APPS_SCRIPT_URL, {
+      const res = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
+      return await res.json();
     } catch (err) {
       console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+      return null;
     }
   }
 
+  // สถานการณ์นี้มีข้ออัตนัย 2 ข้อ (q1, q2) แต่ Code.gs ตรวจได้ทีละข้อต่อการเรียก 1 ครั้ง
+  // จึงเรียก 2 รอบต่อเนื่องกัน: รอบแรกตรวจข้อ 1 (ส่งคะแนนรวมอื่นๆ เป็น 0 ไปก่อน ยังไม่ใช่ค่าจริง)
+  // รอบสองตรวจข้อ 2 โดยส่ง non_ai_score = คะแนนข้อ 1 ที่ได้จากรอบแรก ทำให้ Code.gs คำนวณ
+  // คะแนนรวมที่ถูกต้องและบันทึกแถวสุดท้ายซึ่งมีรายละเอียดครบทั้งสองข้อในคราวเดียว
   async function handleSubmit() {
     const statusEl = document.getElementById("quizStatus");
     const submitBtn = document.getElementById("submitBtn");
@@ -953,37 +835,63 @@
     if (sim.withdrawLog.length === 0) { statusEl.textContent = "กรุณากดปุ่มจำลอง: เพื่อนขอถอนความยินยอม ในห้องทดลองก่อนตอบข้อ 2"; return; }
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
-    statusEl.textContent = "";
     submitBtn.disabled = true;
     statusEl.style.color = "#5c655f";
-    statusEl.textContent = "กำลังตรวจคะแนน...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 1... (อาจใช้เวลาสักครู่)";
 
-    const q1Result = gradeQ1(q1Selected, q1_text);
-    const q2Result = gradeQ2(q2_text);
-    const total_score = q1Result.score + q2Result.score;
+    const behaviorData = collectBehavior();
+    const simLog = {
+      rounds: sim.history.map((h) => ({ round: h.round, n: h.n, sunOk: h.sunOk, sunBad: h.sunBad, inOk: h.inOk, inBad: h.inBad, acc: h.acc, ids: h.ids, t: h.t })),
+      withdrawals: sim.withdrawLog,
+      drag_log: sim.dragLog,
+    };
 
-    await saveToSheet({
+    // ส่งทั้งตัวเลือกและคำอธิบายของข้อ 1 ไปให้ AI พิจารณาร่วมกัน (เกณฑ์เดิมผูกสองส่วนนี้เข้าด้วยกัน)
+    const q1ChoiceLabel = q1Selected === Q1_CORRECT
+      ? "นักเรียนเลือก: กรณีที่ 2 (ใช้เฉพาะภาพที่เจ้าของภาพยินยอมแล้ว)"
+      : "นักเรียนเลือก: กรณีที่ 1 (ใช้ภาพทั้งหมดรวมที่ไม่ได้ขออนุญาตด้วย)";
+    const q1EssayInput = q1ChoiceLabel + "\nคำอธิบายเหตุผล: " + q1_text;
+
+    const result1 = await saveToSheet({
       studentKey: profile.studentKey,
-      name: profile.name,
-      grade: profile.grade,
-      school: profile.school,
-      scenario_id: SCENARIO_ID,
-      scenario_name: SCENARIO_NAME,
-      score: total_score,
-      max_score: MAX_SCORE,
+      name: profile.name, grade: profile.grade, school: profile.school,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME,
+      max_score: MAX_SCORE, non_ai_score: 0,
+      essay_question_key: "q1",
+      raw_answers: { essayText: q1EssayInput },
+      details: { behavior: behaviorData, sim_log: simLog },
+    });
+    if (!result1 || result1.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 1 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+    const q1Result = result1.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
+
+    const result2 = await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name, grade: profile.grade, school: profile.school,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME,
+      max_score: MAX_SCORE, non_ai_score: q1Result.score,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        behavior: collectBehavior(),
-        q1: { score: q1Result.score, selected: q1Selected, record: r.rec, text: q1_text },
-        q2: { score: q2Result.score, text: q2_text },
-        sim_log: {
-          rounds: sim.history.map((h) => ({ round: h.round, n: h.n, sunOk: h.sunOk, sunBad: h.sunBad, inOk: h.inOk, inBad: h.inBad, acc: h.acc, ids: h.ids, t: h.t })),
-          withdrawals: sim.withdrawLog,
-          drag_log: sim.dragLog,
-        },
+        behavior: behaviorData,
+        q1: { score: q1Result.score, selected: q1Selected, record: r.rec, text: q1_text, reasoning: q1Result.reasoning },
+        sim_log: simLog,
       },
     });
+    if (!result2 || result2.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+    const q2Result = result2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = result2.total_score != null ? result2.total_score : q1Result.score + q2Result.score;
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: collectBehavior() });
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   function checksHTML(parts) {
@@ -1037,29 +945,14 @@
     document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
 
-    const q1Reason = !data.q1.chosenCorrect
-      ? "เลือกกรณีที่ 1 ซึ่งใช้ภาพที่ไม่ได้ขออนุญาตร่วมด้วย ยังไม่ได้คำนึงถึงสิทธิ์ของเจ้าของภาพ"
-      : data.q1.score === 2
-        ? "เลือกถูกต้องและอธิบายการแลกเปลี่ยนระหว่างความแม่นยำกับการเคารพสิทธิ์เจ้าของภาพได้ตรงไปตรงมา"
-        : "เลือกกรณีที่ 2 ถูกต้อง แต่คำอธิบายยังไม่ครบ ทั้งการเปรียบเทียบผลความแม่นยำกับกรณีที่ใช้ภาพที่ไม่ได้ขออนุญาต และเหตุผลเรื่องสิทธิ์ของเจ้าของภาพ";
-    const q2Reason = data.q2.saysNothing
-      ? "คำตอบเห็นว่าไม่ต้องทำอะไรเพิ่ม แต่ระบบที่เคยฝึกด้วยภาพนั้นแล้วยังต้องฝึกใหม่โดยไม่มีภาพนั้น"
-      : data.q2.score === 2
-        ? "อธิบายครบทั้งสิ่งที่สังเกตเห็น การฝึกระบบใหม่ และแนวทางขออนุญาตล่วงหน้า"
-        : data.q2.score === 1
-          ? "อธิบายได้บางส่วนจาก 3 ส่วนที่เกณฑ์กำหนด"
-          : "ยังอธิบายไม่ตรงตามเกณฑ์ทั้ง 3 ส่วน";
-
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 1 — การเลือกชุดข้อมูลฝึกและเหตุผล</span><span>${data.q1.score} / 2</span></div>
-        <div class="result__item-reason">${q1Reason}</div>
-        ${checksHTML(data.q1.parts)}
+        <div class="result__item-reason">${data.q1.reasoning || ""}</div>
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 2 — เมื่อเพื่อนขอถอนความยินยอม</span><span>${data.q2.score} / 2</span></div>
-        <div class="result__item-reason">${q2Reason}</div>
-        ${checksHTML(data.q2.parts)}
+        <div class="result__item-reason">${data.q2.reasoning || ""}</div>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

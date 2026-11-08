@@ -281,35 +281,20 @@
     return { score, correctCount };
   }
 
-  // ---------- ข้อ 2: keyword checklist (2 เทคนิค) ----------
-  const Q2_PART_A_KEYWORDS = ["แกนตั้ง", "แกน y", "แกนวาย", "ไม่เริ่มจาก 0", "ไม่เริ่มที่ 0", "80,000", "80000", "ตัดแกน", "เริ่มที่ 80"];
-  const Q2_PART_B_KEYWORDS = ["เลือกช่วงเวลา", "เลือกแสดง", "ไม่แสดงเดือน", "ตัดเดือน", "เฉพาะช่วง", "มีนาคมถึงมิถุนายน", "มี.ค.-มิ.ย.", "4 เดือน", "cherry"];
-
-  function containsAny(text, keywords) {
-    const lower = text.toLowerCase();
-    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
-  }
-
-  function gradeQ2(text) {
-    const hasA = containsAny(text, Q2_PART_A_KEYWORDS);
-    const hasB = containsAny(text, Q2_PART_B_KEYWORDS);
-    let score = 0, reasoning;
-    if (hasA && hasB) { score = 2; reasoning = "ระบุทั้งเทคนิคการตัดแกนตั้งและการเลือกช่วงเวลานำเสนอได้ครบถ้วน"; }
-    else if (hasA || hasB) { score = 1; reasoning = hasA ? "ระบุเทคนิคการตัดแกนตั้งได้ แต่ยังไม่ได้พูดถึงการเลือกช่วงเวลานำเสนอ" : "ระบุเทคนิคการเลือกช่วงเวลานำเสนอได้ แต่ยังไม่ได้พูดถึงการตัดแกนตั้ง"; }
-    else { score = 0; reasoning = "ยังไม่ได้ระบุเทคนิคการนำเสนอข้อมูลที่ทำให้ตัวเลขดูเกินจริง (ตัดแกนตั้ง / เลือกช่วงเวลา)"; }
-    return { score, reasoning };
-  }
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
-      await fetch(APPS_SCRIPT_URL, {
+      const res = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
+      return await res.json();
     } catch (err) {
       console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err);
+      return null;
     }
   }
 
@@ -322,32 +307,42 @@
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังตรวจคะแนน...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
-    const q2Result = gradeQ2(q2_text);
-    const total_score = q1Result.score + q2Result.score;
+    const nonAiScore = q1Result.score;
+    const behaviorData = {
+      time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
+      evidence_opened: Array.from(evidenceOpened),
+    };
 
-    await saveToSheet({
+    const serverResult = await saveToSheet({
       studentKey: profile.studentKey,
       name: profile.name,
       grade: profile.grade,
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: total_score,
       max_score: MAX_SCORE,
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        q1: q1Result, q2: { score: q2Result.score, text: q2_text },
-        behavior: {
-          time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
-          evidence_opened: Array.from(evidenceOpened),
-        },
+        q1: q1Result,
+        behavior: behaviorData,
       },
     });
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
-          evidence_opened: Array.from(evidenceOpened), } });
+    if (!serverResult || serverResult.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
+
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------

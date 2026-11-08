@@ -590,12 +590,9 @@
   }
 
   // GRADING-START
-  // ===================================================================
-  // เครื่องตรวจคำสำคัญและรูปแบบข้อความ (Keyword & Pattern Matching)
-  // น้ำหนัก w: คำหลัก = 1 (พอเป็นหลักฐาน), คำสนับสนุน = 0.5 (ต้องมี 2 คำ)
-  // neg: 0 = ไม่ตรวจการปฏิเสธ, 1 = ตัดทิ้งถ้ามี “ไม่ต้อง/ไม่จำเป็น/ไม่ควร” นำหน้า
-  //      2 = ตัดทิ้งถ้ามี “ไม่/ไม่ได้/มิ” นำหน้า, 3 = ตัดทิ้งถ้ามี “ไม่ได้วางแผน/ไม่มีการ/ไม่ได้” นำหน้าใกล้ๆ
-  // ===================================================================
+  // ข้อ 1, 2, 3 เป็นอัตนัยทั้งหมด — ตรวจด้วย Gemini ที่ Code.gs แทน pattern matching เดิม
+  // ยังคงฟังก์ชันตรวจสอบข้อเท็จจริงจากประวัติการทดลองของนักเรียนเองไว้ (ใช้แนบเป็นบริบท
+  // ให้ Gemini ประกอบการตรวจข้อ 2 เพื่อยืนยันว่าหลักฐานที่นักเรียนอ้างมาจากประวัติจริง)
   function normalizeText(t) {
     const digits = "๐๑๒๓๔๕๖๗๘๙";
     return String(t)
@@ -604,72 +601,6 @@
       .toLowerCase()
       .replace(/เช็ค/g, "เช็ก");
   }
-  function isNegated(norm, idx, level) {
-    if (!level) return false;
-    if (level === 3) return /(ไม่ได้วางแผน|ไม่ได้มีการ|ไม่มีการวางแผน|ไม่มีการ|ไม่ได้|ไม่มี|ไม่ต้อง|ไม่จำเป็นต้อง)(.{0,3})?$/.test(norm.slice(Math.max(0, idx - 14), idx));
-    const before = norm.slice(Math.max(0, idx - 8), idx);
-    return level === 2
-      ? /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร|ไม่ได้|ไม่|มิ)$/.test(before)
-      : /(ไม่ต้อง|ไม่จำเป็นต้อง|ไม่จำเป็น|ไม่ควร)$/.test(before);
-  }
-  function scorePatterns(norm, patterns) {
-    let sum = 0; const hits = [];
-    patterns.forEach((p) => {
-      const re = new RegExp(p.re.source, "g"); let m;
-      while ((m = re.exec(norm))) {
-        if (isNegated(norm, m.index, p.neg || 0)) continue;
-        sum += p.w; hits.push(m[0]); break;
-      }
-    });
-    return { hit: sum >= 1, hits };
-  }
-
-  // ----- ข้อ 1: แผนการทดสอบ -----
-  // A = เปลี่ยนทีละตัวแปร  B = คงค่าอื่นให้เท่ากัน  C = มีคู่เปรียบเทียบอย่างน้อย 2 คู่ (ตัวแปรต่างกัน)  D = ทดสอบซ้ำ/สลับค่ากลับเพื่อยืนยัน
-  const Q1_A = [
-    { re: /ทีละ|เปลี่ยน(เพียง|แค่|เฉพาะ)|ตัวแปรเดียว|ช่องเดียว|ค่าเดียว|เพียงตัวเดียว|แค่ตัวเดียว|ต่างกัน(เพียง|แค่|เฉพาะ)|ยกเว้น|อย่างเดียว|ค่อย(ลอง)?เปลี่ยน|จากนั้น(ค่อย|จึง)?(ลอง)?เปลี่ยน/, w: 1, neg: 1 },
-  ];
-  const Q1_B = [
-    { re: /(คง|ให้|ใช้)ค่า.{0,10}(เท่า|เหมือน)|เหมือน(กัน)?ทุกช่อง|เท่ากันทุก|(ค่าอื่น|ช่องอื่น|ตัวแปรอื่น).{0,8}(เท่า|เหมือน|คงเดิม|เดิม|คงที่)|ควบคุมตัวแปร|ตัวแปรควบคุม|คงที่|คงค่า|ทุกอย่างเท่า|ทุกอย่างเหมือน|ทีละ(ตัว|ช่อง|ค่า)/, w: 1 },
-  ];
-  const Q1_D = [
-    { re: /ทดสอบซ้ำ|ทำซ้ำ|สลับ(กลับ|ค่า)|กลับไปใช้|ยืนยัน|ได้(คะแนน)?เท่าเดิม|ผลเท่าเดิม|อีกครั้ง|อีกรอบ|ตรวจซ้ำ|เช็กซ้ำ|ลองซ้ำ|ซ้ำอีก/, w: 1, neg: 3 },
-  ];
-  const Q1_N = /เปลี่ยนหลาย(ตัวแปร|ช่อง)|พร้อมกัน.{0,10}(หลาย|ทุก)|หลายตัวแปรพร้อม|ทุกช่อง.{0,12}(ให้ดีขึ้น|ให้เก่ง)|กรอก.{0,6}ให้เก่งที่สุด/;
-  const VAR_RES = [/เกรด/, /กิจกรรม/, /โรงเรียน/, /จังหวัด/, /เรียงความ|ความยาว|จำนวนคำ/, /เข้าค่าย|ค่ายเดิม|ประสบการณ์/];
-  function gradeQ1(text) {
-    const n = normalizeText(text);
-    const A = scorePatterns(n, Q1_A).hit, B = scorePatterns(n, Q1_B).hit, D = scorePatterns(n, Q1_D).hit;
-    const vars = VAR_RES.filter((r) => r.test(n)).length;
-    const compareWord = /คู่|เปรียบเทียบ|เทียบ/.test(n);
-    const refs = (n.match(/(ชุด|ใบ|รอบ|ครั้ง)(ที่)?\d+/g) || []).length;
-    const C = vars >= 2 && (compareWord || refs >= 3);
-    const bad = Q1_N.test(n) && !A;
-    let score = 0;
-    if (n.length >= 20 && !bad) {
-      if (A && B && C && D) score = 2;
-      else if (A || B) score = 1;
-    }
-    return { score, A, B, C, D, vars, bad };
-  }
-
-  // ----- ข้อ 2: กฎที่ซ่อนอยู่ + หลักฐานจากคู่ใบสมัครของตนเอง -----
-  const Q2_R1 = [
-    { re: /(โรงเรียน|รร).{0,14}(สาธิต|เอกชนขนาดใหญ่|ในเมือง|ใหญ่).{0,25}(ได้|เพิ่ม|บวก|สูงกว่า|มากกว่า|โบนัส|เปรียบ)/, w: 1 },
-    { re: /(โบนัส|บวก|เพิ่ม).{0,12}(ประเภทโรงเรียน|โรงเรียนสาธิต|โรงเรียนเอกชน)/, w: 1 },
-    { re: /ประเภทโรงเรียน.{0,15}(มีผล|ได้คะแนน|เพิ่ม|บวก|ต่าง|12|สูงกว่า)|12คะแนน/, w: 1 },
-    { re: /สาธิต/, w: 0.5 }, { re: /เอกชนขนาดใหญ่/, w: 0.5 }, { re: /โบนัส/, w: 0.5 },
-  ];
-  const Q2_R2 = [
-    { re: /(เรียงความ|ความยาว|จำนวนคำ).{0,20}(ยาว|มาก|เยอะ|เพิ่ม|ขึ้น|สูง|ได้คะแนน|บวก|ทุก50)/, w: 1 },
-    { re: /ทุก50คำ|8คะแนน/, w: 1 },
-    { re: /(ยาว|เขียนยาว).{0,15}(ได้คะแนน|คะแนน(สูง|มากกว่|ดีกว่))/, w: 1 },
-    { re: /ไม่(ได้)?(ประเมิน|ดู|สนใจ|สนเนื้อหา)(คุณภาพ|เนื้อหา)|เนื้อหา(ว่างเปล่า|ไม่มี)/, w: 1 },
-  ];
-  const Q2_BAD = /จังหวัด.{0,20}(ทำให้|เป็นสาเหตุ|เป็นตัว|มีผล|ส่งผล|คะแนน(ต่าง|สูง|มากกว่))/;
-  const Q2_BAD_OK = /จังหวัด.{0,8}(ไม่|ไม่ได้)(มีผล|ส่งผล|เกี่ยว|ต่าง|เปลี่ยน|ทำให้)/;
-  const Q2_CONTROLLED = /(ทุกอย่าง|ทุกช่อง|ค่าอื่น|ช่องอื่น).{0,10}(เท่า|เหมือน)|ต่างกัน(เพียง|แค่|เฉพาะ)|เปลี่ยน(แค่|เพียง|เฉพาะ)/;
-  const Q2_DELTA = /\d+คะแนน|ทุก50คำ|เป็นขั้น|คงที่|เพิ่มขึ้น.{0,6}คะแนน/;
   function citedPairs(n, history) {
     const re = /(ใบ|ชุด|รอบ|แถว|ครั้ง)(ที่)?(\d+).{0,12}?(กับ|และ|เทียบ|vs|ต่อ).{0,8}?(ใบ|ชุด|รอบ|แถว|ครั้ง)?(ที่)?(\d+)/g;
     const set = new Set(); let m;
@@ -686,57 +617,19 @@
     const words = pairs.some((p) => p.key === "words" && Math.floor(history[p.a - 1].app.words / 50) !== Math.floor(history[p.b - 1].app.words / 50));
     return { school, words, both: school && words };
   }
-  function gradeQ2(text, history) {
-    const n = normalizeText(text);
-    const R1 = scorePatterns(n, Q2_R1).hit, R2 = scorePatterns(n, Q2_R2).hit;
-    const pairsCited = citedPairs(n, history);
-    const textEvidence = Q2_CONTROLLED.test(n) && Q2_DELTA.test(n);
-    const evidence = pairsCited >= 2 || textEvidence;
-    const own = hasOwnEvidencePairs(history);
-    const provinceBad = Q2_BAD.test(n) && !Q2_BAD_OK.test(n);
-    const rules = (R1 ? 1 : 0) + (R2 ? 1 : 0);
-    let score = 0;
-    if (n.length >= 15) {
-      if (rules === 2 && evidence && own.both && !provinceBad) score = 2;
-      else if (rules >= 1) score = 1;
-    }
-    return { score, R1, R2, evidence, pairsCited, own, provinceBad };
-  }
-
-  // ----- ข้อ 3: ตัดสินใจเมื่อพบอคติ -----
-  const Q3_NOTIFY = [{ re: /แจ้ง|บอก(ครู|ผู้จัด|ผู้ใหญ่)|รายงาน|ครูที่ปรึกษา|ผู้จัดค่าย|ผู้มีอำนาจ|ผู้ใหญ่|ตรวจสอบ|ส่งหลักฐาน/, w: 1, neg: 1 }];
-  const Q3_PAUSE = [{ re: /พัก(การ)?ใช้|หยุดใช้|ระงับ|ชะลอ|หยุดการใช้|เลิกใช้|ไม่ใช้(คะแนน|ผล|ระบบ)|ยังไม่ควรใช้|ปิดระบบ|พักระบบ/, w: 1, neg: 1 }];
-  const Q3_RESP = [
-    { re: /(ผู้จัด|เจ้าของระบบ|ผู้พัฒนา|ผู้สร้างระบบ|ผู้ดูแลระบบ).{0,12}(รับผิดชอบ|แก้ไข|ต้องแก้|ต้องปรับ)|รับผิดชอบ.{0,10}(ผู้จัด|ผู้พัฒนา|เจ้าของระบบ)/, w: 1 },
-    { re: /รับผิดชอบ/, w: 0.5, neg: 2 },
-    { re: /ผู้จัด|เจ้าของระบบ|ผู้พัฒนา|ผู้สร้างระบบ|ผู้ดูแลระบบ/, w: 0.5 },
-  ];
-  function gradeQ3(choice, text) {
-    const n = normalizeText(text);
-    const reasons = [
-      { id: "notify", label: "ต้องแจ้งผู้มีอำนาจ (ครูที่ปรึกษา/ผู้จัดค่าย) ให้ตรวจสอบ", ok: scorePatterns(n, Q3_NOTIFY).hit },
-      { id: "pause", label: "ควรพักใช้ระบบชั่วคราวเพื่อไม่ให้ผู้สมัครจริงได้รับผลกระทบ", ok: scorePatterns(n, Q3_PAUSE).hit },
-      { id: "resp", label: "ระบุว่าผู้จัดค่ายหรือผู้พัฒนาระบบต้องเป็นผู้รับผิดชอบแก้ไข", ok: scorePatterns(n, Q3_RESP).hit },
-    ];
-    const count = reasons.filter((r) => r.ok).length;
-    let score = 0;
-    if (choice === 1) {
-      if (n.length >= 15 && count === 3) score = 2;
-      else if (n.length >= 15 && count >= 1) score = 1;
-    } else if (choice === 2) {
-      if (n.length >= 15 && /(อยากให้|ให้คน|ให้ทุกคน|ช่วยกัน|ป้องกัน|เสียโอกาส|รู้ปัญหา|เร็ว)/.test(n)) score = 1;
-    }
-    return { score, reasons, count };
-  }
   // GRADING-END
 
   async function saveToSheet(payload) {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
-      await fetch(APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
-    } catch (err) { console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err); }
+      const res = await fetch(APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+      return await res.json();
+    } catch (err) { console.error("บันทึกผลไป Google Sheet ไม่สำเร็จ:", err); return null; }
   }
 
+  // สถานการณ์นี้มีข้ออัตนัย 3 ข้อ จึงเรียก Code.gs 3 รอบต่อเนื่องกัน แต่ละรอบส่งคะแนนที่ได้
+  // จากรอบก่อนหน้าไปเป็นส่วนหนึ่งของ non_ai_score ทำให้รอบสุดท้ายคำนวณคะแนนรวมถูกต้อง
+  // และบันทึกแถวที่มีรายละเอียดครบทุกข้อ
   async function handleSubmit() {
     const statusEl = document.getElementById("quizStatus");
     const submitBtn = document.getElementById("submitBtn");
@@ -751,30 +644,65 @@
 
     submitBtn.disabled = true;
     statusEl.style.color = "#5c655f";
-    statusEl.textContent = "กำลังตรวจคะแนน...";
 
-    const q1 = gradeQ1(lab.planText), q2 = gradeQ2(q2_text, lab.history), q3 = gradeQ3(q3Selected, q3_text);
-    const total_score = q1.score + q2.score + q3.score;
+    const behaviorData = collectBehavior();
     const pairs = singleVarPairs(lab.history);
+    const simLog = {
+      submissions_used: lab.history.length, quota: QUOTA,
+      submissions: lab.history.map((h) => ({ n: h.n, app: h.app, score: h.score, pass: h.pass, t: h.t })),
+      single_variable_pairs: pairs.length, single_variable_pair_list: pairs,
+      compare_log: lab.compareLog, hypothesis_log: lab.hypLog, reset_log: lab.resetLog,
+      first_submit_ms_after_plan: lab.history.length ? lab.history[0].ms_from_plan : null,
+    };
 
-    await saveToSheet({
+    const basePayload = {
       studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
-      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: total_score, max_score: MAX_SCORE,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, max_score: MAX_SCORE,
+    };
+
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 1... (อาจใช้เวลาสักครู่)";
+    const r1 = await saveToSheet({
+      ...basePayload, non_ai_score: 0, essay_question_key: "q1",
+      raw_answers: { essayText: lab.planText },
+      details: { behavior: behaviorData, sim_log: simLog },
+    });
+    if (!r1 || r1.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 1 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
+    const q1 = r1.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
+    const n2 = normalizeText(q2_text);
+    const pairsCited = citedPairs(n2, lab.history);
+    const own = hasOwnEvidencePairs(lab.history);
+    const q2EssayInput = "คำตอบของนักเรียน: " + q2_text +
+      "\n\n[ข้อมูลที่ระบบตรวจสอบแล้วจากประวัติการทดลองจริงของนักเรียน] จำนวนคู่ใบสมัครที่นักเรียนอ้างอิงและยืนยันได้ว่ามีอยู่จริงในประวัติ: " + pairsCited + " คู่ | มีคู่ในประวัติที่ต่างกันเฉพาะประเภทโรงเรียน: " + (own.school ? "มี" : "ไม่มี") + " | มีคู่ในประวัติที่ต่างกันเฉพาะความยาวเรียงความ: " + (own.words ? "มี" : "ไม่มี");
+    const r2 = await saveToSheet({
+      ...basePayload, non_ai_score: q1.score, essay_question_key: "q2",
+      raw_answers: { essayText: q2EssayInput },
+      details: { behavior: behaviorData, q1: { score: q1.score, text: lab.planText, reasoning: q1.reasoning }, sim_log: simLog },
+    });
+    if (!r2 || r2.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
+    const q2 = r2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
+    const q3ChoiceLabel = q3Selected === 1
+      ? "นักเรียนเลือก: แจ้งผู้มีอำนาจ/ผู้จัดค่ายให้ตรวจสอบ"
+      : "นักเรียนเลือก: ทางเลือกอื่นที่ไม่ใช่การแจ้งผู้มีอำนาจโดยตรง";
+    const q3EssayInput = q3ChoiceLabel + "\nคำอธิบายเหตุผล: " + q3_text;
+    const r3 = await saveToSheet({
+      ...basePayload, non_ai_score: q1.score + q2.score, essay_question_key: "q3",
+      raw_answers: { essayText: q3EssayInput },
       details: {
-        behavior: collectBehavior(),
-        q1: { score: q1.score, text: lab.planText },
-        q2: { score: q2.score, text: q2_text, cited_pairs: q2.pairsCited },
-        q3: { score: q3.score, selected: q3Selected, text: q3_text },
-        sim_log: {
-          submissions_used: lab.history.length, quota: QUOTA,
-          submissions: lab.history.map((h) => ({ n: h.n, app: h.app, score: h.score, pass: h.pass, t: h.t })),
-          single_variable_pairs: pairs.length, single_variable_pair_list: pairs,
-          compare_log: lab.compareLog, hypothesis_log: lab.hypLog, reset_log: lab.resetLog,
-          first_submit_ms_after_plan: lab.history.length ? lab.history[0].ms_from_plan : null,
-        },
+        behavior: behaviorData,
+        q1: { score: q1.score, text: lab.planText, reasoning: q1.reasoning },
+        q2: { score: q2.score, text: q2_text, cited_pairs: pairsCited, reasoning: q2.reasoning },
+        sim_log: simLog,
       },
     });
-    showResult({ q1, q2, q3, total_score, behavior: collectBehavior() });
+    if (!r3 || r3.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 3 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
+    const q3 = r3.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = r3.total_score != null ? r3.total_score : q1.score + q2.score + q3.score;
+
+    showResult({ q1, q2, q3, total_score, behavior: behaviorData });
   }
 
   function checksHTML(parts) {
@@ -828,49 +756,21 @@
     document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((d.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(d.behavior || {});
 
-    const q1 = d.q1;
-    const q1Reason = q1.bad ? "แผนเปลี่ยนหลายตัวแปรพร้อมกัน จึงสรุปสาเหตุของคะแนนไม่ได้"
-      : q1.score === 2 ? "แผนเปลี่ยนทีละตัวแปร คงค่าอื่นเท่ากัน มีคู่เปรียบเทียบหลายคู่ และมีการทดสอบซ้ำเพื่อยืนยัน"
-        : q1.score === 1 ? "แผนมีแนวคิดเปลี่ยนทีละตัวแปร แต่ยังไม่ครบทั้งการคงค่าอื่น คู่เปรียบเทียบที่ชัดเจน และการทดสอบซ้ำเพื่อยืนยัน"
-          : "ยังไม่มีแผนที่ตรวจสอบสาเหตุได้ (ควรเปลี่ยนทีละตัวแปรและคงค่าอื่นให้เท่ากัน)";
-    const q1Checks = [
-      { ok: q1.A, label: "เปลี่ยนทีละตัวแปร" },
-      { ok: q1.B, label: "คงค่าช่องอื่นให้เท่ากันทุกประการ" },
-      { ok: q1.C, label: "มีคู่เปรียบเทียบอย่างน้อย 2 คู่ที่ทดสอบตัวแปรต่างกัน" },
-      { ok: q1.D, label: "มีการทดสอบซ้ำหรือสลับค่ากลับเพื่อยืนยัน" },
-    ];
-
-    const q2 = d.q2;
-    const q2Reason = q2.score === 2 ? "ระบุได้ครบทั้งสองกฎ พร้อมหลักฐานคู่ใบสมัครจากประวัติการทดสอบของตนเอง"
-      : q2.provinceBad && !q2.R1 && !q2.R2 ? "คำตอบอ้างว่าจังหวัดเป็นสาเหตุ ซึ่งเป็นตัวแปรหลอกที่ไม่มีผลต่อคะแนน"
-        : q2.score === 1 ? "ระบุกฎได้บางส่วน หรือระบุกฎได้ครบแต่ยังขาดหลักฐานคู่ใบสมัครจากประวัติของตนเอง"
-          : "ยังไม่ได้ระบุกฎที่ซ่อนอยู่ในระบบ";
-    const q2Checks = [
-      { ok: q2.R1, label: "พบกฎ: โบนัสให้โรงเรียนสาธิต/เอกชนขนาดใหญ่ในเมือง" },
-      { ok: q2.R2, label: "พบกฎ: ความยาวเรียงความให้คะแนนโดยไม่ดูคุณภาพเนื้อหา" },
-      { ok: q2.evidence, label: `อ้างอิงคู่ใบสมัครเป็นหลักฐาน (อ้างหมายเลขครั้งที่ที่ใช้ได้ ${q2.pairsCited} คู่)` },
-      { ok: q2.own.both, label: "ประวัติการทดสอบของตนเองมีคู่ที่ต่างกันเพียงตัวแปรเดียวทั้งประเภทโรงเรียนและความยาวเรียงความ" },
-      { ok: !q2.provinceBad, label: "ไม่อ้างว่าจังหวัดเป็นสาเหตุ (จังหวัดเป็นตัวแปรที่ไม่มีผล)" },
-    ];
-
-    const q3 = d.q3;
-    const q3Reason = q3.score === 2 ? "เลือกแจ้งผู้เกี่ยวข้อง พร้อมอธิบายเรื่องพักใช้ระบบและผู้รับผิดชอบครบถ้วน"
-      : q3.score === 1 ? "เลือกแนวทางที่พอมีเหตุผลรับได้ แต่เหตุผลยังไม่ครบ (แจ้งผู้มีอำนาจ / พักใช้ระบบ / ผู้รับผิดชอบ)"
-        : "ยังไม่ได้คะแนน: แนวทางที่เลือกหรือเหตุผลยังไม่ตรงตามหลักความรับผิดชอบ";
+    const q1 = d.q1, q2 = d.q2, q3 = d.q3;
 
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 1 — แผนการทดสอบ</span><span>${q1.score} / 2</span></div>
-        <div class="result__item-reason">${q1Reason}</div>${checksHTML(q1Checks)}
+        <div class="result__item-reason">${q1.reasoning || ""}</div>
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 2 — กฎที่ซ่อนอยู่ในระบบ</span><span>${q2.score} / 2</span></div>
-        <div class="result__item-reason">${q2Reason}</div>${checksHTML(q2Checks)}
+        <div class="result__item-reason">${q2.reasoning || ""}</div>
         <div class="reveal">เฉลยกฎของระบบ: (1) โรงเรียนสาธิต/เอกชนขนาดใหญ่ในเมืองได้โบนัส +12 คะแนนทันที (2) เรียงความทุก 50 คำได้ +8 คะแนน สูงสุด 24 คะแนนเมื่อยาว 150 คำขึ้นไป โดยไม่ประเมินคุณภาพเนื้อหา (3) จังหวัดไม่มีผลต่อคะแนน</div>
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 3 — เมื่อยืนยันแล้วว่าระบบมีอคติ</span><span>${q3.score} / 2</span></div>
-        <div class="result__item-reason">${q3Reason}</div>${checksHTML(q3.reasons)}
+        <div class="result__item-reason">${q3.reasoning || ""}</div>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

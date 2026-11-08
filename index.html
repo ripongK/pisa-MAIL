@@ -132,7 +132,7 @@
       <h2 id="welcomeText"></h2>
       <div class="summary">
         <div class="summary__box">
-          <div class="summary__num" id="doneCount">0 / 22</div>
+          <div class="summary__num" id="doneCount">0</div>
           <div class="summary__label">สถานการณ์ที่ทำแล้ว</div>
         </div>
         <div class="summary__box">
@@ -244,7 +244,7 @@
       listEl.appendChild(btn);
     });
 
-    document.getElementById("doneCount").textContent = `${doneCount} / 22`;
+    document.getElementById("doneCount").textContent = `${doneCount} / ${SCENARIOS.length}`;
     document.getElementById("totalScore").textContent = totalScore;
     document.getElementById("totalPercent").textContent = totalMaxScore ? `${Math.round((totalScore / totalMaxScore) * 100)}%` : "0%";
   }
