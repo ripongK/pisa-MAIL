@@ -695,7 +695,7 @@
       details: { behavior: behaviorData, sim_log: simLog },
     });
     if (!r1 || r1.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 1 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
-    const q1 = r1.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const q1 = r1.essay || { score: 0, reasoning: "รอตรวจ" };
 
     statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
     const n2 = normalizeText(q2_text);
@@ -709,7 +709,7 @@
       details: { behavior: behaviorData, q1: { score: q1.score, text: lab.planText, reasoning: q1.reasoning }, sim_log: simLog },
     });
     if (!r2 || r2.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
-    const q2 = r2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const q2 = r2.essay || { score: 0, reasoning: "รอตรวจ" };
 
     statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
     const q3ChoiceLabel = q3Selected === 1
@@ -727,7 +727,7 @@
       },
     });
     if (!r3 || r3.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 3 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
-    const q3 = r3.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const q3 = r3.essay || { score: 0, reasoning: "รอตรวจ"  };
     const total_score = r3.total_score != null ? r3.total_score : q1.score + q2.score + q3.score;
 
     showResult({ q1, q2, q3, total_score, behavior: behaviorData });
