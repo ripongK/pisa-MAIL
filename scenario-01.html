@@ -564,7 +564,7 @@
       submitBtn.disabled = false;
       return;
     }
-    const q2Result = r2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const q2Result = r2.essay || { score: 0, reasoning: "รอตรวจ" };
 
     statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
     const r3 = await saveToSheet({
@@ -581,7 +581,7 @@
       submitBtn.disabled = false;
       return;
     }
-    const q3Result = r3.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const q3Result = r3.essay || { score: 0, reasoning: "รอตรวจ" };
     const total_score = r3.total_score != null ? r3.total_score : q1Result.score + q2Result.score + q3Result.score;
 
     showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score, behavior: behaviorData });
