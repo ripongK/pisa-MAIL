@@ -465,7 +465,7 @@
       return;
     }
 
-    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const q2Result = serverResult.essay || { score: 0, reasoning: "รอตรวจ" };
     const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
 
     showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
