@@ -733,7 +733,7 @@
       details: { behavior: behaviorData, q2: { score: q2.score, selected: q2Selected }, sim_log: simLog },
     });
     if (!r1 || r1.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 1 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
-    const q1 = r1.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const q1 = r1.essay || { score: 0, reasoning: "รอตรวจ" };
     q1.passCount = passCount; q1.accs = accs;
 
     statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
@@ -748,7 +748,7 @@
       },
     });
     if (!r2 || r2.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 3 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
-    const q3 = r2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const q3 = r2.essay || { score: 0, reasoning: "รอตรวจ" };
     const total_score = r2.total_score != null ? r2.total_score : q1.score + q2.score + q3.score;
 
     showResult({ q1, q2, q3, total_score, counts: r.counts, behavior: behaviorData });
