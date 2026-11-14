@@ -89,10 +89,24 @@
   .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f1f4f8; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -105,6 +119,15 @@
 <div id="mainScreen">
 
   <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
 
   <div class="scenario-intro">
     <p>โรงเรียนราชวิถีวิทยาคมจัดงาน "กีฬาสีประจำปี 2569" ขึ้นที่ลานอเนกประสงค์หน้าอาคาร 1 โดยมีขบวนพาเหรดเปิดงานเป็นไฮไลต์สำคัญที่สุด เพราะปีนี้โรงเรียนตั้งใจถ่ายภาพลงเพจเฟซบุ๊กทางการเพื่อใช้ประชาสัมพันธ์รับสมัครนักเรียนใหม่ไปพร้อมกัน "ครีม" นักเรียนชั้น ม.5 หัวหน้าฝ่ายประชาสัมพันธ์ ได้รับมอบหมายให้ถ่ายภาพขบวนพาเหรด แต่เช้าวันงานฝนตกหนัก ทำให้มีผู้ปกครองและนักเรียนมาร่วมงานได้น้อยกว่าที่เชิญไว้มาก ลานครึ่งหลังจึงดูโล่งว่างเปล่าในภาพ ครีมจึงใช้ฟีเจอร์ AI เติมภาพ (generative fill) สั่งให้ระบบเติมฝูงชนนักเรียนให้เต็มพื้นที่ว่างด้านหลัง แล้วเลือกภาพที่แต่งแล้วไปโพสต์ลงเพจโรงเรียน ด้านล่างนี้คือภาพที่ครีมโพสต์ ลองกดสลับดูภาพต้นฉบับเทียบกับภาพที่แต่งแล้ว</p>
@@ -228,9 +251,7 @@
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
   const SCENARIO_ID = "scenario-09";
   const SCENARIO_NAME = "ขบวนพาเหรดกีฬาสี";
-  const MAX_SCORE = 4; // q1(2) + q2(2)
-  const ESSAY_MAX = 2;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
+  const MAX_SCORE = 3; // q1(1, ปรนัยเลือกตอบ 2 ระดับ ไม่มีคะแนนบางส่วน) + q2(2)
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -296,10 +317,78 @@
   }
 
   function gradeQ1() {
-    return { score: q1Selected === Q1_CORRECT ? 2 : 0 };
+    return { score: q1Selected === Q1_CORRECT ? 1 : 0 };
   }
 
-  // ---------- ข้อ 2: อัตนัย — บันทึกข้อความลง Google Sheet ระบบไม่ตรวจ (รอการตรวจคะแนนโดยครู) ----------
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
+
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้แสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — เกิดอะไรขึ้นกับภาพที่ครีมโพสต์?",
+      question: "เมื่อเปรียบเทียบภาพต้นฉบับกับภาพที่ครีมนำไปโพสต์ ข้อใดอธิบายสิ่งที่เกิดขึ้นกับภาพได้ถูกต้องที่สุด",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (1 คะแนน)",
+          desc: "เลือกข้อ 1 เท่านั้น — ใช้ AI เติมแถวนักเรียนลงในพื้นที่ว่างจริง ทำให้คนในภาพมากกว่าคนที่มาจริง",
+          examples: [],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "เลือกข้อ 2, 3 หรือ 4 (ข้อนี้เป็นปรนัยแบบเลือกตอบ 2 ระดับ ไม่มีคะแนนบางส่วน)",
+          examples: [],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — ต่างจากการแต่งสี/ครอบตัดภาพอย่างไร?",
+      question: "อธิบายว่าการใช้ AI เติมฝูงชนเพิ่มเข้าไปในภาพขบวนพาเหรดของครีม แตกต่างจากการแต่งสีภาพหรือครอบตัดภาพทั่วไปอย่างไร พร้อมอธิบายว่าเหตุใดความแตกต่างนี้จึงสำคัญเมื่อภาพจะถูกนำไปใช้ในรายงานหรือสื่อประชาสัมพันธ์อย่างเป็นทางการของโรงเรียน (อธิบายให้ครบอย่างน้อย 2 ประเด็น)",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "อธิบายครบทั้งสองประเด็น: (1) การแต่งสี/ครอบตัดเป็นการปรับวิธีนำเสนอภาพที่มีอยู่จริงโดยไม่เปลี่ยนข้อเท็จจริง ขณะที่การเติม AI สร้างเนื้อหาที่ไม่เคยเกิดขึ้นจริงขึ้นมาใหม่ และ (2) การเติมฝูงชนเปลี่ยนแปลงข้อเท็จจริงเชิงปริมาณ (จำนวนผู้เข้าร่วม) ซึ่งจะถูกนำไปอ้างอิงในรายงานหรือสื่อทางการ ทำให้ข้อมูลคลาดเคลื่อนและกระทบความน่าเชื่อถือ (คำตอบที่พูดเพียงว่า 'มันไม่ซื่อสัตย์'/'มันโกหก' โดยไม่อธิบายกลไกไม่นับว่าครบ)",
+          examples: [
+            "“การแต่งสีหรือครอบตัดแค่ทำให้ภาพที่มีอยู่จริงดูดีขึ้น แต่ไม่ได้เปลี่ยนว่ามีคนมากี่คน ส่วนการให้ AI เติมคนเข้าไป คือการสร้างคนที่ไม่ได้มาจริงๆ ขึ้นมาในภาพ ทำให้ตัวเลขคนที่มางานที่โรงเรียนจะเอาไปเขียนรายงานผิดไปจากความจริง...”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "อธิบายได้เพียงหนึ่งในสองประเด็น",
+          examples: [
+            "“การแต่งสีแค่ทำให้ภาพสวยขึ้นแต่ไม่ได้เปลี่ยนแปลงอะไรในภาพ ส่วนการเติม AI คือใส่คนที่ไม่มีจริงเข้าไปในภาพ มันคนละแบบกันเลย” — [ไม่เชื่อมโยงผลกระทบ]",
+            "“มันทำให้ดูเหมือนคนมาเยอะกว่าที่มาจริง ถ้าโรงเรียนเอาไปใช้โฆษณาก็จะดูดีเกินจริง” — [ไม่อธิบายกลไกความแตกต่าง]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ไม่อธิบายความแตกต่าง ตอบไม่เกี่ยวข้อง หรือกล่าวซ้ำโจทย์",
+          examples: [
+            "“ก็แค่แต่งภาพให้สวยเฉยๆ ไม่เห็นเป็นไรเลย ใครๆ ก็แต่งภาพกัน”",
+            "“เพราะครีมไม่ขอเพื่อนก่อนโพสต์ภาพ”",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById(btn.dataset.close).hidden = true;
+  }));
+
   async function saveToSheet(payload) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
@@ -324,7 +413,7 @@
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
     const nonAiScore = q1Result.score;
@@ -340,32 +429,26 @@
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: nonAiScore,            // คะแนนส่วนปรนัย (ตรวจตามเกณฑ์/รูบริคฝั่งหน้าเว็บ)
       max_score: MAX_SCORE,
-      objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX,
-      essay_status: "pending",   // อัตนัย: ไม่ตรวจโดยระบบ → รอการตรวจคะแนน
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — ระบุสิ่งที่เกิดขึ้นกับภาพ", score: q1Result.score, max: 2 },
-        { q: "q2", label: "ข้อ 2 — ความแตกต่างและผลกระทบ", score: null, max: 2, status: "pending" },
-      ],
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        q2: { text: q2_text, max: ESSAY_MAX, status: "pending" },
         q1: { ...q1Result, selected: q1Selected },
         behavior: behaviorData,
       },
     });
 
     if (!serverResult || serverResult.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
 
-    const q2Result = { score: null, pending: true, max: ESSAY_MAX, reasoning: "รอการตรวจคะแนน" };
-    const total_score = nonAiScore; // ยังไม่รวมข้ออัตนัย
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, essay_pending: true, behavior: behaviorData });
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
@@ -410,20 +493,19 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    const pend = !!data.essay_pending;
-    document.getElementById("resultTotal").textContent = pend ? `${data.total_score} / ${OBJECTIVE_MAX}` : `${data.total_score} / ${MAX_SCORE}`;
-    document.getElementById("resultPercent").innerHTML = pend
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 1 — ระบุสิ่งที่เกิดขึ้นกับภาพ</span><span>${data.q1.score} / 2</span></div>
-        <div class="result__item-reason">${data.q1.score === 2 ? "ระบุถูกต้องว่าใช้ AI เติมแถวนักเรียนลงในพื้นที่ว่างจริง" : "คำตอบยังไม่ตรงกับสิ่งที่เกิดขึ้นจริงกับภาพ"}</div>
+        <div class="result__item-head"><span>ข้อ 1 — ระบุสิ่งที่เกิดขึ้นกับภาพ</span><span>${data.q1.score} / 1</span></div>
+        <div class="result__item-reason">${data.q1.score === 1 ? "ระบุถูกต้องว่าใช้ AI เติมแถวนักเรียนลงในพื้นที่ว่างจริง" : "คำตอบยังไม่ตรงกับสิ่งที่เกิดขึ้นจริงกับภาพ"}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — ความแตกต่างและผลกระทบ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว (เต็ม ${ESSAY_MAX} คะแนน) ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง</div>
+        <div class="result__item-head"><span>ข้อ 2 — ความแตกต่างและผลกระทบ</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

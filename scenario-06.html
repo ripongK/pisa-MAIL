@@ -92,10 +92,24 @@
   .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #ece6f5; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -140,14 +154,23 @@
       <div class="transcript-label">บทถอดความคำพูดในคลิป</div>
       <div class="transcript-line"><span class="transcript-time">0:12</span><span class="transcript-text">สวัสดีครับ ผมนายแพทย์ประเสริฐ วัฒนสิน</span></div>
       <div class="transcript-line"><span class="transcript-time">0:18</span><span class="transcript-text">ผลิตภัณฑ์เสริมอาหารไวทาลิกซ์พลัสช่วยลดไขมันในเส้นเลือดได้ถึงร้อยละ 40 ภายในสองสัปดาห์</span></div>
-      <div class="transcript-line"><span class="transcript-time">0:23</span><span class="transcript-text">ผมแนะนำให้คนไข้ทุกคนของผมทานอาหารเสริมตัวนี้ ในฐานะที่ปรึกษากิตติมศักดิ์ของราชวิทยาลัยอายุรแพทย์แห่งประเทศไทย</span></div>
-      <div class="transcript-line"><span class="transcript-time">0:37</span><span class="transcript-text">ผลลัพธ์อาจแตกต่างกันในแต่ละบุคคล ผลิตภัณฑ์นี้ยังไม่ได้ผ่านการรับรองจากสำนักงานคณะกรรมการอาหารและยา ควรปรึกษาแพทย์ก่อนใช้</span></div>
-      <div class="transcript-line"><span class="transcript-time">0:56</span><span class="transcript-text">สั่งซื้อผ่านลิงก์ในคำบรรยาย รับส่วนลด 50% เฉพาะวันนี้เท่านั้น</span></div>
+      <div class="transcript-line"><span class="transcript-time">0:45</span><span class="transcript-text">ผมแนะนำให้คนไข้ทุกคนของผมทานอาหารเสริมตัวนี้ ในฐานะที่ปรึกษากิตติมศักดิ์ของราชวิทยาลัยอายุรแพทย์แห่งประเทศไทย</span></div>
+      <div class="transcript-line"><span class="transcript-time">1:12</span><span class="transcript-text">ผลลัพธ์อาจแตกต่างกันในแต่ละบุคคล ผลิตภัณฑ์นี้ยังไม่ได้ผ่านการรับรองจากสำนักงานคณะกรรมการอาหารและยา ควรปรึกษาแพทย์ก่อนใช้</span></div>
+      <div class="transcript-line"><span class="transcript-time">1:31</span><span class="transcript-text">สั่งซื้อผ่านลิงก์ในคำบรรยาย รับส่วนลด 50% เฉพาะวันนี้เท่านั้น</span></div>
     </div>
   </div>
 
   </div>
  </div>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
 
   <div class="content-wide">
   <section class="quiz" id="quizSection">
@@ -200,8 +223,6 @@
   const SCENARIO_ID = "scenario-06";
   const SCENARIO_NAME = "โฆษณา \"คุยหมอเช้านี้\"";
   const MAX_SCORE = 4; // q1(2) + q2(2)
-  const ESSAY_MAX = 2;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -312,7 +333,81 @@
     return { score, correctCount };
   }
 
-  // ---------- ข้อ 2: อัตนัย — บันทึกข้อความลง Google Sheet ระบบไม่ตรวจ (รอการตรวจคะแนนโดยครู) ----------
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
+
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้สำหรับแสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน (คะแนนจริงตรวจโดย Gemini ฝั่ง Code.gs ตามเกณฑ์เดียวกันนี้) ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — ลักษณะใดเป็นสัญญาณเตือน?",
+      question: "จากรายละเอียดในคลิปเสียงโฆษณา ให้พิจารณาว่าลักษณะแต่ละอย่างต่อไปนี้เป็น 'สัญญาณเตือน' ว่าคลิปนี้น่าสงสัยหรือไม่",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ตอบถูกทั้ง 5 ข้อ: ข้อ 1 (เสียงราบเรียบไม่มีเสียงหายใจ) = สัญญาณเตือน / ข้อ 2 (อ้างตำแหน่งที่ตรวจสอบไม่ได้) = สัญญาณเตือน / ข้อ 3 (ข้อปฏิเสธความรับผิดอ่านเร็วท้ายคลิป) = สัญญาณเตือน / ข้อ 4 (เผยแพร่บนแอปที่มีผู้ใช้จำนวนมาก) = ไม่ใช่สัญญาณเตือน (ความนิยมของแพลตฟอร์มไม่เกี่ยวกับความน่าเชื่อถือของเนื้อหา) / ข้อ 5 (อ้างตัวเลขผลลัพธ์ชัดเจนโดยไม่อ้างอิงงานวิจัย) = สัญญาณเตือน",
+          examples: [],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ตอบถูก 3-4 ข้อจาก 5 ข้อ",
+          examples: [],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ตอบถูกน้อยกว่า 3 ข้อ หรือไม่ตอบ",
+          examples: [],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — พลอยควรพูดอะไรกับคุณยาย?",
+      question: "คุณยายทองย้อยได้ยินคลิปโฆษณานี้แล้วบอกว่าจะลองสั่งซื้อผลิตภัณฑ์ทันทีที่กลับถึงบ้าน ให้เขียนสิ่งที่พลอยควรพูดกับคุณยายสั้นๆ เพื่อชะลอการตัดสินใจซื้อ โดยคำตอบต้องระบุเหตุผลที่เป็นรูปธรรมอย่างน้อย 1 ข้อที่ทำให้คลิปนี้น่าสงสัย พร้อมข้อเสนอแนะว่าควรทำอย่างไรก่อนตัดสินใจซื้อ",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ระบุเหตุผลที่เป็นรูปธรรมจากคลิป (เช่น เสียงผิดธรรมชาติ ตำแหน่งตรวจสอบไม่ได้ หรือข้อปฏิเสธความรับผิดอ่านเร็ว) อย่างน้อย 1 ข้อ พร้อมข้อเสนอแนะการกระทำที่เป็นรูปธรรมก่อนซื้อ (เช่น ตรวจสอบชื่อแพทย์ หรือปรึกษาแพทย์จริง)",
+          examples: [
+            "“ยายรอก่อนนะ เสียงหมอในคลิปมันเรียบไปหมดเลย ไม่หายใจเลยสักครั้ง หนูว่าอาจจะเป็นเสียงปลอมนะ ลองถามหมอที่คลินิกวันนี้ดูก่อนดีกว่าว่ากินได้จริงไหม”",
+            "“ยายอย่าเพิ่งสั่งเลย ตำแหน่ง 'ที่ปรึกษาราชวิทยาลัย' ที่พูดในคลิปหนูหาไม่เจอเลยว่ามีจริงไหม รอหนูลองเช็คให้ก่อนดีกว่านะ”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "มีเพียงเหตุผลหรือเพียงข้อเสนอแนะอย่างใดอย่างหนึ่งเท่านั้น",
+          examples: [
+            "“ยายอย่าเพิ่งซื้อเลยนะ เดี๋ยวหนูเช็คให้ก่อน” — [มีข้อเสนอแนะแต่ไม่มีเหตุผล]",
+            "“เสียงหมอในคลิปมันแปลกๆ นะยาย ไม่น่าเชื่อ” — [มีความน่าสงสัยแต่ไม่มีข้อเสนอแนะ]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "คำตอบไม่เกี่ยวข้อง หรือเห็นด้วยกับการซื้อโดยไม่เตือนคุณยาย",
+          examples: [
+            "“ลองซื้อมากินดูก็ได้ ยายอยากกินก็กินเถอะ”",
+            "“หมอเก่งจังเลยเนอะ”",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById(btn.dataset.close).hidden = true;
+  }));
+
   async function saveToSheet(payload) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
@@ -337,7 +432,7 @@
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
     const nonAiScore = q1Result.score;
@@ -354,32 +449,26 @@
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: nonAiScore,            // คะแนนส่วนปรนัย (ตรวจตามเกณฑ์/รูบริคฝั่งหน้าเว็บ)
       max_score: MAX_SCORE,
-      objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX,
-      essay_status: "pending",   // อัตนัย: ไม่ตรวจโดยระบบ → รอการตรวจคะแนน
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — สังเกตสัญญาณเตือน", score: q1Result.score, max: 2 },
-        { q: "q2", label: "ข้อ 2 — ชะลอการตัดสินใจซื้อ", score: null, max: 2, status: "pending" },
-      ],
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        q2: { text: q2_text, max: ESSAY_MAX, status: "pending" },
         q1: q1Result,
         behavior: behaviorData,
       },
     });
 
     if (!serverResult || serverResult.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
 
-    const q2Result = { score: null, pending: true, max: ESSAY_MAX, reasoning: "รอการตรวจคะแนน" };
-    const total_score = nonAiScore; // ยังไม่รวมข้ออัตนัย
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, essay_pending: true, behavior: behaviorData });
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
@@ -424,20 +513,19 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    const pend = !!data.essay_pending;
-    document.getElementById("resultTotal").textContent = pend ? `${data.total_score} / ${OBJECTIVE_MAX}` : `${data.total_score} / ${MAX_SCORE}`;
-    document.getElementById("resultPercent").innerHTML = pend
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 1 — สังเกตสัญญาณเตือน</span><span>${data.q1.score} / 2</span></div>
         <div class="result__item-reason">ตอบถูก ${data.q1.correctCount} จาก 5 ข้อ</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — ชะลอการตัดสินใจซื้อ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว (เต็ม ${ESSAY_MAX} คะแนน) ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง</div>
+        <div class="result__item-head"><span>ข้อ 2 — ชะลอการตัดสินใจซื้อ</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

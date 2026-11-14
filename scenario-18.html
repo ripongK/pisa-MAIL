@@ -148,10 +148,24 @@
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
   :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f1f4f8; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -164,6 +178,15 @@
 <div id="mainScreen">
 
   <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
 
   <div class="scenario-intro">
     <p>เนยกับเพื่อนในชมรมคอมพิวเตอร์ของโรงเรียนกำลังพัฒนาแอปจำแนกภาพขนมไทยสำหรับใช้ในงานเปิดบ้านโรงเรียนปลายเดือนนี้ ทีมออกไปถ่ายภาพขนมจากร้านรอบโรงเรียนและตลาดนัดใกล้บ้านมาได้หลายสิบภาพ แล้วนำมาสร้างเป็นชุดข้อมูลฝึกให้ระบบเรียนรู้ว่าขนมแต่ละชิ้นคือขนมอะไร เมื่อทดลองใช้แอปกับภาพขนมที่เพื่อนคนอื่นถ่ายมาให้ลองทาย กลับพบผลดังหน้าจอด้านล่างนี้</p>
@@ -342,8 +365,6 @@
   const SCENARIO_ID = "scenario-18";
   const SCENARIO_NAME = "แอปจำแนกภาพขนมไทย";
   const MAX_SCORE = 5; // q1(2) + q2(1) + q3(2)
-  const ESSAY_MAX = 4;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -475,11 +496,11 @@
   // ===================================================================
   const REGION_NAME = { c: "กลาง", n: "เหนือ", e: "อีสาน", s: "ใต้" };
   const CARD_SPEC = [
-    ["thongyip", "ทองหยิบ", "c"], ["khaotaeng", "ข้าวแต๋น", "n"], ["thongyod", "ทองหยอด", "c"], ["khaotom", "ข้าวต้มมัด", "e"],
-    ["foithong", "ฝอยทอง", "c"], ["kanomla", "ขนมลา", "s"], ["khanomchan", "ขนมชั้น", "c"], ["thiankaeo", "ขนมเทียนแก้ว", "n"],
-    ["tako", "ตะโก้", "c"], ["khaochi", "ข้าวจี่", "e"], ["lukchup", "ลูกชุบ", "c"], ["rotikrop", "โรตีกรอบ", "s"],
-    ["sangkhaya", "สังขยาฟักทอง", "c"], ["aewlaew", "แอ่วแหลว", "n"], ["piakpun", "ขนมเปียกปูน", "c"], ["thianisan", "ขนมเทียน", "e"],
-    ["kluay", "กล้วยบวชชี", "c"], ["chujun", "ขนมจู้จุน", "s"],
+    ["thongyip", "ทองหยิบ", "c"], ["thongyod", "ทองหยอด", "c"], ["foithong", "ฝอยทอง", "c"], ["khanomchan", "ขนมชั้น", "c"],
+    ["tako", "ตะโก้", "c"], ["lukchup", "ลูกชุบ", "c"], ["sangkhaya", "สังขยาฟักทอง", "c"], ["piakpun", "ขนมเปียกปูน", "c"],
+    ["kluay", "กล้วยบวชชี", "c"], ["khaotaeng", "ข้าวแต๋น", "n"], ["thiankaeo", "ขนมเทียนแก้ว", "n"], ["aewlaew", "แอ่วแหลว", "n"],
+    ["khaotom", "ข้าวต้มมัด", "e"], ["khaochi", "ข้าวจี่", "e"], ["thianisan", "ขนมเทียน", "e"],
+    ["kanomla", "ขนมลา", "s"], ["rotikrop", "โรตีกรอบ", "s"], ["chujun", "ขนมจู้จุน", "s"],
   ];
   const CARDS = CARD_SPEC.map(([kind, name, r], i) => ({ id: "d" + (i + 1), kind, name, r }));
   const CARD_BY_ID = Object.fromEntries(CARDS.map((c) => [c.id, c]));
@@ -636,6 +657,7 @@
   function gradeQ2() { return { score: q2Selected === Q2_CORRECT ? 1 : 0 }; }
 
   // GRADING-START
+  // ข้อ 1 และข้อ 3 เป็นอัตนัย — ตรวจด้วย Gemini ที่ Code.gs แทน pattern matching เดิม
   // (ข้อ 2 เป็นปรนัยเลือกตอบ ยังตรวจด้วยกฎฝั่งหน้าเว็บตามเดิม ดูฟังก์ชัน gradeQ2 ด้านล่าง)
   const CHECK_REGIONS = ["n", "e", "s"];
   // GRADING-END
@@ -700,38 +722,137 @@
       scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, max_score: MAX_SCORE,
     };
 
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 1... (อาจใช้เวลาสักครู่)";
     const accs = computeAccCounts(r.counts);
-    const passCount = CHECK_REGIONS.filter((k) => accs[k] >= THRESHOLD).length;   // ข้อมูลประกอบสำหรับครู
+    const passCount = CHECK_REGIONS.filter((k) => accs[k] >= THRESHOLD).length;
+    const q1EssayInput = "คำตอบของนักเรียน: " + q1_text +
+      "\n\n[ข้อมูลที่ระบบตรวจสอบแล้วจากชุดข้อมูลฝึกจริงที่นักเรียนเลือก] จำนวนภูมิภาค (เหนือ/อีสาน/ใต้) ที่ความแม่นยำถึงเกณฑ์ 70%: " + passCount + " จาก 3 ภูมิภาค (ความแม่นยำจริง: เหนือ " + accs.n.toFixed(1) + "% อีสาน " + accs.e.toFixed(1) + "% ใต้ " + accs.s.toFixed(1) + "%)";
+    const r1 = await saveToSheet({
+      ...basePayload, non_ai_score: q2.score, essay_question_key: "q1",
+      raw_answers: { essayText: q1EssayInput },
+      details: { behavior: behaviorData, q2: { score: q2.score, selected: q2Selected }, sim_log: simLog },
+    });
+    if (!r1 || r1.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 1 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
+    const q1 = r1.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    q1.passCount = passCount; q1.accs = accs;
 
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
-    const res = await saveToSheet({
-      ...basePayload, score: q2.score, objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX, essay_status: "pending",
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — จัดชุดข้อมูลและอธิบายข้อจำกัดของความแม่นยำรวม", score: null, max: 2, status: "pending" },
-        { q: "q2", label: "ข้อ 2 — เหตุที่เพิ่มภาพภาคกลางไม่ช่วย", score: q2.score, max: 1 },
-        { q: "q3", label: "ข้อ 3 — ข้อเสนอเพิ่มภาพภาคกลางเท่าตัว", score: null, max: 2, status: "pending" },
-      ],
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
+    const r2 = await saveToSheet({
+      ...basePayload, non_ai_score: q2.score + q1.score, essay_question_key: "q3",
+      raw_answers: { essayText: q3_text },
       details: {
         behavior: behaviorData,
-        q1: { counts: r.counts, accuracy: accs, regions_passing_threshold: passCount, text: q1_text, max: 2, status: "pending" },
+        q1: { score: q1.score, counts: r.counts, accuracy: accs, text: q1_text, reasoning: q1.reasoning },
         q2: { score: q2.score, selected: q2Selected },
-        q3: { text: q3_text, max: 2, status: "pending" },
         sim_log: simLog,
       },
     });
-    if (!res || res.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
-      submitBtn.disabled = false;
-      return;
-    }
+    if (!r2 || r2.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 3 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
+    const q3 = r2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = r2.total_score != null ? r2.total_score : q1.score + q2.score + q3.score;
 
-    showResult({ q2, total_score: q2.score, essay_pending: true, counts: r.counts, accs, behavior: behaviorData });
+    showResult({ q1, q2, q3, total_score, counts: r.counts, behavior: behaviorData });
   }
 
   function checksHTML(parts) {
     return `<ul class="checks">${parts.map((p) => `<li class="${p.ok ? "yes" : "no"}">${p.ok ? "✓" : "✗"} ${p.label}</li>`).join("")}</ul>`;
   }
+
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้แสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — จัดชุดข้อมูลให้แม่นยำทุกภูมิภาค",
+      question: "จัดชุดข้อมูลฝึกจากคลังการ์ดขนมไทยหลายแบบ แล้วกดฝึกระบบดูผล จากนั้นจัดชุดข้อมูลฝึกอีกครั้งให้ความแม่นยำของขนมภาคเหนือ อีสาน และใต้ ทั้งสามภูมิภาคไม่ต่ำกว่าระดับที่ยอมรับได้ แล้วบันทึกองค์ประกอบของชุดที่เลือก และอธิบายว่าทำไมไม่ควรพิจารณาเพียงค่าความแม่นยำรวมที่ระบบแสดงเพียงอย่างเดียว",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "สามารถจัดองค์ประกอบชุดข้อมูลให้ทั้งสี่ภูมิภาคมีจำนวนใกล้เคียงกันมากพอจนความแม่นยำของภาคเหนือ อีสาน ใต้ ขึ้นสูงพร้อมกัน และคำอธิบายให้เห็นชัดเจนว่าความแม่นยำรวมเพียงอย่างเดียวไม่สามารถใช้ตัดสินใจได้ เนื่องจากค่าความแม่นยำรวมอาจจะสูงทั้งที่ค่าความแม่นยำของบางภูมิภาคยังต่ำ เพราะภาพส่วนใหญ่ยังเป็นภาคกลางซึ่งมีจำนวนมากกว่า จึงถ่วงค่าเฉลี่ยให้เกิดความผิดพลาดได้",
+          examples: [
+            "“เลือกภาคกลาง 4 ใบ เหนือ 3 ใบ อีสาน 3 ใบ ใต้ 3 ใบ: ตอนนี้ทั้งสี่ภูมิภาคใกล้เคียงกันแล้ว ความแม่นยำของเหนือ อีสาน ใต้ ขึ้นมาใกล้ภาคกลาง ถ้าเพิ่มแต่ภาคกลางเข้าไปอีก ความแม่นยำรวมจะสูงขึ้นแต่ค่าความแม่นยำอีกสามภาคอาจจะต่ำลงหรือคงที่ เพราะค่าความแม่นยำรวมถูกถ่วงด้วยจำนวนข้อมูลของภาคกลางที่มากกว่าข้อมูลจากภาคอื่นๆ” — [องค์ประกอบสมดุล และอธิบายกลไกที่ค่ารวมปิดบังปัญหาได้ถูกต้องชัดเจน]",
+            "“เลือกทุกภูมิภาคเท่ากันหมดภูมิภาคละ 3 ใบ: เมื่อจำนวนเท่ากันทั้งสี่กลุ่ม แต่ละภูมิภาคมีโอกาสถูกฝึกเท่ากัน ความแม่นยำจึงไม่เอียงไปภาคกลางมากเกินไป แม้ความแม่นยำรวมอาจจะลดลงบ้าง เพราะหากค่าความแม่นยำรวมมาจากภาคกลางเป็นหลัก จะไม่สะท้อนผลของภาคอื่นได้อย่างเท่าเทียม” — [แสดงความเข้าใจว่าความแม่นยำรวมอาจลดลง แต่สะท้อนความจริงของทุกกลุ่มมากกว่า]",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ปรับองค์ประกอบให้บางภูมิภาคดีขึ้นแต่ยังไม่ครบทั้งสามภูมิภาคเป้าหมายพร้อมกัน หรืออธิบายได้เพียงว่าความแม่นยำรวมสูงโดยไม่ได้อธิบายกลไกว่าทำไมถึงปิดบังปัญหาได้ชัดเจน",
+          examples: [
+            "“เลือกภาคกลาง 8 ใบ เหนือ 3 ใบ อีสาน 1 ใบ ใต้ 1 ใบ: ความแม่นยำรวมสูงอยู่เพราะข้อมูลจากภาคกลางเยอะ” — [แก้ได้แค่บางส่วน องค์ประกอบยังเอียงมาก และคำอธิบายไม่ได้ชี้กลไกถ่วงค่าเฉลี่ยอย่างชัดเจน]",
+            "“เลือกภาคกลาง 5 ใบ เหนือ 3 ใบ อีสาน 3 ใบ ใต้ 1 ใบ: ภาคใต้ยังมีน้อยอยู่ ความแม่นยำภาคใต้เลยยังต่ำกว่าภาคอื่น” — [ปรับสำเร็จสองในสามภูมิภาคเป้าหมาย ยังขาดภาคใต้ที่ยังไม่ถึงเกณฑ์]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ไม่ได้ปรับองค์ประกอบให้ต่างจากค่าที่เอียงไปทางภาคกลางเดิมอย่างมีนัยสำคัญ หรือเพิ่มเฉพาะการ์ดภาคกลางเข้าไปอีกแล้วอธิบายว่าความแม่นยำรวมสูงขึ้นถือว่าปัญหาหมดไปแล้ว",
+          examples: [
+            "“เลือกภาคกลางทั้ง 9 ใบ และเหนือ อีสาน ใต้ อย่างละ 1 ใบ: ความแม่นยำรวมสูงมากแล้ว แสดงว่าระบบใช้ได้ดี” — [เข้าใจผิดว่าความแม่นยำรวมสูงเท่ากับระบบใช้ได้ดีกับทุกกลุ่ม ไม่ได้แก้ปัญหาจริงและไม่ได้ลงมือปรับองค์ประกอบตามเป้า]",
+          ],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — ทำไมการเพิ่มภาพภาคกลางจึงไม่ช่วย",
+      question: "ข้อใดอธิบายได้ถูกต้องที่สุดว่าทำไมการถ่ายภาพขนมภาคกลางเพิ่มอีกจำนวนมากจึงไม่ช่วยแก้ปัญหาที่แอปทายขนมภาคอื่นผิดบ่อย",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (1 คะแนน)",
+          desc: "เลือกตัวเลือก 4 — เพราะสัดส่วนขนมแต่ละภูมิภาคในชุดฝึกของภาคอื่นยังมีน้อยกว่าภาคกลางมาก",
+          examples: [],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "เลือกตัวเลือกอื่น (1, 2 หรือ 3) — ข้อนี้เป็นคำถามแบบเลือกตอบข้อเดียว ไม่มีคะแนนบางส่วน",
+          examples: [],
+        },
+      ],
+    },
+    q3: {
+      title: "ข้อ 3 — ข้อเสนอของเพื่อน",
+      question: "หากมีเพื่อนเสนอทางแก้ว่า “ควรเก็บภาพขนมภาคกลางเพิ่มอีกเท่าตัว เพราะขนมจากภาคกลางส่งผลให้ค่าความแม่นยำสูงขึ้น” นักเรียนเห็นด้วยกับแนวคิดนี้หรือไม่ ให้แสดงเหตุผลสนับสนุนหรือขัดแย้งแนวคิดนี้",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ไม่เห็นด้วย และสามารถชี้ได้ว่าข้อเสนอที่เพิ่มเฉพาะกลุ่มที่มีจำนวนมากอยู่แล้ว ไม่สามารถช่วยให้ระบบแก้ปัญหาการทายผิดข้อมูลกลุ่มที่มีน้อย และเสนอทางแก้ที่ถูกทาง คือเพิ่มสัดส่วนภาพภาคเหนือ อีสาน ใต้ ให้มากขึ้นแทน",
+          examples: [
+            "“จุดอ่อนคือถึงจะมีภาพกลางเยอะขึ้นเป็นสองเท่า ระบบก็ยังไม่เคยเห็นขนมภาคอื่นเพิ่มขึ้นเลย ความแม่นยำของภาคเหนือ อีสาน ใต้ จะยังแย่เหมือนเดิม ทีมควรไปเก็บภาพขนมภาคอื่นให้มากขึ้นแทนที่จะเก็บภาคกลางเพิ่ม” — [ชี้จุดอ่อนถูกต้องและเสนอทางแก้ที่ตรงประเด็น]",
+            "“จากที่ลองปรับในหน้าจอ หากเพิ่มภาคกลางเพียงอย่างเดียวความแม่นยำรวมอาจสูงขึ้นเล็กน้อย แต่ค่าความแม่นยำแยกภูมิภาคของเหนือ อีสาน ใต้ ไม่ขยับเลย แสดงว่าปัญหาที่แท้จริงคือสัดส่วน ไม่ใช่จำนวน ควรไปหาภาพจากภาคอื่นเพิ่ม” — [อ้างอิงหลักฐานจากการทดลองจริงในหน้าจอและสรุปถูกต้อง]",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ไม่เห็นด้วย แต่ชี้จุดอ่อนได้บางส่วนโดยไม่ได้อ้างอิงผลจากการทดลองในหน้าจอ หรือเสนอทางแก้ที่ไม่ชัดเจนพอ",
+          examples: [
+            "“ข้อเสนอนี้ไม่ค่อยดีเพราะยังไม่ครอบคลุมขนมทุกภาค” — [ชี้จุดอ่อนถูกทิศทางแต่ไม่อธิบายกลไกหรืออ้างอิงหลักฐานจากหน้าจอ]",
+            "“น่าจะต้องเพิ่มขนมภาคอื่นด้วย ไม่ใช่แค่ภาคกลาง” — [ให้ข้อเสนอถูกทิศทางแต่สั้นเกินไป ไม่ได้อธิบายว่าทำไมข้อเสนอเดิมถึงมีจุดอ่อน]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "เห็นด้วยกับข้อเสนอเดิมโดยไม่มีเหตุผล หรือให้เหตุผลที่ไม่เกี่ยวข้องกับองค์ประกอบของชุดข้อมูล",
+          examples: [
+            "“เห็นด้วย เพราะภาพเยอะขึ้นน่าจะทำให้ระบบฉลาดขึ้นเสมอ” — [ไม่เข้าใจว่าปัญหาคือสัดส่วน ไม่ใช่ปริมาณรวม และไม่ได้อ้างอิงผลจากหน้าจอ]",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById(btn.dataset.close).hidden = true;
+  }));
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
   function renderBehaviorHtml(b) {
@@ -776,27 +897,28 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    document.getElementById("resultTotal").textContent = OBJECTIVE_MAX > 0 ? `${d.total_score} / ${OBJECTIVE_MAX}` : "รอตรวจ";
-    document.getElementById("resultPercent").innerHTML = OBJECTIVE_MAX > 0
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `ข้ออัตนัยทั้งหมด (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`;
+    document.getElementById("resultTotal").textContent = `${d.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((d.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(d.behavior || {});
 
-    const a = d.accs;
+    const a = d.q1.accs;
     const q2Reason = d.q2.score ? "เลือกถูกต้อง: ปัญหาอยู่ที่สัดส่วนข้อมูลของภาคอื่นที่น้อยกว่าภาคกลางมาก" : "คำตอบที่ถูกคือข้อ 4 เพราะสัดส่วนข้อมูลของภาคอื่นในชุดฝึกยังน้อยกว่าภาคกลางมาก";
 
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 1 — จัดชุดข้อมูลและอธิบายข้อจำกัดของความแม่นยำรวม</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (ความแม่นยำที่บันทึกได้: เหนือ ${a.n.toFixed(1)}% อีสาน ${a.e.toFixed(1)}% ใต้ ${a.s.toFixed(1)}% — องค์ประกอบ: กลาง ${d.counts.c} เหนือ ${d.counts.n} อีสาน ${d.counts.e} ใต้ ${d.counts.s})</div>
+        <div class="result__item-head"><span>ข้อ 1 — จัดชุดข้อมูลและอธิบายข้อจำกัดของความแม่นยำรวม</span><span>${d.q1.score} / 2</span></div>
+        <div class="result__item-reason">${d.q1.reasoning || ""} (ความแม่นยำที่บันทึกได้: เหนือ ${a.n.toFixed(1)}% อีสาน ${a.e.toFixed(1)}% ใต้ ${a.s.toFixed(1)}% — องค์ประกอบ: กลาง ${d.counts.c} เหนือ ${d.counts.n} อีสาน ${d.counts.e} ใต้ ${d.counts.s})</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 2 — เหตุที่เพิ่มภาพภาคกลางไม่ช่วย</span><span>${d.q2.score} / 1</span></div>
         <div class="result__item-reason">${q2Reason}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 3 — ข้อเสนอเพิ่มภาพภาคกลางเท่าตัว</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
+        <div class="result__item-head"><span>ข้อ 3 — ข้อเสนอเพิ่มภาพภาคกลางเท่าตัว</span><span>${d.q3.score} / 2</span></div>
+        <div class="result__item-reason">${d.q3.reasoning || ""}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q3')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

@@ -69,10 +69,24 @@
   .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f1f4f8; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -97,6 +111,15 @@
 
   <div class="case-wrap">
     <img src="images/scenario-02-case.jpg" alt="สไลด์สรุปคำวินิจฉัยคดีแชทบอทสายการบินที่กลุ่มพิมนำเสนอ" />
+  </div>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
   </div>
 
   <div class="content-wide">
@@ -156,8 +179,6 @@
   const SCENARIO_ID = "scenario-02";
   const SCENARIO_NAME = "แชทบอทสายการบินกับตั๋วงานศพ";
   const MAX_SCORE = 7; // q4(2) + q5(2) + q6(3)
-  const ESSAY_MAX = 3;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -245,7 +266,98 @@
     return { score, correctSelected, totalSelected };
   }
 
-  // ---------- ข้อ 6: อัตนัย — บันทึกข้อความลง Google Sheet ระบบไม่ตรวจ (รอการตรวจคะแนนโดยครู) ----------
+  // ---------- ข้อ 6: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
+
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้แสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 4 — \"สรุปได้\" หรือ \"สรุปเกิน\"?",
+      question: "กลุ่มของพิมช่วยกันเสนอข้อสรุปที่จะเขียนลงในรายงาน จงพิจารณาข้อสรุปแต่ละข้อว่าเป็นข้อสรุปที่ \"สรุปได้จากคดีนี้\" หรือ \"สรุปเกินกว่าข้อมูลในคดี\"",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ตอบถูกทั้ง 5 ข้อ ตามลำดับ สรุปได้ – สรุปได้ – สรุปได้ – สรุปเกิน – สรุปเกิน",
+          examples: ["“สรุปได้ สรุปได้ สรุปได้ สรุปเกิน สรุปเกิน” — [ตอบถูกครบทั้ง 5 ข้อ]"],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ตอบถูก 4 ข้อจาก 5 ข้อ",
+          examples: [
+            "“สรุปได้ สรุปได้ สรุปได้ สรุปเกิน สรุปได้” — [ถูก 4 ข้อ: เข้าใจผิดว่าผลคดีในแคนาดาใช้ได้ทุกประเทศ]",
+            "“สรุปได้ สรุปได้ สรุปได้ สรุปได้ สรุปเกิน” — [ถูก 4 ข้อ: สรุปเหมารวมจากกรณีเดียวไปสู่แชทบอททั้งหมด]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ตอบถูก 3 ข้อหรือน้อยกว่า หรือไม่ตอบ",
+          examples: [
+            "“สรุปได้ สรุปได้ สรุปได้ สรุปได้ สรุปได้” — [ถูกเพียง 3 ข้อ: ไม่แยกแยะระหว่างข้อสรุปที่มีหลักฐานรองรับกับการสรุปเหมารวม]",
+            "“สรุปเกิน สรุปเกิน สรุปได้ สรุปเกิน สรุปเกิน” — [ถูกเพียง 3 ข้อ: ปฏิเสธข้อสรุปที่มีข้อเท็จจริงรองรับชัดเจน]",
+          ],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 5 — เลือกแนวปฏิบัติที่ช่วยป้องกันปัญหานี้ได้จริง",
+      question: "จงวงกลมข้อความที่เป็นแนวปฏิบัติซึ่งช่วยป้องกันปัญหาแบบเดียวกับในคดีนี้ได้จริง จำนวน 2 ข้อ",
+      levels: [
+        { key: "full", label: "คะแนนเต็ม (2 คะแนน)", desc: "วงกลมข้อ 1 (บันทึกภาพหน้าจอบทสนทนาให้เห็นทั้งข้อความและวันเวลา) และข้อ 3 (กดลิงก์ที่แชทบอทแนบมาแล้วอ่านหน้านโยบายทางการก่อนตัดสินใจจ่ายเงิน) เท่านั้น", examples: [] },
+        { key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)", desc: "วงกลม 2 ข้อ โดยถูก 1 ข้อและผิด 1 ข้อ หรือวงกลมเพียงข้อ 1 หรือข้อ 3 เพียง 1 ข้อ", examples: [] },
+        { key: "none", label: "ไม่ได้คะแนน (0 คะแนน)", desc: "ไม่วงกลมข้อถูกเลย หรือวงกลมมากกว่า 2 ข้อ หรือไม่ตอบ", examples: [] },
+      ],
+    },
+    q3: {
+      title: "ข้อ 6 — โต้แย้งเพื่อนที่เห็นต่าง",
+      question: "เพื่อนกลุ่มอื่นแย้งว่า \"ถ้าแชทบอทเป็นตัวตอบผิดเอง บริษัทก็ไม่ควรต้องรับผิด เพราะบริษัทไม่ได้ตั้งใจโกหก\" จงเขียนคำตอบโต้แย้งเพื่อนคนนั้น โดยต้อง (1) อธิบายว่าเหตุใดข้อโต้แย้งนั้นจึงไม่หนักแน่น (2) อ้างเหตุผลของตุลาการในคดีนี้มาสนับสนุน และ (3) ระบุว่าหากยอมรับข้อโต้แย้งของเพื่อน จะเกิดผลอย่างไรต่อผู้บริโภคคนอื่นในอนาคต",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (3 คะแนน)",
+          desc: "มีองค์ประกอบครบทั้ง 3 ข้อ: (1) โต้แย้งข้อสันนิษฐานเรื่องเจตนา — ความรับผิดไม่ได้ขึ้นอยู่กับเจตนาโกหก แต่ขึ้นอยู่กับการไม่ใช้ความระมัดระวังตามสมควร หรือชี้ว่าแชทบอทไม่ใช่ผู้กระทำที่แยกจากบริษัท (2) อ้างเหตุผลของตุลาการอย่างน้อยหนึ่งข้อ เช่น เรียกข้อต่อสู้ว่า \"ข้อเสนอที่น่าประหลาดใจ\" หรือองค์กรต้องรับผิดชอบข้อมูลทุกส่วนบนเว็บไซต์ของตน (3) ระบุผลเสียที่ตามมาอย่างสมเหตุสมผลต่อผู้บริโภคในอนาคต",
+          examples: [
+            "“ผมไม่เห็นด้วย เพราะเรื่องนี้ไม่ได้ตัดสินกันที่ว่าบริษัทตั้งใจโกหกหรือไม่ แต่ตัดสินที่ว่าบริษัทระมัดระวังพอหรือไม่ ตุลาการบอกชัดว่าองค์กรมีหน้าที่ต้องใช้ความระมัดระวังตามสมควรให้ข้อมูลที่ตัวเองส่งออกไปถูกต้องและไม่ทำให้เข้าใจผิด และตอนที่สายการบินอ้างว่าแชทบอทเป็นนิติบุคคลแยกต่างหาก ตุลาการยังเรียกว่าเป็นข้อเสนอที่น่าประหลาดใจ ... ถ้าเรายอมรับตามที่เพื่อนว่า ต่อไปบริษัทไหนก็เอา AI มาตอบลูกค้าแล้วโบ้ยว่าเป็นความผิดของ AI ได้หมด ลูกค้าที่เสียเงินจะไม่เหลือใครให้เรียกร้องเลย”",
+            "“ข้อโต้แย้งนี้ไม่หนักแน่นค่ะ เพราะการรับผิดไม่ได้ต้องมีเจตนาโกหก แค่ประมาทไม่ตรวจสอบก็ต้องรับผิดแล้ว ตุลาการวินิจฉัยว่าบริษัทต้องรับผิดชอบข้อมูลทุกส่วนบนเว็บไซต์ของตัวเอง ... ถ้ายอมให้บริษัทอ้างว่าเป็นความผิดของ AI ได้ ผู้บริโภคในอนาคตก็จะเสียเปรียบมาก”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1-2 คะแนน)",
+          desc: "ให้ 2 คะแนนเมื่อมีองค์ประกอบครบ 2 ข้อจาก 3 ข้อ และให้ 1 คะแนนเมื่อมีองค์ประกอบเพียง 1 ข้อ",
+          examples: [
+            "“ไม่เห็นด้วย เพราะบริษัทเป็นคนเอาแชทบอทมาใช้เอง ก็ต้องรับผิดชอบสิ่งที่มันพูด ตุลาการก็บอกว่าบริษัทต้องรับผิดชอบข้อมูลทุกอย่างบนเว็บไซต์ของตัวเอง” — [2 คะแนน: ไม่อ้างผลที่จะเกิดขึ้นในอนาคต]",
+            "“ไม่เห็นด้วยครับ เพราะถ้าให้อ้างแบบนั้นได้ ต่อไปบริษัทก็จะโบ้ยให้ AI ทุกเรื่อง ลูกค้าจะไม่มีที่พึ่ง และเรื่องนี้ไม่ได้ดูที่เจตนาแต่ดูที่ความระมัดระวัง” — [2 คะแนน: ไม่อ้างเหตุผลของตุลาการ]",
+            "“ไม่เห็นด้วย เพราะบริษัทต้องรับผิดชอบแชทบอทของตัวเอง” — [1 คะแนน: มีเฉพาะองค์ประกอบที่ 1 ระดับพื้นฐาน]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "เห็นด้วยกับข้อโต้แย้งของเพื่อนโดยไม่มีการไตร่ตรอง หรือตอบโดยไม่มีองค์ประกอบใดเลย หรือโต้แย้งด้วยเหตุผลที่ไม่เกี่ยวข้องกับประเด็นความรับผิดชอบ",
+          examples: [
+            "“เห็นด้วยกับเพื่อน AI ผิดเองบริษัทไม่เกี่ยว”",
+            "“เพื่อนคิดผิด บริษัทใหญ่ต้องจ่ายอยู่แล้วเพราะมีเงินมาก” — [เหตุผลไม่เกี่ยวกับหลักความรับผิดชอบ]",
+            "“แชทบอทมันไม่มีความคิด มันเลยตอบผิด” — [อธิบายสาเหตุทางเทคนิคแต่ไม่ตอบว่าใครควรรับผิด]",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById(btn.dataset.close).hidden = true;
+  }));
+
   async function saveToSheet(payload) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
@@ -271,7 +383,7 @@
     if (!q3_text) { statusEl.textContent = "กรุณาตอบข้อ 6"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 6... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
     const q2Result = gradeQ2();
@@ -285,33 +397,26 @@
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: nonAiScore,            // คะแนนส่วนปรนัย (ตรวจตามเกณฑ์/รูบริคฝั่งหน้าเว็บ)
       max_score: MAX_SCORE,
-      objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX,
-      essay_status: "pending",   // อัตนัย: ไม่ตรวจโดยระบบ → รอการตรวจคะแนน
-      rubric: [
-        { q: "q1", label: "ข้อ 4 — แยกแยะสรุปได้/สรุปเกิน", score: q1Result.score, max: 2 },
-        { q: "q2", label: "ข้อ 5 — เลือกแนวปฏิบัติที่ถูกต้อง", score: q2Result.score, max: 2 },
-        { q: "q3", label: "ข้อ 6 — โต้แย้งอย่างมีเหตุผล", score: null, max: 3, status: "pending" },
-      ],
+      non_ai_score: nonAiScore,
+      essay_question_key: "q3",
+      raw_answers: { essayText: q3_text },
       details: {
-        q3: { text: q3_text, max: ESSAY_MAX, status: "pending" },
         q1: q1Result, q2: { ...q2Result, selected: Array.from(q2Checked) },
         behavior: behaviorData,
       },
     });
 
     if (!serverResult || serverResult.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 6 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
 
-    const q3Result = { score: null, pending: true, max: ESSAY_MAX, reasoning: "รอการตรวจคะแนน" };
-    const total_score = nonAiScore; // ยังไม่รวมข้ออัตนัย
+    const q3Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q3Result.score;
 
-    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score, essay_pending: true, behavior: behaviorData });
+    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
@@ -356,24 +461,24 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    const pend = !!data.essay_pending;
-    document.getElementById("resultTotal").textContent = pend ? `${data.total_score} / ${OBJECTIVE_MAX}` : `${data.total_score} / ${MAX_SCORE}`;
-    document.getElementById("resultPercent").innerHTML = pend
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 4 — แยกแยะสรุปได้/สรุปเกิน</span><span>${data.q1.score} / 2</span></div>
         <div class="result__item-reason">ตอบถูก ${data.q1.correctCount} จาก 5 ข้อ</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 5 — เลือกแนวปฏิบัติที่ถูกต้อง</span><span>${data.q2.score} / 2</span></div>
         <div class="result__item-reason">เลือกถูก ${data.q2.correctSelected} ข้อ จากทั้งหมด ${data.q2.totalSelected} ข้อที่เลือก</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 6 — โต้แย้งอย่างมีเหตุผล</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว (เต็ม ${ESSAY_MAX} คะแนน) ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง</div>
+        <div class="result__item-head"><span>ข้อ 6 — โต้แย้งอย่างมีเหตุผล</span><span>${data.q3.score} / 3</span></div>
+        <div class="result__item-reason">${data.q3.reasoning}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q3')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

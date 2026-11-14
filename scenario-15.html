@@ -156,12 +156,27 @@
   .checks { list-style: none; margin: 6px 0 0; padding: 0; font-size: 12.5px; line-height: 1.7; }
   .checks .yes { color: var(--ok); } .checks .no { color: var(--danger); }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
-  :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f1f4f8; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
+
+  :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -174,6 +189,15 @@
 <div id="mainScreen">
 
   <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
 
   <div class="scenario-intro">
     <p>แบมและเพื่อนในสภานักเรียนอยากทำระบบช่วยตรวจว่าใครแต่งกายชุดนักเรียนถูกระเบียบก่อนเข้าแถวตอนเช้า เพื่อลดเวลาที่ครูเวรต้องยืนตรวจหน้าประตูทุกวัน ทีมงานเก็บภาพนักเรียนที่แต่งกายถูกระเบียบจากกล้องมือถือตอนเข้าแถว ซึ่งแดดจ้าทุกภาพ ภาพส่วนหนึ่งขออนุญาตเจ้าของภาพแล้ว แต่อีกส่วนหนึ่งดึงมาจากอัลบั้มภาพหมู่ในกลุ่มไลน์ห้องที่เพื่อนเคยส่งกันเล่นๆ โดยไม่ได้บอกเจ้าของภาพว่าจะนำไปฝึกระบบ ดูบทสนทนาของทีมได้ด้านล่างนี้</p>
@@ -428,8 +452,6 @@
   const SCENARIO_ID = "scenario-15";
   const SCENARIO_NAME = "สภานักเรียนฝึกระบบตรวจชุดนักเรียนจากภาพเพื่อน";
   const MAX_SCORE = 4; // q1(2) + q2(2)
-  const ESSAY_MAX = 4;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -780,6 +802,7 @@
     });
   }
 
+  // ข้อ 1 และข้อ 2 ทั้งสองข้อเป็นอัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทน
   // (เดิมตรวจด้วย pattern matching ในไฟล์นี้ ดูคำอธิบายขั้นตอนที่ handleSubmit ด้านล่าง)
 
   // ===================================================================
@@ -843,7 +866,7 @@
 
     submitBtn.disabled = true;
     statusEl.style.color = "#5c655f";
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 1... (อาจใช้เวลาสักครู่)";
 
     const behaviorData = collectBehavior();
     const simLog = {
@@ -852,40 +875,137 @@
       drag_log: sim.dragLog,
     };
 
-    // ทั้งข้อ 1 (เลือกกรณี + อธิบายเหตุผล) และข้อ 2 เป็นอัตนัย: บันทึกอย่างเดียว ระบบไม่ตรวจ
+    // ส่งทั้งตัวเลือกและคำอธิบายของข้อ 1 ไปให้ AI พิจารณาร่วมกัน (เกณฑ์เดิมผูกสองส่วนนี้เข้าด้วยกัน)
     const q1ChoiceLabel = q1Selected === Q1_CORRECT
       ? "นักเรียนเลือก: กรณีที่ 2 (ใช้เฉพาะภาพที่เจ้าของภาพยินยอมแล้ว)"
       : "นักเรียนเลือก: กรณีที่ 1 (ใช้ภาพทั้งหมดรวมที่ไม่ได้ขออนุญาตด้วย)";
+    const q1EssayInput = q1ChoiceLabel + "\nคำอธิบายเหตุผล: " + q1_text;
 
-    const res = await saveToSheet({
+    const result1 = await saveToSheet({
       studentKey: profile.studentKey,
       name: profile.name, grade: profile.grade, school: profile.school,
       scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME,
-      score: 0, max_score: MAX_SCORE, objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX, essay_status: "pending",
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — การเลือกชุดข้อมูลฝึกและเหตุผล", score: null, max: 2, status: "pending" },
-        { q: "q2", label: "ข้อ 2 — เมื่อเพื่อนขอถอนความยินยอม", score: null, max: 2, status: "pending" },
-      ],
-      details: {
-        behavior: behaviorData,
-        q1: { selected: q1Selected, choice_label: q1ChoiceLabel, record: r.rec, text: q1_text, max: 2, status: "pending" },
-        q2: { text: q2_text, max: 2, status: "pending" },
-        sim_log: simLog,
-      },
+      max_score: MAX_SCORE, non_ai_score: 0,
+      essay_question_key: "q1",
+      raw_answers: { essayText: q1EssayInput },
+      details: { behavior: behaviorData, sim_log: simLog },
     });
-    if (!res || res.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+    if (!result1 || result1.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 1 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
+    const q1Result = result1.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
 
-    showResult({ total_score: 0, essay_pending: true, behavior: behaviorData });
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
+
+    const result2 = await saveToSheet({
+      studentKey: profile.studentKey,
+      name: profile.name, grade: profile.grade, school: profile.school,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME,
+      max_score: MAX_SCORE, non_ai_score: q1Result.score,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
+      details: {
+        behavior: behaviorData,
+        q1: { score: q1Result.score, selected: q1Selected, record: r.rec, text: q1_text, reasoning: q1Result.reasoning },
+        sim_log: simLog,
+      },
+    });
+    if (!result2 || result2.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+    const q2Result = result2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = result2.total_score != null ? result2.total_score : q1Result.score + q2Result.score;
+
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   function checksHTML(parts) {
     return `<ul class="checks">${parts.map((p) => `<li class="${p.ok ? "yes" : "no"}">${p.ok ? "✓" : "✗"} ${p.label}</li>`).join("")}</ul>`;
   }
+
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้แสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — การเลือกชุดข้อมูลฝึกและเหตุผล",
+      question: "จัดชุดข้อมูลฝึกแล้วกดฝึกระบบดูผล จากนั้นบันทึกองค์ประกอบของชุดที่เลือก และอธิบายว่ามีหลักในการเลือกภาพอย่างไร นักเรียนจะเลือกใช้กรณีใด เพราะเหตุใด",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "เลือกกรณีที่ 2 คือใช้ชุดข้อมูลฝึกที่ไม่มีภาพที่ติดป้าย 'ไม่ได้ขออนุญาต' เลยแม้แต่ใบเดียว และคำอธิบายยอมรับตรงไปตรงมาว่าความแม่นยำอาจต่ำกว่าหรือมีตัวอย่างน้อยกว่าเมื่อเทียบกับการยอมใช้ภาพที่ไม่ได้ขออนุญาต แต่ยังเลือกทำเพราะเคารพสิทธิ์เจ้าของภาพ",
+          examples: [
+            "“เลือกเฉพาะภาพยินยอมแล้วกลางแดด 6 ใบ และยินยอมแล้วในร่ม 4 ใบ รวม 10 ใบ ได้ข้อมูลน้อยกว่าถ้ารวมภาพที่ไม่ได้ขออนุญาตด้วย ความแม่นยำโดยเฉพาะภาพในร่มอาจต่ำกว่ากรณีที่ใช้ทั้ง 18 ใบ แต่เราเลือกใช้เท่านี้เพราะภาพที่เหลือไม่ได้ขอเจ้าของภาพไว้ก่อน จะเอามาใช้ไม่ได้ไม่ว่าจะช่วยความแม่นยำแค่ไหน” [อธิบายการแลกเปลี่ยนระหว่างความแม่นยำกับจริยธรรมได้ตรงไปตรงมา]",
+            "“เลือกภาพยินยอมแล้วทั้งหมดที่มี 10 ใบ ความแม่นยำรวมที่ได้ต่ำกว่าตอนที่เคยลองใช้ภาพทั้ง 18 ใบซึ่งรวมภาพที่ไม่ได้ขออนุญาตด้วย แสดงว่าการขออนุญาตทำให้ข้อมูลน้อยลงและระบบอาจไม่แม่นเท่าเดิม แต่เป็นสิ่งที่ต้องยอมรับเพื่อไม่ละเมิดเจ้าของภาพ” [เปรียบเทียบผลจริงจากหน้าจอสองสถานการณ์และสรุปจุดยืนเชิงจริยธรรมได้ชัดเจน]",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "เลือกกรณีที่ 2 แต่คำอธิบายไม่ได้เปรียบเทียบผลกับกรณีใช้ภาพที่ไม่ได้ขออนุญาต",
+          examples: [
+            "“เลือกภาพยินยอมแล้ว 8 ใบ ความแม่นยำสูงดี” [ไม่อธิบายเปรียบเทียบกรณีที่มีภาพที่ไม่ได้ขออนุญาตปะปนด้วย]",
+            "“เลือกเฉพาะภาพยินยอมแล้ว 10 ใบ ความแม่นยำได้เท่านี้” [ไม่ได้อธิบายเปรียบเทียบกับกรณีใช้ภาพที่ไม่ได้ขออนุญาตตามที่โจทย์ถาม]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "เลือกกรณีที่ 1 เพราะได้ค่าความแม่นยำสูงกว่า ไม่ว่าคำอธิบายจะเป็นอย่างไร",
+          examples: [
+            "“เลือกภาพทั้ง 18 ใบรวมภาพที่ไม่ได้ขออนุญาตด้วย ยิ่งใช้ภาพเยอะยิ่งแม่นยำ ไม่เห็นเป็นปัญหา” [ไม่ได้แยกแยะประเด็นการยินยอมเลย]",
+          ],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — เมื่อเพื่อนขอถอนความยินยอม",
+      question: "กดปุ่มจำลองเหตุการณ์ 'เพื่อนขอถอนความยินยอม' ในหน้าจอ แล้วสังเกตว่าเกิดอะไรขึ้นกับการ์ดและชุดข้อมูลฝึก จากนั้นอธิบายว่า นอกจากการดึงภาพนั้นออกจากชุดข้อมูลแล้ว ทีมของแบมควรทำอะไรอีกบ้างกับระบบที่เคยฝึกด้วยภาพนั้นไปแล้วก่อนหน้านี้ และควรวางแนวทางขออนุญาตใหม่อย่างไรไม่ให้เกิดปัญหานี้ซ้ำ",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "อธิบายครบทั้งสามส่วน คือสิ่งที่สังเกตเห็นจากการกดปุ่ม (การ์ดถูกล็อกและดึงออก) สิ่งที่ต้องทำกับระบบที่เคยฝึกด้วยภาพนั้นไปแล้ว (เช่น ต้องฝึกใหม่โดยไม่มีภาพนั้น ไม่ใช่แค่ลบออกจากคลัง) และแนวทางขออนุญาตล่วงหน้าที่ชัดเจนก่อนเก็บภาพในอนาคต",
+          examples: [
+            "“พอกดปุ่ม การ์ดของเพื่อนคนนั้นเปลี่ยนเป็นล็อกและถูกดึงออกจากชุดฝึกทันที ทีมควรฝึกระบบใหม่อีกรอบโดยไม่มีภาพนี้อยู่เลย ไม่ใช่แค่เอาการ์ดออกจากหน้าจอ เพราะระบบเก่าที่เคยฝึกไปแล้วยังมี 'ร่องรอย' ของภาพนั้นอยู่ และต่อไปควรถามเจ้าของภาพทุกคนก่อนถ่ายหรือก่อนนำไปใช้ พร้อมบอกด้วยว่าจะเอาไปทำอะไรและถอนได้ทุกเมื่อ” [ครบทั้งสามส่วน และเข้าใจว่าการฝึกซ้ำเป็นสิ่งจำเป็นเมื่อถอนความยินยอม]",
+            "“การ์ดถูกล็อกใช้ไม่ได้ทันที สิ่งที่ต้องทำต่อคือฝึกระบบใหม่ตั้งแต่ต้นโดยไม่มีภาพของเพื่อนคนนี้ และก่อนเริ่มโครงการครั้งหน้า ทีมควรทำแบบฟอร์มขออนุญาตที่บอกชัดว่าภาพจะถูกใช้ฝึกระบบตรวจชุดนักเรียน ใครไม่ยินยอมก็ไม่ต้องถ่าย และถอนสิทธิ์ได้ภายหลังเสมอ” [ระบุการฝึกใหม่และกระบวนการขออนุญาตล่วงหน้าที่เป็นรูปธรรม]",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "อธิบายได้เพียงหนึ่งหรือสองส่วนจากสามส่วน เช่น บอกว่าการ์ดถูกลบแต่ไม่พูดถึงการฝึกใหม่ หรือพูดถึงการขออนุญาตล่วงหน้าลอยๆ โดยไม่เชื่อมกับเหตุการณ์ที่เห็น",
+          examples: [
+            "“การ์ดของเพื่อนหายไปจากชุดฝึก ทีมควรขอโทษเพื่อนคนนั้น” [กล่าวถึงผลจากการกดปุ่มถูกต้องบางส่วนแต่ไม่ได้พูดถึงการฝึกระบบใหม่หรือแนวทางป้องกันในอนาคต]",
+            "“ต่อไปควรขออนุญาตก่อนเก็บภาพทุกครั้ง” [ให้แนวทางป้องกันถูกทิศทางแต่ไม่ได้เชื่อมโยงกับสิ่งที่สังเกตเห็นจากการกดปุ่มหรือพูดถึงระบบเดิม]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ไม่ได้อธิบายผลจากการกดปุ่ม หรือเห็นว่าไม่จำเป็นต้องทำอะไรเพิ่มเพราะภาพถูกลบออกไปแล้ว",
+          examples: [
+            "“ไม่มีอะไรต้องทำเพิ่ม เพราะการ์ดถูกเอาออกจากชุดฝึกไปแล้ว” [ไม่เข้าใจว่าระบบที่เคยฝึกไปแล้วยังคงใช้ข้อมูลของภาพนั้นอยู่ และไม่ได้เสนอแนวทางป้องกันปัญหาในอนาคต]",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById(btn.dataset.close).hidden = true;
+  }));
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
   function renderBehaviorHtml(b) {
@@ -930,20 +1050,20 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    document.getElementById("resultTotal").textContent = OBJECTIVE_MAX > 0 ? `${data.total_score} / ${OBJECTIVE_MAX}` : "รอตรวจ";
-    document.getElementById("resultPercent").innerHTML = OBJECTIVE_MAX > 0
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `ข้ออัตนัยทั้งหมด (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
 
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 1 — การเลือกชุดข้อมูลฝึกและเหตุผล</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
+        <div class="result__item-head"><span>ข้อ 1 — การเลือกชุดข้อมูลฝึกและเหตุผล</span><span>${data.q1.score} / 2</span></div>
+        <div class="result__item-reason">${data.q1.reasoning || ""}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — เมื่อเพื่อนขอถอนความยินยอม</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
+        <div class="result__item-head"><span>ข้อ 2 — เมื่อเพื่อนขอถอนความยินยอม</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning || ""}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

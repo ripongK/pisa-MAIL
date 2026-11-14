@@ -97,10 +97,24 @@
   .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f1f4f8; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -113,6 +127,15 @@
 <div id="mainScreen">
 
   <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
 
   <div class="scenario-intro">
     <p>เนยเรียนอยู่ชั้นมัธยมศึกษาปีที่ 4 กำลังเตรียมสอบกลางภาควิชาคณิตศาสตร์และวิทยาศาสตร์ เพื่อนในห้องแนะนำแอปติวสอบชื่อ StudyGenie AI ซึ่งใช้เทคโนโลยีปัญญาประดิษฐ์แบบเดียวกับ ChatGPT ช่วยตอบคำถาม อธิบายโจทย์ และสร้างแบบฝึกหัดให้ตามระดับความสามารถของผู้เรียนแต่ละคน เนยดาวน์โหลดแอปมาลงในโทรศัพท์ทันทีหลังเลิกเรียน เพราะอยากเริ่มติวให้ทันก่อนสอบในอีกสิบวัน เมื่อเปิดแอปครั้งแรก หน้าจอที่ปรากฏขึ้นมาไม่ใช่หน้าติวเลย แต่เป็นหน้า "ตั้งค่าความเป็นส่วนตัว" ที่มีตัวเลือกเรียงกันหกรายการ แต่ละรายการมีคำอธิบายตัวหนังสือขนาดเล็กสีเทาที่อ่านยากและใช้ศัพท์เทคนิค เนยกวาดสายตาผ่านไปอย่างเร็วๆ โดยไม่ได้อ่านรายละเอียดแต่ละบรรทัดจริงจัง ลองแตะสวิตช์แต่ละอันเพื่อดูสถานะเริ่มต้นของแต่ละตัวเลือกได้ด้านล่างนี้</p>
@@ -230,9 +253,7 @@
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1GO0dYfAEUTfhnmL8uynk3-1GfYRXeMx7Wc1n89rJAPH3H5uAcpBB9Giv8g0V0ZJ5/exec";
   const SCENARIO_ID = "scenario-13";
   const SCENARIO_NAME = "การตั้งค่าความเป็นส่วนตัวแอป";
-  const MAX_SCORE = 4; // q1(2) + q2(2)
-  const ESSAY_MAX = 2;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
+  const MAX_SCORE = 3; // q1(1, 2-tier: เต็ม/ไม่ได้คะแนน) + q2(2)
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -304,10 +325,79 @@
   }
 
   function gradeQ1() {
-    return { score: q1Selected === Q1_CORRECT ? 2 : 0 };
+    // เกณฑ์ 2 ระดับ (คะแนนเต็ม / ไม่ได้คะแนน) ไม่มีคะแนนบางส่วน จึงคะแนนเต็ม = 1
+    return { score: q1Selected === Q1_CORRECT ? 1 : 0 };
   }
 
-  // ---------- ข้อ 2: อัตนัย — บันทึกข้อความลง Google Sheet ระบบไม่ตรวจ (รอการตรวจคะแนนโดยครู) ----------
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
+
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้แสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — ตัวเลือกใดเสี่ยงที่สุดต่อ \"คนอื่น\"?",
+      question: "จากตัวเลือกในหน้าตั้งค่าของแอป StudyGenie AI ตัวเลือกใดมีความเสี่ยงมากที่สุดที่จะทำให้ข้อมูลส่วนตัวของ \"บุคคลอื่น\" ที่ไม่ได้ให้ความยินยอม เช่น เพื่อนของเนย ถูกส่งออกไปอยู่ในมือของคนที่เนยควบคุมไม่ได้",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (1 คะแนน)",
+          desc: "เลือกข้อ 2 \"ใช้บทสนทนาของฉันเพื่อฝึกและปรับปรุงโมเดล AI\" เพราะบทสนทนาที่เนยพิมพ์มีทั้งข้อมูลส่วนตัวของครอบครัวและชื่อ/อาการป่วยของเพื่อนที่ไม่ได้รับความยินยอม เมื่อเปิดตัวเลือกนี้ข้อมูลจะถูกส่งให้ทีมตรวจสอบภายนอกอ่านและเก็บไว้นานถึงสามปี",
+          examples: [],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "เลือกข้ออื่นนอกจากข้อ 2 (ข้อ 1, 3 หรือ 4) — เกณฑ์นี้มี 2 ระดับเท่านั้น ไม่มีคะแนนบางส่วน",
+          examples: [],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — เนยควรทำอย่างไรต่อไป?",
+      question: "หลังจากอ่านหน้าตั้งค่าอีกครั้งในคืนก่อนสอบ เนยควรตัดสินใจอย่างไรกับตัวเลือกทั้งหกรายการนี้ และควรทำอย่างไรก่อนพิมพ์ข้อความลงในแอปติวสอบในครั้งต่อไป จงอธิบายแนวคิดของเนยให้ครบสามส่วน คือ (1) ตัวเลือกอย่างน้อยหนึ่งรายการที่เนยควรปิดหรือเปลี่ยนพร้อมเหตุผล (2) ความเสี่ยงของการพิมพ์ข้อมูลส่วนตัวของตนเองหรือของผู้อื่นลงในบทสนทนากับ AI (3) สิ่งที่เนยควรทำก่อนพิมพ์ข้อความในลักษณะเดียวกันนี้อีกในอนาคต",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "กล่าวถึงครบทั้งสามส่วนอย่างสมเหตุสมผลและเชื่อมโยงกับสถานการณ์: ระบุตัวเลือกที่ควรปิด/เปลี่ยนพร้อมเหตุผล (เช่น ปิดการใช้บทสนทนาฝึกโมเดลเพราะมีข้อมูลของปูอยู่ในนั้น) + อธิบายความเสี่ยงของการพิมพ์ข้อมูลส่วนตัวของตนเอง/ผู้อื่นลงแชท AI ที่อาจถูกคนอื่นเห็นหรือเก็บไว้นาน + เสนอแนวปฏิบัติที่เป็นรูปธรรมก่อนพิมพ์ในอนาคต เช่น ไม่พิมพ์ชื่อจริงของเพื่อน ขออนุญาตก่อนพูดถึงเรื่องคนอื่น หรืออ่านการตั้งค่าก่อนกดยอมรับ",
+          examples: [
+            "“เนยควรปิดตัวเลือกที่ให้เอาแชทไปฝึกโมเดล เพราะในแชทมีเรื่องของปูที่ปูไม่ได้ยินยอมให้พูดถึง ถ้าเปิดไว้คนอื่นอาจได้อ่านชื่อกับอาการป่วยของปู ต่อไปเนยจะไม่พิมพ์ชื่อเพื่อนหรือเรื่องส่วนตัวมากลงในแชท จะถามแบบทั่วไปแทนและจะอ่านหน้าตั้งค่าก่อนกดยอมรับทุกครั้ง”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "กล่าวถึงเพียง 1-2 ส่วนจาก 3 ส่วน หรือกล่าวครบสามส่วนแต่บางส่วนคลุมเครือไม่เชื่อมโยงกับสถานการณ์",
+          examples: [
+            "“เนยควรปิดตัวเลือกฝึกโมเดลเพราะมันเอาข้อมูลเราไปใช้ อย่างอื่นก็เฉยๆ” — [เฉพาะส่วนที่ 1]",
+            "“หนูว่าไม่ควรพิมพ์เรื่องส่วนตัวลงไปเพราะอาจมีคนอื่นอ่านได้ ต่อไปจะระวังมากขึ้น” — [ส่วนที่ 2, 3 ไม่มีส่วนที่ 1]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ไม่ตอบตรงคำถาม ตอบคลุมเครือเกินไปโดยไม่อ้างถึงสถานการณ์ หรือกล่าวซ้ำโจทย์",
+          examples: [
+            "“ไม่ควรใช้แอปนี้อีกเลยเพราะมันไม่ดี”",
+            "“เนยควรอ่านให้ดีก่อนกด”",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById(btn.dataset.close).hidden = true;
+  }));
+
   async function saveToSheet(payload) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
@@ -332,7 +422,7 @@
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
     const nonAiScore = q1Result.score;
@@ -348,32 +438,26 @@
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: nonAiScore,            // คะแนนส่วนปรนัย (ตรวจตามเกณฑ์/รูบริคฝั่งหน้าเว็บ)
       max_score: MAX_SCORE,
-      objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX,
-      essay_status: "pending",   // อัตนัย: ไม่ตรวจโดยระบบ → รอการตรวจคะแนน
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — ความเสี่ยงต่อข้อมูลบุคคลอื่น", score: q1Result.score, max: 2 },
-        { q: "q2", label: "ข้อ 2 — การตัดสินใจและแนวทางในอนาคต", score: null, max: 2, status: "pending" },
-      ],
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        q2: { text: q2_text, max: ESSAY_MAX, status: "pending" },
         q1: { ...q1Result, selected: q1Selected },
         behavior: behaviorData,
       },
     });
 
     if (!serverResult || serverResult.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
 
-    const q2Result = { score: null, pending: true, max: ESSAY_MAX, reasoning: "รอการตรวจคะแนน" };
-    const total_score = nonAiScore; // ยังไม่รวมข้ออัตนัย
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, essay_pending: true, behavior: behaviorData });
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
@@ -418,20 +502,19 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    const pend = !!data.essay_pending;
-    document.getElementById("resultTotal").textContent = pend ? `${data.total_score} / ${OBJECTIVE_MAX}` : `${data.total_score} / ${MAX_SCORE}`;
-    document.getElementById("resultPercent").innerHTML = pend
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 1 — ความเสี่ยงต่อข้อมูลบุคคลอื่น</span><span>${data.q1.score} / 2</span></div>
-        <div class="result__item-reason">${data.q1.score === 2 ? "เลือกถูกต้อง: การใช้บทสนทนาฝึกโมเดล AI" : "คำตอบยังไม่ตรงกับตัวเลือกที่เสี่ยงที่สุดต่อข้อมูลบุคคลอื่น"}</div>
+        <div class="result__item-head"><span>ข้อ 1 — ความเสี่ยงต่อข้อมูลบุคคลอื่น</span><span>${data.q1.score} / 1</span></div>
+        <div class="result__item-reason">${data.q1.score === 1 ? "เลือกถูกต้อง: การใช้บทสนทนาฝึกโมเดล AI" : "คำตอบยังไม่ตรงกับตัวเลือกที่เสี่ยงที่สุดต่อข้อมูลบุคคลอื่น"}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — การตัดสินใจและแนวทางในอนาคต</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว (เต็ม ${ESSAY_MAX} คะแนน) ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง</div>
+        <div class="result__item-head"><span>ข้อ 2 — การตัดสินใจและแนวทางในอนาคต</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

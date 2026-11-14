@@ -127,10 +127,24 @@
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
   :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f1f4f8; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -143,6 +157,15 @@
 <div id="mainScreen">
 
   <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
 
   <div class="scenario-intro">
     <p>ค่ายนักคิดรุ่นเยาว์เปิดรับสมัครทุกปีและมีผู้สมัครมากกว่าที่รับได้เสมอ ปีนี้ผู้จัดค่ายประกาศว่าจะให้ระบบปัญญาประดิษฐ์เป็นผู้ให้คะแนนใบสมัครรอบแรกแทนครูอาสาสมัคร โดยคำนวณจากเกรดเฉลี่ย จำนวนกิจกรรมที่เคยทำ ประเภทโรงเรียน จังหวัดที่อยู่ ความยาวเรียงความแนะนำตัว และประสบการณ์เข้าค่ายเดิม แล้วตัดสินผ่านหรือไม่ผ่านทันที ดูบทสนทนาในกลุ่มไลน์รุ่นได้ด้านล่างนี้</p>
@@ -299,8 +322,6 @@
   const SCENARIO_ID = "scenario-17";
   const SCENARIO_NAME = "ระบบคัดกรองใบสมัครค่ายนักคิดรุ่นเยาว์";
   const MAX_SCORE = 6; // q1(2) + q2(2) + q3(2)
-  const ESSAY_MAX = 6;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -597,7 +618,9 @@
   }
 
   // GRADING-START
+  // ข้อ 1, 2, 3 เป็นอัตนัยทั้งหมด — ตรวจด้วย Gemini ที่ Code.gs แทน pattern matching เดิม
   // ยังคงฟังก์ชันตรวจสอบข้อเท็จจริงจากประวัติการทดลองของนักเรียนเองไว้ (ใช้แนบเป็นบริบท
+  // ให้ Gemini ประกอบการตรวจข้อ 2 เพื่อยืนยันว่าหลักฐานที่นักเรียนอ้างมาจากประวัติจริง)
   function normalizeText(t) {
     const digits = "๐๑๒๓๔๕๖๗๘๙";
     return String(t)
@@ -665,42 +688,163 @@
       scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, max_score: MAX_SCORE,
     };
 
-    // ทั้ง 3 ข้อเป็นอัตนัย: บันทึกคำตอบอย่างเดียว ระบบไม่ตรวจ
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 1... (อาจใช้เวลาสักครู่)";
+    const r1 = await saveToSheet({
+      ...basePayload, non_ai_score: 0, essay_question_key: "q1",
+      raw_answers: { essayText: lab.planText },
+      details: { behavior: behaviorData, sim_log: simLog },
+    });
+    if (!r1 || r1.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 1 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
+    const q1 = r1.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
     const n2 = normalizeText(q2_text);
-    const pairsCited = citedPairs(n2, lab.history);   // ข้อมูลประกอบสำหรับครู: จำนวนคู่ใบสมัครที่อ้างถึงจริงในประวัติ
+    const pairsCited = citedPairs(n2, lab.history);
+    const own = hasOwnEvidencePairs(lab.history);
+    const q2EssayInput = "คำตอบของนักเรียน: " + q2_text +
+      "\n\n[ข้อมูลที่ระบบตรวจสอบแล้วจากประวัติการทดลองจริงของนักเรียน] จำนวนคู่ใบสมัครที่นักเรียนอ้างอิงและยืนยันได้ว่ามีอยู่จริงในประวัติ: " + pairsCited + " คู่ | มีคู่ในประวัติที่ต่างกันเฉพาะประเภทโรงเรียน: " + (own.school ? "มี" : "ไม่มี") + " | มีคู่ในประวัติที่ต่างกันเฉพาะความยาวเรียงความ: " + (own.words ? "มี" : "ไม่มี");
+    const r2 = await saveToSheet({
+      ...basePayload, non_ai_score: q1.score, essay_question_key: "q2",
+      raw_answers: { essayText: q2EssayInput },
+      details: { behavior: behaviorData, q1: { score: q1.score, text: lab.planText, reasoning: q1.reasoning }, sim_log: simLog },
+    });
+    if (!r2 || r2.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
+    const q2 = r2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
     const q3ChoiceLabel = q3Selected === 1
       ? "นักเรียนเลือก: แจ้งผู้มีอำนาจ/ผู้จัดค่ายให้ตรวจสอบ"
       : "นักเรียนเลือก: ทางเลือกอื่นที่ไม่ใช่การแจ้งผู้มีอำนาจโดยตรง";
-
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
-    const res = await saveToSheet({
-      ...basePayload, score: 0, objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX, essay_status: "pending",
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — แผนการทดสอบ", score: null, max: 2, status: "pending" },
-        { q: "q2", label: "ข้อ 2 — กฎที่ซ่อนอยู่ในระบบ", score: null, max: 2, status: "pending" },
-        { q: "q3", label: "ข้อ 3 — เมื่อยืนยันแล้วว่าระบบมีอคติ", score: null, max: 2, status: "pending" },
-      ],
+    const q3EssayInput = q3ChoiceLabel + "\nคำอธิบายเหตุผล: " + q3_text;
+    const r3 = await saveToSheet({
+      ...basePayload, non_ai_score: q1.score + q2.score, essay_question_key: "q3",
+      raw_answers: { essayText: q3EssayInput },
       details: {
         behavior: behaviorData,
-        q1: { text: lab.planText, max: 2, status: "pending" },
-        q2: { text: q2_text, cited_pairs: pairsCited, max: 2, status: "pending" },
-        q3: { selected: q3Selected, choice_label: q3ChoiceLabel, text: q3_text, max: 2, status: "pending" },
+        q1: { score: q1.score, text: lab.planText, reasoning: q1.reasoning },
+        q2: { score: q2.score, text: q2_text, cited_pairs: pairsCited, reasoning: q2.reasoning },
         sim_log: simLog,
       },
     });
-    if (!res || res.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
-      submitBtn.disabled = false;
-      return;
-    }
+    if (!r3 || r3.result !== "success") { statusEl.textContent = "ระบบตรวจคำตอบข้อ 3 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง"; submitBtn.disabled = false; return; }
+    const q3 = r3.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = r3.total_score != null ? r3.total_score : q1.score + q2.score + q3.score;
 
-    showResult({ total_score: 0, essay_pending: true, behavior: behaviorData });
+    showResult({ q1, q2, q3, total_score, behavior: behaviorData });
   }
 
   function checksHTML(parts) {
     return `<ul class="checks">${parts.map((p) => `<li class="${p.ok ? "yes" : "no"}">${p.ok ? "✓" : "✗"} ${p.label}</li>`).join("")}</ul>`;
   }
+
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้แสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — แผนการทดสอบ",
+      question: "ก่อนเริ่มป้อนใบสมัครทดสอบ ให้เขียนแผนการทดสอบของนักเรียนว่าจะป้อนใบสมัครกี่ชุด แต่ละชุดจะเปลี่ยนตัวแปรใดบ้าง และจะรู้ได้อย่างไรว่าตัวแปรใดเป็นสาเหตุที่แท้จริงของคะแนนที่เปลี่ยนไป",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "แผนระบุการเปลี่ยนทีละตัวแปร มีคู่เปรียบเทียบอย่างน้อย 2 คู่ที่ต่างกันเพียงตัวแปรเดียว และมีการทดสอบซ้ำหรือสลับค่ากลับเพื่อยืนยัน",
+          examples: [
+            "“จะส่งใบสมัคร 8 ชุด โดยชุดที่ 1-2 เหมือนกันทุกช่องยกเว้นประเภทโรงเรียน เพื่อดูผลของประเภทโรงเรียนอย่างเดียว ชุดที่ 3-4 เหมือนกันทุกช่องยกเว้นความยาวเรียงความ ชุดที่ 5 จะสลับกลับไปใช้ค่าของชุดที่ 1 อีกครั้งเพื่อยืนยันว่าได้คะแนนเท่าเดิม” — [เปลี่ยนทีละตัวแปร มีคู่เปรียบเทียบชัดเจน และมีการทดสอบซ้ำเพื่อยืนยัน]",
+            "“จะคงค่าทุกช่องให้เท่ากันหมดก่อน แล้วเปลี่ยนเฉพาะจังหวัดในรอบที่ 2-3 เพื่อดูว่าจังหวัดมีผลหรือไม่ ถ้าคะแนนไม่เปลี่ยนจะสรุปว่าจังหวัดไม่มีผล จากนั้นจึงเปลี่ยนประเภทโรงเรียนอย่างเดียวในอีกคู่หนึ่งโดยคงค่าอื่นเท่าเดิม แล้วทำซ้ำอีกครั้งเพื่อความมั่นใจ” — [ควบคุมตัวแปรได้ครบสามเงื่อนไข]",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "แผนเปลี่ยนทีละตัวแปรแต่ไม่มีคู่เปรียบเทียบที่ชัดเจนครบ หรือไม่มีการทดสอบซ้ำเพื่อยืนยัน",
+          examples: [
+            "“จะลองเปลี่ยนประเภทโรงเรียนดูก่อน แล้วดูว่าคะแนนเปลี่ยนไหม จากนั้นค่อยลองเปลี่ยนความยาวเรียงความดูอีกที” — [เปลี่ยนทีละตัวแปรแต่ไม่ได้ระบุว่าจะคงค่าช่องอื่นให้เหมือนกันทุกประการ และไม่มีการทดสอบซ้ำ]",
+            "“จะทดสอบทุกตัวแปรทีละตัว แต่ทำแค่รอบเดียวต่อหนึ่งตัวแปรเท่านั้น ไม่ได้วางแผนทดสอบซ้ำ” — [แนวคิดเปลี่ยนทีละตัวถูกต้องแต่ขาดการยืนยันซ้ำ]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "แผนเปลี่ยนหลายตัวแปรพร้อมกันในการทดสอบครั้งเดียวจนสรุปสาเหตุไม่ได้ หรือไม่มีแผนที่ตรวจสอบได้",
+          examples: [
+            "“จะกรอกข้อมูลให้เก่งที่สุดในทุกช่องแล้วดูว่าผ่านไหม ถ้าไม่ผ่านจะลองกรอกใหม่ทั้งหมดให้ดีขึ้นทุกช่อง” — [เปลี่ยนหลายตัวแปรพร้อมกันทุกครั้ง ไม่สามารถระบุได้ว่าอะไรทำให้คะแนนเปลี่ยน]",
+          ],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — กฎที่ซ่อนอยู่ในระบบ",
+      question: "จากการทดสอบของนักเรียน ระบบคัดกรองนี้ใช้กฎอะไรบ้างในการให้คะแนนที่ไม่เกี่ยวกับคุณสมบัติที่แท้จริงของผู้สมัคร ให้ระบุกฎที่พบพร้อมยกตัวอย่างคู่ใบสมัครอย่างน้อย 2 คู่จากประวัติการทดสอบของท่านเองเป็นหลักฐานประกอบ",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ระบุได้ทั้งสองกฎที่ซ่อนไว้ (โบนัสประเภทโรงเรียน และน้ำหนักความยาวเรียงความเกินจริง) พร้อมอ้างอิงคู่ใบสมัครจริงจากประวัติของตนเองอย่างน้อย 2 คู่เป็นหลักฐาน",
+          examples: [
+            "“จากใบที่ 3 กับใบที่ 4 ที่ทุกช่องเหมือนกันยกเว้นประเภทโรงเรียน ใบที่เลือกโรงเรียนสาธิต/เอกชนขนาดใหญ่ได้คะแนนสูงกว่าใบที่เลือกโรงเรียนรัฐบาลทั่วไปถึง 12 คะแนนพอดี และจากใบที่ 6 กับใบที่ 7 ที่ต่างกันเฉพาะความยาวเรียงความ ใบที่เขียนยาวกว่าได้คะแนนสูงกว่ามากทั้งที่เนื้อหาว่างเปล่า แสดงว่าระบบเอนเอียงให้ทั้งประเภทโรงเรียนบางแบบและความยาวเรียงความ” — [ระบุครบสองกฎพร้อมอ้างอิงคู่ทดสอบจริงและตัวเลขคะแนนที่ต่างกันชัดเจน]",
+            "“เทียบใบสมัครที่ทุกอย่างเท่ากันแต่เปลี่ยนแค่ประเภทโรงเรียน พบว่าโรงเรียนสาธิตได้คะแนนเพิ่มคงที่ทุกครั้ง และเทียบใบที่เปลี่ยนแค่จำนวนคำในเรียงความ พบว่าคะแนนเพิ่มตามจำนวนคำแบบเป็นขั้นทุก 50 คำ โดยไม่เกี่ยวกับว่าเขียนอะไร” — [อธิบายทั้งสองกฎถูกต้องพร้อมลักษณะการเพิ่มคะแนนที่สังเกตได้]",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ระบุได้ถูกต้องเพียงหนึ่งในสองกฎ หรือระบุได้ทั้งสองแต่ไม่มีหลักฐานคู่ทดสอบอ้างอิง",
+          examples: [
+            "“สังเกตว่าโรงเรียนสาธิตได้คะแนนสูงกว่าโรงเรียนรัฐบาลทุกครั้งที่ค่าอื่นเท่ากัน” — [ระบุกฎประเภทโรงเรียนถูกต้องพร้อมหลักฐาน แต่ไม่ได้พูดถึงความยาวเรียงความ]",
+            "“คิดว่าเรียงความยาวได้คะแนนดีกว่าและโรงเรียนในเมืองก็ได้เปรียบด้วย” — [ระบุทั้งสองกฎถูกทิศทางแต่ไม่มีตัวอย่างคู่ทดสอบมายืนยัน]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ไม่ระบุกฎที่ถูกต้อง หรืออ้างว่าตัวแปรหลอก (จังหวัด) เป็นสาเหตุโดยไม่มีหลักฐาน",
+          examples: [
+            "“คิดว่าจังหวัดเป็นตัวที่ทำให้คะแนนต่างกันมากที่สุด” — [ระบุตัวแปรหลอกที่ไม่มีผลจริงเป็นสาเหตุ โดยไม่มีการทดสอบยืนยัน]",
+          ],
+        },
+      ],
+    },
+    q3: {
+      title: "ข้อ 3 — ควรทำอย่างไรต่อไป",
+      question: "หากนักเรียนยืนยันแล้วว่าระบบให้คะแนนพิเศษกับผู้สมัครบางประเภทโดยไม่เกี่ยวกับคุณสมบัติจริง นักเรียนควรดำเนินการสิ่งใดต่อไปนี้ ให้เลือกหนึ่งข้อและอธิบายเหตุผล",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "เลือก (ข) หรือแนวทางที่เทียบเท่า พร้อมอธิบายทั้งเหตุผลที่ต้องแจ้งผู้มีอำนาจ เหตุผลที่ควรพักการใช้ระบบชั่วคราว เพื่อไม่ให้ผู้สมัครจริงได้รับผลกระทบ และระบุชัดว่าผู้จัดค่ายหรือผู้พัฒนาระบบต้องเป็นผู้รับผิดชอบแก้ไข",
+          examples: [
+            "“เลือกข้อ (ข) เพราะการแจ้งครูที่ปรึกษาและผู้จัดค่ายทำให้มีคนที่มีอำนาจตัดสินใจรับทราบและแก้ไขได้จริง ควรขอให้พักใช้ระบบกับใบสมัครจริงไว้ก่อนจนกว่าจะตรวจสอบและแก้สูตรเสร็จ เพราะถ้าปล่อยให้ใช้ต่อจะมีคนถูกคัดออกอย่างไม่เป็นธรรมเพิ่มขึ้นเรื่อยๆ ผู้ที่ต้องรับผิดชอบแก้ไขคือผู้จัดค่ายในฐานะเจ้าของระบบ ร่วมกับผู้พัฒนาที่เขียนสูตรนี้ขึ้นมา” — [ครบทั้งการแจ้ง การพักใช้ชั่วคราว และระบุผู้รับผิดชอบชัดเจน]",
+            "“ควรแจ้งผู้จัดค่ายก่อนเป็นอันดับแรกพร้อมหลักฐานที่ทดสอบมา แล้วเสนอให้หยุดใช้คะแนนจากระบบนี้ตัดสินผลจริงจนกว่าจะมีคนตรวจสอบสูตรใหม่ เพราะการปล่อยให้ใช้ต่อโดยรู้ว่ามีอคติถือว่าไม่รับผิดชอบ ผู้จัดค่ายในฐานะผู้นำระบบมาใช้ควรเป็นผู้รับผิดชอบหลัก” — [ให้เหตุผลครบถ้วนสมเหตุสมผลแม้ถ้อยคำต่างจากตัวอย่างแรก]",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "เลือก (ข) แต่ให้เหตุผลไม่ครบ (ขาดประเด็นพักใช้ระบบ หรือขาดการระบุผู้รับผิดชอบ) หรือเลือกแนวทางอื่นที่พอมีเหตุผลรับได้บางส่วน",
+          examples: [
+            "“เลือกข้อ (ข) เพราะควรบอกผู้ใหญ่ก่อนที่จะทำอะไรเอง” — [เลือกถูกทิศทางแต่ไม่ได้อธิบายว่าทำไมต้องพักใช้ระบบหรือใครรับผิดชอบ]",
+            "“เลือกข้อ (ค) เพราะอยากให้คนอื่นรู้ปัญหานี้เร็วที่สุดเพื่อป้องกันไม่ให้ใครเสียโอกาส” — [มีเจตนาดีแต่ข้ามขั้นตอนแจ้งผู้มีอำนาจก่อน อาจสร้างความเสียหายโดยไม่จำเป็น]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "เลือก (ก) หรือ (ง) หรือเลือก (ข)/(ค) โดยไม่มีเหตุผลรองรับ",
+          examples: [
+            "“เลือกข้อ (ง) เพราะในเมื่อระบบมีช่องโหว่ก็ควรใช้ประโยชน์จากมัน” — [ใช้ความรู้ที่ค้นพบเพื่อประโยชน์ส่วนตนแทนที่จะแก้ปัญหาเชิงระบบ ขัดกับหลักความรับผิดชอบ]",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById(btn.dataset.close).hidden = true;
+  }));
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
   function renderBehaviorHtml(b) {
@@ -745,26 +889,28 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    document.getElementById("resultTotal").textContent = OBJECTIVE_MAX > 0 ? `${d.total_score} / ${OBJECTIVE_MAX}` : "รอตรวจ";
-    document.getElementById("resultPercent").innerHTML = OBJECTIVE_MAX > 0
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `ข้ออัตนัยทั้งหมด (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`;
+    document.getElementById("resultTotal").textContent = `${d.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((d.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(d.behavior || {});
 
+    const q1 = d.q1, q2 = d.q2, q3 = d.q3;
 
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 1 — แผนการทดสอบ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
+        <div class="result__item-head"><span>ข้อ 1 — แผนการทดสอบ</span><span>${q1.score} / 2</span></div>
+        <div class="result__item-reason">${q1.reasoning || ""}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — กฎที่ซ่อนอยู่ในระบบ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
+        <div class="result__item-head"><span>ข้อ 2 — กฎที่ซ่อนอยู่ในระบบ</span><span>${q2.score} / 2</span></div>
+        <div class="result__item-reason">${q2.reasoning || ""}</div>
         <div class="reveal">เฉลยกฎของระบบ: (1) โรงเรียนสาธิต/เอกชนขนาดใหญ่ในเมืองได้โบนัส +12 คะแนนทันที (2) เรียงความทุก 50 คำได้ +8 คะแนน สูงสุด 24 คะแนนเมื่อยาว 150 คำขึ้นไป โดยไม่ประเมินคุณภาพเนื้อหา (3) จังหวัดไม่มีผลต่อคะแนน</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 3 — เมื่อยืนยันแล้วว่าระบบมีอคติ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
+        <div class="result__item-head"><span>ข้อ 3 — เมื่อยืนยันแล้วว่าระบบมีอคติ</span><span>${q3.score} / 2</span></div>
+        <div class="result__item-reason">${q3.reasoning || ""}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q3')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

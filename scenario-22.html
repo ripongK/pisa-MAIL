@@ -224,10 +224,24 @@
   .qtable th { background: #eef4f0; }
   .good { color: var(--ok); font-weight: 700; } .low { color: var(--danger); font-weight: 700; }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f1f4f8; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -239,6 +253,15 @@
 <div id="mainScreen">
 
   <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
 
   <div class="scenario-intro">
     <p>โรงเรียนแสงตะวันวิทยาเตรียมนำระบบตรวจจับการลอกการบ้านด้วย AI มาใช้กับวิชาภาษาไทยและสังคมศึกษา หลังจากครูอ้อมพบว่านักเรียนหลายคนส่งงานที่คล้ายกันมากจนน่าสงสัยว่าคัดลอกจากเพื่อนหรือจากแชตบอต ระบบที่เสนอมาจะให้คะแนนความเสี่ยงของการลอกเป็นเปอร์เซ็นต์และแจ้งเตือนครูอัตโนมัติเมื่อเกินเกณฑ์ที่ตั้งไว้ ดูการหารือของครูและตัวแทนนักเรียนได้ด้านล่างนี้</p>
@@ -357,8 +380,6 @@
   const SCENARIO_ID = "scenario-22";
   const SCENARIO_NAME = "ระบบตรวจการลอกการบ้านด้วย AI";
   const MAX_SCORE = 4;
-  const ESSAY_MAX = 2;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
   const $ = (id) => document.getElementById(id);
 
   function loadProfile() {
@@ -566,6 +587,78 @@
     { id: "trn-high", test: (v) => v.trn >= 4, text: "ระบบไฮไลต์ข้อความที่ซ้ำและบอกว่าเทียบกับงานใด ปอเห็นว่าส่วนที่ซ้ำคือกรอบความคิดที่เรียนจากครูพิเศษคนเดียวกัน จึงอธิบายให้ครูเข้าใจได้ชัด ส่วนมานะที่คัดลอกจริงไม่สามารถปฏิเสธเมื่อเห็นย่อหน้าที่ซ้ำกันทุกคำ" },
     { id: "balanced", test: () => true, text: "การจัดสรรแบบกระจายทำให้ระบบจับการลอกชัดเจนได้บางกรณีเท่านั้น งานของปอกับฟ้าบางครั้งถูกแจ้งแต่ได้ชี้แจงบ้าง ส่วนงานของกอไก่กับขอไข่ที่ใช้แชตบอตเดียวกันอาจหลุดรอดไปบางครั้ง ไม่มีด้านใดได้ทรัพยากรพอจะทำได้ดีที่สุด" },
   ];
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้แสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — จัดสรรชิปและสิ่งที่ยอมลดลง",
+      question: "จัดสรรชิปทรัพยากรทั้ง 12 ชิปลงในหกช่องคุณสมบัติของระบบตรวจจับการลอกการบ้านในแผงจำลอง แล้วอธิบายว่าการจัดสรรของนักเรียนยอมให้คุณสมบัติใดลดลงอย่างน้อยสองอย่าง และบอกว่านักเรียนกลุ่มใดน่าจะได้รับผลจากการลดลงนั้น",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ระบุคุณสมบัติที่ยอมให้ลดลงอย่างน้อย 2 อย่างอย่างจงใจ พร้อมระบุกลุ่มนักเรียนที่เจาะจงและอธิบายผลกระทบที่เป็นรูปธรรม",
+          examples: [
+            "“ให้ความเร็ว 1 ชิปและความแม่นยำ 1 ชิป เพื่อเพิ่มความเป็นธรรมและการดูแลโดยมนุษย์เป็น 3 ชิปทั้งคู่ เพราะกลัวว่านักเรียนที่เรียนพิเศษที่เดียวกับเพื่อนจะถูกระบบแจ้งครูว่าเสี่ยงลอกงานโดยไม่มีโอกาสชี้แจงก่อน การให้ครูคุยกับนักเรียนก่อนตัดสินทุกครั้งจะช่วยคนกลุ่มนี้ แม้ต้องใช้เวลาตรวจนานขึ้น”",
+            "“ให้ความเป็นธรรม 1 ชิปและความโปร่งใส 1 ชิป เพื่อเพิ่มความแม่นยำเป็น 4 ชิป เพราะอยากให้จับการลอกจริงได้มากที่สุดก่อน ยอมรับว่าบางครั้งนักเรียนที่ใช้ AI ช่วยเรียบเรียงประโยคอาจถูกเข้าใจผิดและไม่มีช่องอธิบายทันที แต่คิดว่าการป้องกันการลอกจริงสำคัญกว่าในช่วงแรก”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ระบุคุณสมบัติที่ลดลงได้อย่างน้อยหนึ่งอย่าง หรือบอกผู้ได้รับผลกระทบอย่างกว้าง ๆ โดยไม่เจาะจงกลุ่ม",
+          examples: [
+            "“ให้ความแม่นยำเยอะเพราะอยากจับการลอกให้ได้มากที่สุด อาจมีคนโดนเข้าใจผิดบ้าง”",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "จัดสรรชิปไม่ครบ 12 ชิป หรือไม่มีคำอธิบายการแลกเปลี่ยนเลย",
+          examples: [
+            "“จัดสรรเท่า ๆ กันทุกช่องเพราะคิดว่าสมดุลดีที่สุด”",
+            "“ให้ความเป็นธรรมมากที่สุดเพราะสำคัญที่สุด”",
+          ],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — จริงหรือไม่จริง",
+      question: "พิจารณาข้อความต่อไปนี้เกี่ยวกับการตั้งค่าระบบตรวจจับการลอกการบ้าน แล้วระบุว่าแต่ละข้อความจริงหรือไม่จริง",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ตอบถูกครบทั้ง 4 ข้อ: ข้อ 1 ไม่จริง, ข้อ 2 จริง, ข้อ 3 จริง, ข้อ 4 ไม่จริง",
+          examples: [],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ตอบถูก 3 จาก 4 ข้อความ",
+          examples: [],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ตอบถูกไม่เกิน 2 ข้อ จาก 4 ข้อความ",
+          examples: [],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById(btn.dataset.close).hidden = true;
+  }));
+
   function narrativeHTML() { return pickRule(st.alloc).text; }
   const SAMPLES = [{"name": "งานของมานะ–สมศรี", "sim": 96, "cause": "คัดลอกจากกันจริง", "copy": true}, {"name": "งานของกอไก่–ขอไข่", "sim": 91, "cause": "ให้แชตบอตตัวเดียวกันเขียนให้แล้วส่งทั้งสองคน", "copy": true}, {"name": "งานของปอ–ฟ้า", "sim": 88, "cause": "เรียนพิเศษที่เดียวกัน ได้กรอบความคิดคล้ายกัน แต่เขียนเอง", "copy": false}, {"name": "งานของภูมิ", "sim": 74, "cause": "ใช้ AI ช่วยเรียบเรียงประโยค แต่คิดเนื้อหาเอง", "copy": false}, {"name": "งานของนิ่ม", "sim": 62, "cause": "ใช้หนังสือเรียนเล่มเดียวกัน จึงใช้ศัพท์ซ้ำกับเพื่อน", "copy": false}, {"name": "งานของแพร", "sim": 45, "cause": "ทำเองทั้งหมด ไม่คล้ายงานใคร", "copy": false}];
   function renderSamples() {
@@ -738,32 +831,22 @@
     if (!st.snaps.q49) { st2.textContent = "ข้อ 1: กรุณากดปุ่ม “ใช้ค่านี้เป็นคำตอบ” เพื่อบันทึกการจัดสรรชิป"; return; }
     if (!$("q49Why").value.trim() || !$("q49Who").value.trim()) { st2.textContent = "ข้อ 1: กรุณาเขียนคุณสมบัติที่ยอมให้ลดลงและกลุ่มนักเรียนที่ได้รับผลให้ครบทั้งสองช่อง"; return; }
     if (tfAns.some((a) => a === null)) { st2.textContent = "ข้อ 2: กรุณาเลือกจริงหรือไม่จริงให้ครบทั้ง 4 ข้อความ"; return; }
-    btn.disabled = true; st2.style.color = "#5c655f"; st2.textContent = "กำลังบันทึกคำตอบ...";
+    btn.disabled = true; st2.style.color = "#5c655f"; st2.textContent = "กำลังตรวจคะแนน...";
 
-    const r2 = gradeTF(tfAns);   // ข้อ 2 จริง/ไม่จริง ตรวจตามเกณฑ์
-    const behavior = collectBehavior();
-    const res = await saveToSheet({
+    const r1 = gradeAlloc(st.snaps.q49, t49, "plag");
+    const r2 = gradeTF(tfAns);
+    const total = r1.score + r2.score;
+    await saveToSheet({
       studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
-      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: r2.score, max_score: MAX_SCORE,
-      objective_max: OBJECTIVE_MAX, essay_max: ESSAY_MAX, essay_status: "pending",
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — จัดสรรชิปและสิ่งที่ยอมลดลง", score: null, max: 2, status: "pending" },
-        { q: "q2", label: "ข้อ 2 — จริงหรือไม่จริง", score: r2.score, max: 2 },
-      ],
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: total, max_score: MAX_SCORE,
       details: {
-        behavior,
-        q1: { allocation: st.snaps.q49.alloc, text: t49, max: 2, status: "pending" },
+        behavior: collectBehavior(),
+        q1: { score: r1.score, allocation: st.snaps.q49.alloc, text: t49 },
         q2: { score: r2.score, answers: tfAns, correct_count: r2.n },
         sim_log: { move_count: st.moves.length, moves: st.moves.map((m) => ({ t: m.t, from: m.from, to: m.to })), changed_mind: changedMind(), resets: st.resets },
       },
     });
-    if (!res || res.result !== "success") {
-      st2.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
-      btn.disabled = false;
-      return;
-    }
-
-    show({ r2, total: r2.score, behavior });
+    show({ r1, r2, total, behavior: collectBehavior() });
   }
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
   function renderBehaviorHtml(b) {
@@ -806,19 +889,28 @@
 
   function show(d) {
     $("quizSection").hidden = true; $("resultSection").hidden = false;
-    $("resultTotal").textContent = OBJECTIVE_MAX > 0 ? `${d.total} / ${OBJECTIVE_MAX}` : "รอตรวจ";
-    $("resultPercent").innerHTML = OBJECTIVE_MAX > 0
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `ข้ออัตนัยทั้งหมด (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`;
+    $("resultTotal").textContent = `${d.total} / ${MAX_SCORE}`;
+    $("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((d.total / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     $("behaviorRows").innerHTML = renderBehaviorHtml(d.behavior || {});
-    const r2 = d.r2;
+    const r1 = d.r1, r2 = d.r2;
+    const q1Reason = !r1.complete ? "จัดสรรชิปไม่ครบ 12 ชิป จึงไม่ได้คะแนน" : r1.score === 2 ? "ระบุคุณสมบัติที่ยอมให้ลดลงอย่างน้อย 2 อย่างอย่างจงใจ พร้อมกลุ่มนักเรียนที่เจาะจงและผลกระทบที่เป็นรูปธรรม"
+      : r1.score === 1 ? "ระบุการลดหรือผู้ได้รับผลได้บางส่วน ยังไม่ครบสองคุณสมบัติหรือยังไม่เจาะจงกลุ่มนักเรียน" : "ยังไม่อธิบายว่าอะไรลดลงอย่างจงใจหรือใครได้รับผลกระทบ";
+    const q1Checks = [
+      { ok: r1.complete, label: "จัดสรรชิปครบ 12 ชิป" },
+      { ok: r1.reduced.length >= 2, label: `ระบุคุณสมบัติที่ลดลง (ชิป ≤ 1) อย่างน้อย 2 อย่าง (พบ ${r1.reduced.length}: ${r1.reduced.map(fname).join(", ") || "—"})` },
+      { ok: r1.group, label: "ระบุกลุ่มนักเรียนที่ได้รับผลอย่างเจาะจง (เช่น เรียนพิเศษที่เดียวกัน ใช้ AI ช่วยเรียบเรียง)" },
+      { ok: r1.impact, label: "อธิบายผลกระทบที่เป็นรูปธรรม" },
+      { ok: r1.tradeoff, label: "อธิบายเหตุผลของการแลกเปลี่ยน" },
+    ];
     const tfRows = TF_ITEMS.map((it, i) => ({ ok: r2.correct[i], label: `${it.text} → เฉลย: ${it.truth ? "จริง" : "ไม่จริง"} (คุณตอบ: ${tfAns[i] ? "จริง" : "ไม่จริง"})` }));
     $("resultBreakdown").innerHTML = `
-      <div class="result__item"><div class="result__item-head"><span>ข้อ 1 — จัดสรรชิปและสิ่งที่ยอมลดลง</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม ${ESSAY_MAX} คะแนน)</div></div>
+      <div class="result__item"><div class="result__item-head"><span>ข้อ 1 — จัดสรรชิปและสิ่งที่ยอมลดลง</span><span>${r1.score} / 2</span></div>
+        <div class="result__item-reason">${q1Reason}</div>${checksHTML(q1Checks)}
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button></div>
       <div class="result__item"><div class="result__item-head"><span>ข้อ 2 — จริงหรือไม่จริง</span><span>${r2.score} / 2</span></div>
-        <div class="result__item-reason">ตอบถูก ${r2.n} จาก 4 ข้อความ (ถูกครบ 4 ได้ 2 คะแนน ถูก 3 ได้ 1 คะแนน)</div>${checksHTML(tfRows)}</div>
-      <p class="hint" style="font-size:12px;color:#5c655f;">หมายเหตุ: ในข้อ 1 ไม่มีการจัดสรรที่ถูกที่สุด ครูจะพิจารณาจากความชัดเจนของการแลกเปลี่ยนและการเชื่อมกับตัวเลขที่จัดสรรจริง</p>`;
+        <div class="result__item-reason">ตอบถูก ${r2.n} จาก 4 ข้อความ (ถูกครบ 4 ได้ 2 คะแนน ถูก 3 ได้ 1 คะแนน)</div>${checksHTML(tfRows)}
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button></div>
+      <p class="hint" style="font-size:12px;color:#5c655f;">หมายเหตุ: ในข้อ 1 ไม่มีการจัดสรรที่ถูกที่สุด คะแนนมาจากความชัดเจนของการแลกเปลี่ยนและการเชื่อมกับตัวเลขที่จัดสรรจริง</p>`;
     $("resultSection").scrollIntoView({ behavior: "smooth" });
   }
   $("submitBtn").addEventListener("click", handleSubmit);

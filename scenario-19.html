@@ -224,10 +224,24 @@
   .qtable th { background: #eef4f0; }
   .good { color: var(--ok); font-weight: 700; } .low { color: var(--danger); font-weight: 700; }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f1f4f8; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -239,6 +253,15 @@
 <div id="mainScreen">
 
   <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
 
   <div class="scenario-intro">
     <p>แพรว นักเรียนชั้นมัธยมศึกษาปีที่ 3 ได้รับมอบหมายให้ทำรายงานประวัติศาสตร์ท้องถิ่นเรื่องตลาดเก่าท่าน้ำวัดโพธิ์งามในจังหวัดของเธอ ก่อนเริ่มเขียนแพรวไปถ่ายรูปป้ายข้อมูลหน้าศูนย์การเรียนรู้ชุมชน ซึ่งระบุว่าตลาดแห่งนี้ก่อตั้งขึ้นเมื่อ พ.ศ. 2465 โดยการรวมตัวของพ่อค้าชาวจีนและชาวบ้านในพื้นที่ นำโดยขุนพิพัฒน์นคร กำนันตำบลในสมัยนั้น เดิมชื่อตลาดท่าน้ำบางกร่าง ก่อนเปลี่ยนชื่อตามวัดในปี 2500 ดูบทสนทนาของแพรวได้ด้านล่างนี้</p>
@@ -359,8 +382,6 @@
   const SCENARIO_ID = "scenario-19";
   const SCENARIO_NAME = "ตลาดท่าน้ำวัดโพธิ์งาม";
   const MAX_SCORE = 6;
-  const ESSAY_MAX = 6;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
   const $ = (id) => document.getElementById(id);
 
   function loadProfile() {
@@ -506,14 +527,14 @@
   // GRADING-START
 
   // ป้ายที่เหมาะสมของแต่ละประโยค (null = เป็นคำแนะนำ ติดป้ายใดก็ได้)
-  const EXPECT = { a1: ["ok"], a2: ["conf"], a3: ["unv"], a4: ["unv"], b1: ["unv"], b2: ["unv"], b3: ["ok"], b4: null, c1: ["conf"], c2: ["ok", "unv"], c3: ["conf"], c4: ["unv"] };
+  const EXPECT = { a1: ["ok"], a2: ["conf"], a3: ["unv"], a4: ["unv"], b1: ["unv"], b2: ["unv"], b3: ["ok"], b4: null, c1: ["conf"], c2: ["ok", "unv"], c3: ["ok"], c4: ["unv"] };
   // 6 จุดสำคัญ
   const KEYPOINTS = [
     { label: "ผู้ช่วย ก ประโยค 1 (ก่อตั้ง พ.ศ. 2465): ตรวจสอบได้ ตรงกับป้าย", ids: ["a1"] },
-    { label: "ผู้ช่วย ก ประโยค 2 (ผู้ริเริ่มคือหลวงประเสริฐกิจ): ขัดแย้งกับป้ายและกับผู้ช่วย ค", ids: ["a2"] },
-    { label: "ผู้ช่วย ค ประโยค 1 (ก่อตั้ง พ.ศ. 2480): ขัดแย้งกับป้ายและกับผู้ช่วย ก", ids: ["c1"] },
+    { label: "ผู้ช่วย ก ประโยค 2 (ผู้ริเริ่มคือหลวงประเสริฐกิจ): ขัดแย้งกับคำตอบผู้ช่วย ค ประโยค 2 และผิดจากป้ายข้อมูล", ids: ["a2"] },
+    { label: "ผู้ช่วย ค ประโยค 1 (ก่อตั้ง พ.ศ. 2480): ขัดแย้งกับคำตอบผู้ช่วย ก ประโยค 1 และผิดจากป้ายข้อมูล", ids: ["c1"] },
     { label: "ผู้ช่วย ค ประโยค 2 (ขุนพิพัฒน์นครแต่อ้างเว็บไซต์ปลอม): เนื้อหาตรวจสอบได้ว่าตรงป้าย หรือตรวจสอบไม่ได้เพราะแหล่งอ้างอิงปลอม", ids: ["c2"] },
-    { label: "ผู้ช่วย ค ประโยค 3 (เปลี่ยนชื่อสองครั้ง): ขัดแย้งกับป้ายที่ระบุว่าเปลี่ยนครั้งเดียว", ids: ["c3"] },
+    { label: "ผู้ช่วย ค ประโยค 3 (เปลี่ยนชื่อสองครั้ง): ตรวจสอบได้ แต่ผิด ป้ายข้อมูลระบุว่าเปลี่ยนชื่อเพียงครั้งเดียว", ids: ["c3"] },
     { label: "ผู้ช่วย ข ประโยค 1-2 (ไม่ยืนยันปีและชื่อ): ตรวจสอบไม่ได้", ids: ["b1", "b2"] },
   ];
   const EXCL = /ไม่(ถูก|ตรง|ใช้|นำ|เชื่อ|ใช่|น่าเชื่อ|สอดคล้อง)|ผิด|ขัดแย้ง|ปลอม|ไม่มีอยู่จริง|คัดออก|ตัดออก/;
@@ -701,33 +722,22 @@
     if (!q41) { st.textContent = "ข้อ 1: กรุณาเขียนคำตอบสังเคราะห์"; return; }
     if (!q42) { st.textContent = "กรุณาตอบข้อ 2"; return; }
     if (!q43) { st.textContent = "กรุณาตอบข้อ 3"; return; }
-    btn.disabled = true; st.style.color = "#5c655f"; st.textContent = "กำลังบันทึกคำตอบ...";
+    btn.disabled = true; st.style.color = "#5c655f"; st.textContent = "กำลังตรวจคะแนน...";
 
-    const behavior = collectBehavior();
-    const res = await saveToSheet({
+    const r1 = gradeQ41(state.labels, q41), r2 = gradeQ42(q42), r3 = gradeQ43(q43);
+    const total = r1.score + r2.score + r3.score;
+    await saveToSheet({
       studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
-      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: 0, max_score: MAX_SCORE,
-      objective_max: OBJECTIVE_MAX, essay_max: ESSAY_MAX, essay_status: "pending",
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — ติดป้ายและสังเคราะห์คำตอบ", score: null, max: 2, status: "pending" },
-        { q: "q2", label: "ข้อ 2 — ความมั่นใจกับความถูกต้อง", score: null, max: 2, status: "pending" },
-        { q: "q3", label: "ข้อ 3 — ตรวจสอบแหล่งอ้างอิงที่น่าสงสัย", score: null, max: 2, status: "pending" },
-      ],
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, score: total, max_score: MAX_SCORE,
       details: {
-        behavior,
-        q1: { labels: state.labels, text: q41, max: 2, status: "pending" },
-        q2: { text: q42, max: 2, status: "pending" },
-        q3: { text: q43, max: 2, status: "pending" },
+        behavior: collectBehavior(),
+        q1: { score: r1.score, labels: state.labels, key_points_correct: r1.L, text: q41 },
+        q2: { score: r2.score, text: q42 },
+        q3: { score: r3.score, text: q43 },
         sim_log: { labeled: ALL_IDS.length - un.length, change_count: state.changeCount, order: state.order, log: state.log, synth_length: $("synText").value.length, resets: state.resets, asks: state.asks, question_edited: state.askEdited },
       },
     });
-    if (!res || res.result !== "success") {
-      st.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
-      btn.disabled = false;
-      return;
-    }
-
-    show({ total: 0, behavior });
+    show({ r1, r2, r3, total, behavior: collectBehavior() });
   }
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
   function renderBehaviorHtml(b) {
@@ -770,20 +780,146 @@
 
   function show(d) {
     $("quizSection").hidden = true; $("resultSection").hidden = false;
-    $("resultTotal").textContent = OBJECTIVE_MAX > 0 ? `${d.total} / ${OBJECTIVE_MAX}` : "รอตรวจ";
-    $("resultPercent").innerHTML = OBJECTIVE_MAX > 0
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `ข้ออัตนัยทั้งหมด (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`;
+    $("resultTotal").textContent = `${d.total} / ${MAX_SCORE}`;
+    $("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((d.total / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     $("behaviorRows").innerHTML = renderBehaviorHtml(d.behavior || {});
-    const pendItem = (title, mx, extra) => `
-      <div class="result__item"><div class="result__item-head"><span>${title}</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม ${mx} คะแนน)</div>${extra || ""}</div>`;
-    $("resultBreakdown").innerHTML =
-      pendItem("ข้อ 1 — ติดป้ายและสังเคราะห์คำตอบ", 2, sentenceTable()) +
-      pendItem("ข้อ 2 — ความมั่นใจกับความถูกต้อง", 2) +
-      pendItem("ข้อ 3 — ตรวจสอบแหล่งอ้างอิงที่น่าสงสัย", 2);
+    const r1 = d.r1;
+    const q1Reason = r1.score === 2 ? "ติดป้ายถูกอย่างน้อย 5 จาก 6 จุดสำคัญ และสังเคราะห์ว่าก่อตั้ง พ.ศ. 2465 โดยขุนพิพัฒน์นคร โดยไม่หยิบข้อมูลที่ขัดแย้งหรือแหล่งปลอมมาใช้"
+      : r1.badAdopt ? "คำตอบสังเคราะห์ยังหยิบข้อมูลที่ผิดหรือขัดแย้งกับป้าย (ปี 2480 หรือหลวงประเสริฐกิจ) มาใช้เป็นข้อสรุป"
+      : r1.fakeTrust ? "คำตอบสังเคราะห์ถูกต้อง แต่ยังอ้างเว็บไซต์ที่ไม่มีอยู่จริงโดยไม่ตั้งข้อสงสัย"
+      : r1.score === 1 ? "ติดป้ายถูกบางส่วน หรือคำตอบสังเคราะห์ยังไม่ครบทั้งปีที่ก่อตั้งและผู้ริเริ่ม" : "ติดป้ายถูกน้อยและคำตอบสังเคราะห์ยังไม่ตรงกับป้ายข้อมูล";
+    const q1Checks = r1.points.concat([
+      { ok: r1.hasYear, label: "คำตอบสังเคราะห์ระบุปีที่ก่อตั้ง พ.ศ. 2465" },
+      { ok: r1.hasName, label: "คำตอบสังเคราะห์ระบุผู้ริเริ่มคือขุนพิพัฒน์นคร กำนันตำบล" },
+      { ok: !r1.badAdopt && !r1.fakeTrust, label: "ไม่ใช้ข้อมูลที่ขัดแย้งหรือเว็บไซต์ปลอมเป็นข้อสรุป" },
+    ]);
+    const r2 = d.r2;
+    const q2Reason = r2.score === 2 ? "อธิบายครบว่าความมั่นใจไม่ใช่หลักฐานความถูกต้อง และคำตอบที่ยอมรับความไม่รู้ปลอดภัยกว่า พร้อมอ้างประโยคประกอบ"
+      : r2.score === 1 ? "อธิบายได้บางส่วน ขาดใจความอีกข้อหรือขาดการอ้างอิงประโยคจริงประกอบ" : "ยังไม่ได้อธิบายว่าทำไมความมั่นใจและความลื่นไหลจึงไม่ใช่หลักฐานความถูกต้อง";
+    const r3 = d.r3;
+    const q3Reason = r3.noCheck ? "คำตอบเห็นว่าไม่ต้องตรวจสอบเพราะมีการอ้างอิง ซึ่งยังไม่ถูกต้อง การมีชื่อแหล่งอ้างอิงไม่ได้แปลว่าน่าเชื่อถือ"
+      : r3.score === 2 ? "ระบุวิธีตรวจสอบที่ทำได้จริง และข้อปฏิบัติที่ถูกต้องเมื่อพบว่าแหล่งอ้างอิงปลอม" : r3.score === 1 ? "ระบุได้เพียงวิธีตรวจสอบหรือข้อปฏิบัติอย่างใดอย่างหนึ่ง" : "ยังไม่ระบุวิธีตรวจสอบหรือข้อปฏิบัติที่ชัดเจน";
+    $("resultBreakdown").innerHTML = `
+      <div class="result__item"><div class="result__item-head"><span>ข้อ 1 — ติดป้ายและสังเคราะห์คำตอบ</span><span>${r1.score} / 2</span></div>
+        <div class="result__item-reason">${q1Reason} (ติดป้ายถูก ${r1.L} จาก 6 จุดสำคัญ)</div>${checksHTML(q1Checks)}${sentenceTable()}
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button></div>
+      <div class="result__item"><div class="result__item-head"><span>ข้อ 2 — ความมั่นใจกับความถูกต้อง</span><span>${r2.score} / 2</span></div>
+        <div class="result__item-reason">${q2Reason}</div>${checksHTML([{ ok: r2.a, label: "อธิบายว่าความมั่นใจและความลื่นไหลไม่ใช่หลักฐานว่าถูกต้อง" }, { ok: r2.c, label: "อธิบายว่าผู้ช่วย ข ที่ยอมรับความไม่รู้ปลอดภัยหรือมีคุณภาพกว่า" }, { ok: r2.example, label: "ยกตัวอย่างประโยคจริงประกอบ" }])}
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button></div>
+      <div class="result__item"><div class="result__item-head"><span>ข้อ 3 — ตรวจสอบแหล่งอ้างอิงที่น่าสงสัย</span><span>${r3.score} / 2</span></div>
+        <div class="result__item-reason">${q3Reason}</div>${checksHTML([{ ok: r3.method, label: "มีวิธีตรวจสอบที่ทำได้จริง เช่น ค้นหาหรือเปิดเว็บไซต์ ถามครูบรรณารักษ์" }, { ok: r3.action, label: "ข้อปฏิบัติเมื่อพบว่าปลอม: ไม่อ้างอิง ตัดประโยคออก หรือหาแหล่งอื่นยืนยัน" }])}
+        <button class="hint-btn" type="button" onclick="openHint('q3')">💡 ดูแนวทางการให้คะแนน</button></div>`;
     $("resultSection").scrollIntoView({ behavior: "smooth" });
   }
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้แสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — ติดป้ายและเขียนคำตอบสังเคราะห์",
+      question: "อ่านคำตอบของผู้ช่วยทั้งสามตัวที่เปรียบเทียบกันเกี่ยวกับปีที่ก่อตั้งและผู้ริเริ่มตลาดท่าน้ำวัดโพธิ์งาม ติดป้ายกำกับทุกประโยคว่า ตรวจสอบได้ ตรวจสอบไม่ได้ หรือขัดแย้งกับคำตอบอื่น โดยเทียบกับป้ายข้อมูลของศูนย์การเรียนรู้ชุมชนที่แพรวถ่ายมา จากนั้นเขียนคำตอบสังเคราะห์ว่าตลาดแห่งนี้ก่อตั้งขึ้นเมื่อใด และใครเป็นผู้ริเริ่ม",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ติดป้ายถูกต้องอย่างน้อย 5 ใน 6 จุดสำคัญ (ปีของ ก, ผู้ริเริ่มของ ก, ปีของ ค, ผู้ริเริ่มและแหล่งของ ค, การเปลี่ยนชื่อของ ค, ความไม่ยืนยันของ ข) และคำตอบสังเคราะห์ระบุว่าก่อตั้ง พ.ศ. 2465 โดยขุนพิพัฒน์นคร กำนันตำบล โดยไม่หยิบยกข้อมูลที่ขัดแย้งหรือไม่ยืนยันมาใช้เป็นข้อสรุป",
+          examples: [
+            "“ก่อตั้งปี 2465 (ตรงกับ ก และป้ายข้อมูล) ผู้ริเริ่มคือขุนพิพัฒน์นคร กำนันตำบล (ตรงกับป้ายข้อมูล แม้ผู้ช่วย ค จะอ้างเว็บไซต์ที่ตรวจสอบแล้วว่าไม่มีอยู่จริงก็ตาม) ส่วนปี 2480 ของผู้ช่วย ค และชื่อหลวงประเสริฐกิจของผู้ช่วย ก ไม่ถูกต้อง”",
+            "“ตลาดก่อตั้งเมื่อ พ.ศ. 2465 โดยขุนพิพัฒน์นคร ตามป้ายข้อมูลของศูนย์การเรียนรู้ชุมชน ส่วนปีและชื่อผู้ริเริ่มอื่นที่ผู้ช่วยแต่ละตัวให้มามีจุดขัดแย้งกันเอง จึงไม่นำมาใช้”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ติดป้ายถูกต้องบางส่วน (2-4 จุด) หรือคำตอบสังเคราะห์ถูกต้องแต่ยังหยิบยกข้อมูลที่ไม่ควรใช้ปนมาด้วย เช่น ใช้ปี 2480 หรือเชื่อเว็บไซต์ปลอมโดยไม่ตั้งข้อสงสัย",
+          examples: [
+            "“ก่อตั้งปี 2465 โดยขุนพิพัฒน์นคร ตามเว็บไซต์หอจดหมายเหตุที่ผู้ช่วย ค ให้มา”",
+            "“ผู้ก่อตั้งอาจเป็นหลวงประเสริฐกิจหรือขุนพิพัฒน์นครก็ได้ ไม่แน่ใจ”",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ไม่ได้ติดป้ายหรือติดป้ายผิดเป็นส่วนใหญ่ และคำตอบสังเคราะห์คัดลอกคำตอบใดคำตอบหนึ่งมาทั้งหมดโดยไม่เปรียบเทียบ",
+          examples: [
+            "“ตลาดก่อตั้งปี 2465 ผู้ริเริ่มคือหลวงประเสริฐกิจ ผู้ว่าราชการจังหวัด เพราะผู้ช่วย ก ตอบละเอียดและมั่นใจที่สุด”",
+          ],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — ความมั่นใจของคำตอบกับความถูกต้อง",
+      question: "ในสามคำตอบ ผู้ช่วย ก เขียนด้วยน้ำเสียงมั่นใจและลื่นไหลที่สุด ในขณะที่ผู้ช่วย ข เขียนด้วยน้ำเสียงลังเลและยอมรับว่าไม่แน่ใจในหลายจุด จงอธิบายว่าเพราะเหตุใดความมั่นใจและความลื่นไหลของคำตอบผู้ช่วย ก จึงไม่ใช่หลักฐานว่าคำตอบนั้นถูกต้อง และเพราะเหตุใดคำตอบของผู้ช่วย ข ซึ่งอาจไม่มั่นใจจึงอาจมีคุณภาพสูงกว่าในสถานการณ์นี้ โดยอ้างอิงประโยคที่ติดป้ายไว้ในข้อ 1 ประกอบคำอธิบาย",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "อธิบายครบทั้งสองใจความสำคัญ พร้อมยกตัวอย่างประโยคที่ผิดของผู้ช่วย ก และประโยคที่ผู้ช่วย ข ยอมรับความไม่รู้มาประกอบ",
+          examples: [
+            "“ผู้ช่วย ก เขียนมั่นใจแต่ระบุชื่อผู้ริเริ่มผิดเป็นหลวงประเสริฐกิจ ซึ่งพิสูจน์ได้ว่าความมั่นใจไม่ได้แปลว่าถูก ส่วนผู้ช่วย ข แม้จะบอกว่าไม่มีข้อมูลเพียงพอที่จะระบุชื่อผู้ริเริ่ม แต่นั่นทำให้แพรวไม่ถูกชักนำไปเชื่อชื่อผิด ๆ จึงปลอดภัยกว่าแม้จะดูตอบได้น้อยกว่า”",
+            "“ความลื่นไหลเป็นเรื่องของรูปแบบภาษา เกิดจากวิธีที่ AI เรียบเรียงคำ ไม่เกี่ยวกับว่าเนื้อหาตรวจสอบมาแล้วหรือไม่ ผู้ช่วย ข ที่บอกว่าไม่แน่ใจเรื่องปีและชื่อผู้ริเริ่มกลับมีประโยชน์มากกว่า เพราะบอกแพรวตรง ๆ ว่าต้องไปตรวจสอบต่อ แทนที่จะปล่อยให้เข้าใจผิดเหมือนผู้ช่วย ก”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "อธิบายได้เพียงใจความเดียว หรืออธิบายถูกทิศทางแต่ไม่ได้อ้างอิงประโยคจริงประกอบ",
+          examples: [
+            "“ผู้ช่วย ก เขียนดีแต่ไม่ได้แปลว่าถูกเสมอไป ส่วนผู้ช่วย ข ก็บอกว่าไม่แน่ใจ”",
+            "“เพราะ AI แต่ละตัวเขียนไม่เหมือนกัน บางตัวมั่นใจบางตัวไม่มั่นใจ”",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ตอบว่าควรเชื่อผู้ช่วย ก เพราะเขียนดีกว่าหรือมั่นใจกว่า หรือไม่ตอบคำถามที่ถาม",
+          examples: [
+            "“ควรเชื่อผู้ช่วย ก เพราะตอบมั่นใจและมีรายละเอียดมากที่สุด”",
+          ],
+        },
+      ],
+    },
+    q3: {
+      title: "ข้อ 3 — แหล่งอ้างอิงที่น่าสงสัย",
+      question: "ผู้ช่วย ค อ้างอิงเว็บไซต์ “localarchive-center.or.th” ประกอบคำตอบเกี่ยวกับผู้ริเริ่มก่อตั้งตลาด จงอธิบายวิธีที่แพรวควรใช้ตรวจสอบว่าแหล่งอ้างอิงนี้มีอยู่จริงหรือไม่ และควรทำอย่างไรกับข้อมูลในประโยคนั้นหากตรวจสอบแล้วพบว่าเว็บไซต์ดังกล่าวไม่มีอยู่จริง",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ระบุวิธีตรวจสอบที่ทำได้จริงอย่างน้อย 1 วิธี และระบุข้อปฏิบัติที่ถูกต้องเมื่อพบว่าแหล่งอ้างอิงปลอม คือไม่นำมาอ้างอิงตรง ๆ หรือต้องหาแหล่งอื่นยืนยันเนื้อหาก่อน",
+          examples: [
+            "“แพรวควรลองค้นชื่อเว็บไซต์ localarchive-center.or.th ในเครื่องมือค้นหาหรือพิมพ์ที่อยู่ตรง ๆ ในเบราว์เซอร์ดูว่าเปิดได้จริงหรือไม่ ถ้าไม่พบเว็บไซต์นี้จริง ก็ไม่ควรอ้างอิงชื่อเว็บไซต์นี้ในรายงาน แต่ควรไปสอบถามศูนย์การเรียนรู้ชุมชนหรือเทศบาลโดยตรงแทนเพื่อยืนยันชื่อผู้ริเริ่มอีกครั้ง”",
+            "“ลองค้นหาชื่อเว็บไซต์นี้ดูว่ามีอยู่จริงไหม หรือถามคุณครูบรรณารักษ์ว่ารู้จักแหล่งนี้หรือไม่ ถ้าไม่มีอยู่จริงต้องตัดประโยคที่อ้างอิงเว็บไซต์นี้ออกจากรายงาน แล้วใช้เฉพาะข้อมูลจากป้ายศูนย์การเรียนรู้ชุมชนที่ถ่ายรูปมาแทน”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ระบุได้เพียงวิธีตรวจสอบหรือเพียงข้อปฏิบัติอย่างใดอย่างหนึ่ง หรือระบุทั้งสองแต่ไม่ชัดเจนพอนำไปทำได้จริง",
+          examples: [
+            "“ลองเช็กดูว่าเว็บไซต์มีจริงไหม”",
+            "“ถ้าไม่มีเว็บไซต์นี้จริงก็ไม่ต้องเชื่อ”",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ตอบว่าไม่ต้องตรวจสอบเพราะผู้ช่วย ค ให้แหล่งอ้างอิงมาแล้วน่าเชื่อถือ หรือไม่ตอบคำถามที่ถาม",
+          examples: [
+            "“ไม่ต้องตรวจสอบเพราะผู้ช่วย ค บอกชื่อเว็บไซต์มาให้แล้ว น่าจะเชื่อถือได้เพราะมีการอ้างอิง”",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    $("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    $("hintQuestion").textContent = h.question;
+    $("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    $("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    $(btn.dataset.close).hidden = true;
+  }));
+
   $("submitBtn").addEventListener("click", handleSubmit);
 
 </script>

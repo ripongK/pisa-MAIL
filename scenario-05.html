@@ -127,10 +127,24 @@
   .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f1f1ef; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -226,6 +240,15 @@
 
   </div>
  </div>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
 
   <div class="content-wide">
   <section class="quiz" id="quizSection">
@@ -376,6 +399,70 @@
     return Q2_ITEMS.every((item) => q2Selected[item.key] != null);
   }
 
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้แสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — ข้อใดเป็นสัญญาณอันตราย?",
+      question: "ข้อความต่อไปนี้เป็นสัญญาณอันตรายที่ควรระวังหรือไม่ใช่สัญญาณอันตรายเกี่ยวกับข้อเสนอสกินฟรีในคลิปนี้",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ตอบถูกครบทั้ง 4 ข้อ ตามลำดับ สัญญาณอันตราย – สัญญาณอันตราย – ไม่ใช่สัญญาณ – ไม่ใช่สัญญาณ: การสะกดชื่อเว็บผิดเพี้ยนและการขอรหัสผ่านบัญชีเกมตรงๆ เป็นสัญญาณอันตราย ส่วนยอดผู้ชม/ไลก์ และคำบรรยายวิธีเล่นเกมอย่างละเอียด ไม่ใช่สัญญาณอันตราย",
+          examples: [],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ตอบถูก 2-3 ข้อจาก 4 ข้อ",
+          examples: [],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ตอบถูก 0-1 ข้อ หรือไม่ตอบ",
+          examples: [],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — เรียงลำดับสิ่งที่ควรทำ",
+      question: "จงเรียงลำดับสิ่งที่แทนควรทำเมื่อพบข้อเสนอแจกสกินฟรีนี้ โดยเริ่มจากขั้นแรกไปจนถึงขั้นสุดท้าย",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "เรียงลำดับถูกต้องครบทั้ง 4 ขั้นตอน: (1) ปิดป้ายโฆษณาและไม่กดลิงก์ในช่องคำอธิบายคลิปทันที (2) บอกผู้ปกครองหรือพี่ที่ไว้ใจได้ว่าเจอคลิปที่ขอรหัสผ่านบัญชีเกม (3) กดรายงาน (Report) คลิปนี้ให้แพลตฟอร์มตรวจสอบว่าเป็นกลลวงหรือไม่ (4) เปลี่ยนรหัสผ่านบัญชีเกมทันทีหากเผลอกรอกไปแล้วก่อนรู้ตัว",
+          examples: [],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "เรียงลำดับถูก 2-3 ตำแหน่ง หรือสลับกันเพียง 1 คู่",
+          examples: [],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "เรียงลำดับถูกน้อยกว่า 2 ตำแหน่ง หรือไม่ตอบ",
+          examples: [],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById(btn.dataset.close).hidden = true;
+  }));
+
   async function saveToSheet(payload) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return;
     try {
@@ -413,12 +500,6 @@
       scenario_name: SCENARIO_NAME,
       score: total_score,
       max_score: MAX_SCORE,
-      objective_max: MAX_SCORE,
-      essay_max: 0,
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — สังเกตสัญญาณอันตราย", score: q1Result.score, max: 2 },
-        { q: "q2", label: "ข้อ 2 — เรียงลำดับการรับมือ", score: q2Result.score, max: 2 },
-      ],
       details: {
         q1: q1Result, q2: { ...q2Result, selected: q2Selected },
         behavior: { time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000) },
@@ -477,10 +558,12 @@
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 1 — สังเกตสัญญาณอันตราย</span><span>${data.q1.score} / 2</span></div>
         <div class="result__item-reason">ตอบถูก ${data.q1.correctCount} จาก 4 ข้อ</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 2 — เรียงลำดับการรับมือ</span><span>${data.q2.score} / 2</span></div>
         <div class="result__item-reason">เรียงลำดับถูกต้อง ${data.q2.correctCount} จาก 4 ตำแหน่ง</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

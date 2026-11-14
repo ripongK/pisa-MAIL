@@ -103,10 +103,20 @@
   .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #ece0e8; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -165,6 +175,15 @@
   <div class="chat-nudge">
     <p>ต้นข้าวสังเกตเห็นตัวหนังสือเล็กๆ มุมล่างขวาของภาพ จึงลองค้นหาสถิติจากเว็บไซต์อิสระ GameTrack Thailand</p>
     <button class="btn btn--primary" id="openSearchBtn" type="button">📊 ดูข้อมูลเต็มจาก GameTrack Thailand</button>
+  </div>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
   </div>
 
   <div class="modal" id="searchModal" hidden>
@@ -230,8 +249,6 @@
   const SCENARIO_ID = "scenario-08";
   const SCENARIO_NAME = "กราฟยอดผู้เล่นเกมในชมรมอีสปอร์ต";
   const MAX_SCORE = 4; // q1(2) + q2(2)
-  const ESSAY_MAX = 2;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -288,7 +305,77 @@
     return { score, correctCount };
   }
 
-  // ---------- ข้อ 2: อัตนัย — บันทึกข้อความลง Google Sheet ระบบไม่ตรวจ (รอการตรวจคะแนนโดยครู) ----------
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
+
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้สำหรับแสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน (คะแนนจริงตรวจโดย Gemini ฝั่ง Code.gs ตามเกณฑ์เดียวกันนี้) ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — ข้อความใดถูกต้องตามข้อมูล?",
+      question: "จงพิจารณาข้อความต่อไปนี้ทีละข้อ แล้วระบุว่าแต่ละข้อความ 'ถูกต้องตามข้อมูล' หรือ 'ไม่ถูกต้องตามข้อมูล' ในสถานการณ์",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ตอบถูกครบทั้ง 5 ข้อ: ข้อ 1 (กราฟของปั้นแสดง ม.ค.-ส.ค.) = ไม่ถูกต้อง (กราฟแสดงแค่ มี.ค.-มิ.ย.) / ข้อ 2 (แกนตั้งเริ่มจาก 0) = ไม่ถูกต้อง (เริ่มที่ 80,000) / ข้อ 3 (มิ.ย. = 98,000 คน) = ถูกต้อง / ข้อ 4 (ส.ค. สูงกว่า ก.ค.) = ไม่ถูกต้อง (ส.ค. 97,000 ต่ำกว่า ก.ค. 99,000) / ข้อ 5 (เพิ่มขึ้นประมาณร้อยละ 29 ตลอด 8 เดือน) = ถูกต้อง",
+          examples: [],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ตอบถูก 3-4 ข้อจาก 5 ข้อ",
+          examples: [],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ตอบถูกไม่เกิน 2 ข้อ หรือไม่ตอบ",
+          examples: [],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — กราฟใช้เทคนิคใดทำให้ดูน่าตื่นเต้นเกินจริง?",
+      question: "ต้นข้าวบอกว่ากราฟที่ปั้นนำมาอ้างทำให้ \"ตัวเลขที่ถูกต้องดูน่าตื่นเต้นเกินจริง\" จงอธิบายสั้นๆ ว่ากราฟดังกล่าวใช้เทคนิคใดสองอย่างที่ทำให้เกิดผลเช่นนี้ พร้อมยกตัวเลขจากสถานการณ์ประกอบอย่างน้อยหนึ่งตัวเลข",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ระบุครบทั้ง 2 เทคนิค: (1) ตัดแกนตั้งให้ไม่เริ่มจาก 0 (เริ่มที่ 80,000) ทำให้ความต่างจริงประมาณร้อยละ 20 ดูเหมือนต่างเกือบ 5 เท่า และ (2) เลือกแสดงเฉพาะช่วงเวลาที่ตัวเลขกำลังเพิ่มขึ้น (มี.ค.-มิ.ย.) โดยไม่แสดงเดือนก่อนแพตช์หรือหลังกรกฎาคมที่ทรงตัว/ลดลง พร้อมยกตัวเลขอย่างน้อย 1 ตัว",
+          examples: [
+            "“กราฟตัดแกนตั้งไม่ให้เริ่มจาก 0 แต่เริ่มที่ 80,000 คน เลยทำให้แท่งกราฟดูต่างกันเยอะทั้งที่จริงต่างกันแค่ประมาณ 20% แล้วเขาก็เลือกโชว์แค่เดือนมี.ค.-มิ.ย. ซึ่งเป็นช่วงที่ตัวเลขกำลังขึ้น ไม่โชว์เดือนก่อนหน้าหรือหลังจากนั้นที่ตัวเลขเริ่มทรงตัวแล้ว”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ระบุได้เพียง 1 ใน 2 เทคนิค หรือครบ 2 เทคนิคแต่ไม่มีตัวเลขประกอบ",
+          examples: [
+            "“เขาตัดแกนกราฟให้ไม่เริ่มจากศูนย์ เลยทำให้ดูต่างกันเยอะเกินจริง” — [ไม่พูดถึงการเลือกช่วงเวลา]",
+            "“บริษัทเลือกเอาแต่ช่วงที่ตัวเลขขึ้นมาโชว์ ไม่เอาช่วงที่ตัวเลขนิ่งๆ มาโชว์ด้วย” — [ไม่พูดถึงการตัดแกน]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ไม่ระบุเทคนิคใดเลย หรือกล่าวประเด็นอื่นที่ไม่เกี่ยวข้อง เช่นกล่าวว่าบริษัทโกหกตัวเลขโดยไม่อธิบายเทคนิค",
+          examples: [
+            "“บริษัทเกมนี้โกหกตัวเลขแน่ๆ เพื่อโฆษณาเกม”",
+            "“กราฟสวยดี ดูน่าเล่นเกมนี้จัง”",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+
   async function saveToSheet(payload) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
@@ -313,7 +400,7 @@
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
     const nonAiScore = q1Result.score;
@@ -329,32 +416,26 @@
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: nonAiScore,            // คะแนนส่วนปรนัย (ตรวจตามเกณฑ์/รูบริคฝั่งหน้าเว็บ)
       max_score: MAX_SCORE,
-      objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX,
-      essay_status: "pending",   // อัตนัย: ไม่ตรวจโดยระบบ → รอการตรวจคะแนน
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — ตรวจสอบข้อเท็จจริง", score: q1Result.score, max: 2 },
-        { q: "q2", label: "ข้อ 2 — ระบุเทคนิคการนำเสนอข้อมูลที่บิดเบือน", score: null, max: 2, status: "pending" },
-      ],
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
-        q2: { text: q2_text, max: ESSAY_MAX, status: "pending" },
         q1: q1Result,
         behavior: behaviorData,
       },
     });
 
     if (!serverResult || serverResult.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
 
-    const q2Result = { score: null, pending: true, max: ESSAY_MAX, reasoning: "รอการตรวจคะแนน" };
-    const total_score = nonAiScore; // ยังไม่รวมข้ออัตนัย
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
 
-    showResult({ q1: q1Result, q2: q2Result, total_score, essay_pending: true, behavior: behaviorData });
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
@@ -399,20 +480,19 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    const pend = !!data.essay_pending;
-    document.getElementById("resultTotal").textContent = pend ? `${data.total_score} / ${OBJECTIVE_MAX}` : `${data.total_score} / ${MAX_SCORE}`;
-    document.getElementById("resultPercent").innerHTML = pend
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 1 — ตรวจสอบข้อเท็จจริง</span><span>${data.q1.score} / 2</span></div>
         <div class="result__item-reason">ตอบถูก ${data.q1.correctCount} จาก 5 ข้อ</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — ระบุเทคนิคการนำเสนอข้อมูลที่บิดเบือน</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว (เต็ม ${ESSAY_MAX} คะแนน) ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง</div>
+        <div class="result__item-head"><span>ข้อ 2 — ระบุเทคนิคการนำเสนอข้อมูลที่บิดเบือน</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

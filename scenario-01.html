@@ -113,10 +113,26 @@
   .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--teal-deep); color: var(--teal-deep); }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- แถบสรุปผลแบบตาราง (คล้ายตัวอย่างอ้างอิง) ----- */
+  .score-table { width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 18px; font-size: 12.5px; }
+  .score-table th, .score-table td { border: 1px solid var(--bubble-border); padding: 8px 9px; }
+  .score-table th { background: #eef2ef; color: var(--teal-deep); font-size: 11.5px; }
+  .score-table td.num { text-align: center; white-space: nowrap; }
+
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--teal-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f6f5f2; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -238,6 +254,15 @@
     </div>
   </div>
 
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
+
   <div class="content-wide">
   <section class="quiz" id="quizSection">
     <div class="quiz__intro">
@@ -259,8 +284,11 @@
 
     <div class="quiz__card">
       <h2>ข้อ 3 — ต้นข้าวควรพิมพ์ตอบในกลุ่มว่าอย่างไร?</h2>
-      <p class="quiz__desc">เลือกข้อความที่เหมาะสมที่สุดที่ต้นข้าวควรส่งในกลุ่มไลน์ครอบครัว</p>
-      <div id="q3List"></div>
+      <p class="quiz__desc">ต้นข้าวตัดสินใจพิมพ์ข้อความตอบในกลุ่มไลน์ครอบครัว จงเขียนข้อความที่ต้นข้าวควรส่ง โดยข้อความของเธอต้อง
+        (1) ยกหลักฐานที่หนักแน่นอย่างน้อย 1 อย่างมาอธิบายว่าเหตุใดคลิปนี้จึงเป็นของปลอม
+        (2) ใช้ถ้อยคำที่ให้เกียรติผู้ใหญ่และไม่ทำให้คุณป้าเสียหน้าในกลุ่ม และ
+        (3) เสนอสิ่งที่ควรทำต่อไปอย่างเป็นรูปธรรมอย่างน้อย 1 อย่าง</p>
+      <textarea id="q3Text" rows="6" placeholder="พิมพ์ข้อความที่ต้นข้าวควรส่งในกลุ่มไลน์ครอบครัว..."></textarea>
     </div>
 
     <button class="btn btn--submit" id="submitBtn" type="button">ส่งคำตอบ</button>
@@ -292,8 +320,6 @@
   const SCENARIO_ID = "scenario-01";
   const SCENARIO_NAME = "คลิปสัมภาษณ์การลงทุน";
   const MAX_SCORE = 7; // q1(2) + q2(2) + q3(3)
-  const ESSAY_MAX = 2;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   // ---------- ตรวจสอบว่ามีการเข้าสู่ระบบจากหน้าหลักหรือยัง ----------
   function loadProfile() {
@@ -357,42 +383,118 @@
     return { score, correctCount };
   }
 
-  // ---------- ข้อ 2: อัตนัย — บันทึกข้อความลง Google Sheet ระบบไม่ตรวจ (รอการตรวจคะแนนโดยครู) ----------
+  // ---------- ข้อ 2 และข้อ 3: อัตนัยทั้งคู่ — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs ----------
+  // (ไม่มีการตรวจฝั่งนี้แล้ว คะแนน+เหตุผลของข้อ 2 และข้อ 3 จะมาจากคำตอบของ Apps Script หลังส่งคำตอบ
+  //  เรียก Code.gs 2 ครั้งต่อเนื่องกัน: ครั้งแรกตรวจข้อ 2 แล้วนำคะแนนไปรวมเป็น non_ai_score ของครั้งที่สอง
+  //  ซึ่งตรวจข้อ 3 — คะแนนรวมสุดท้ายจากครั้งที่สองเป็นคะแนนที่ถูกต้องและบันทึกไว้ในชีต)
 
-  // ---------- ข้อ 3: ปรนัย 4 ตัวเลือก (แทนข้ออัตนัยเดิม) ----------
-  const Q3_OPTIONS = [
-    { id: "a", score: 3, text: "ป้าครับ/ค่ะ ผมลองค้นดูแล้วเจอว่าคลิปนี้จริงๆ มาจากข่าวเก่าของ NHK ปี 2556 เรื่องผู้ประสบภัยน้ำท่วมครับ ไม่ใช่ข่าวการลงทุนเลย อาจมีคนเอาคลิปเก่ามาตัดต่อหลอกลวง ป้ายังไม่ควรโอนเงินไปก่อนนะครับ เดี๋ยวผมลองหารายละเอียดเพิ่มแล้วจะมาเล่าให้ฟังอีกทีครับ" },
-    { id: "b", score: 2, text: "ป้าก็เชื่อง่ายจัง คลิปนี้ปลอมชัดๆ เอามาจากข่าวน้ำท่วมเก่าปี 2556 ของ NHK  ไม่เกี่ยวกับการลงทุนเลย อย่าเพิ่งโอนเงินเด็ดขาดนะ" },
-    { id: "c", score: 2, text: "ป้าครับ ผมว่าคลิปนี้น่าจะไม่จริงนะครับ ป้ายังไม่ควรโอนเงินไปก่อนนะครับ เดี๋ยวลองถามคนอื่นดูอีกทีครับ" },
-    { id: "d", score: 0, text: "ป้าครับ ถ้าป้าอยากลองก็ลองดูน้อยๆ ก่อนก็ได้ครับ เผื่อได้กำไรจริงๆ" },
-  ];
-  const Q3_REASONING = {
-    a: "มีหลักฐานชัดเจน น้ำเสียงสุภาพ และเสนอสิ่งที่ควรทำต่อไปครบทั้ง 3 องค์ประกอบ",
-    b: "มีหลักฐานและข้อเสนอแนะที่ชัดเจน แต่น้ำเสียงต่อผู้ใหญ่ไม่สุภาพ ('ป้าก็เชื่อง่ายจัง') ทำให้เสียคะแนนด้านมารยาท",
-    c: "น้ำเสียงสุภาพและมีข้อเสนอแนะ แต่ไม่ได้อ้างหลักฐานที่หนักแน่นมายืนยัน",
-    d: "ข้อความสนับสนุนให้ลองลงทุนต่อ ซึ่งอาจทำให้ครอบครัวเสี่ยงสูญเสียเงิน จึงไม่ได้คะแนน",
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้สำหรับแสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน (คะแนนจริงตรวจโดย Gemini ฝั่ง Code.gs ตามเกณฑ์เดียวกันนี้) ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — หลักฐานใดยืนยันได้หนักแน่น?",
+      question: "ต้นข้าวต้องการเลือกหลักฐานที่ “ยืนยันได้หนักแน่น” ว่าคลิปนี้เป็นของปลอม เพื่อนำไปอธิบายให้คุณป้าฟัง จงพิจารณาข้อความแต่ละข้อว่าเป็นหลักฐานที่ยืนยันได้หนักแน่นว่าคลิปเป็นของปลอมหรือไม่",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "ตอบถูกทั้ง 5 ข้อ ตามลำดับ หนักแน่น – หนักแน่น – หนักแน่น – ไม่หนักแน่น – ไม่หนักแน่น: ระบุถูกว่าหลักฐาน 3 ข้อแรกหนักแน่น เพราะเป็นการตรวจสอบข้ามไปยังแหล่งต้นทางและคำยืนยันจากผู้เกี่ยวข้องโดยตรง / ระบุถูกว่าข้อ 4 ไม่หนักแน่น เพราะเป็นค่าความน่าจะเป็นจากเครื่องมือ ไม่ใช่ข้อยืนยันเด็ดขาด / ระบุถูกว่าข้อ 5 ไม่หนักแน่น เพราะลักษณะของเพจและยอดกดถูกใจเป็นเพียงข้อสังเกตชวนสงสัย ไม่ใช่ข้อพิสูจน์",
+          examples: ["“หนักแน่น หนักแน่น หนักแน่น ไม่หนักแน่น ไม่หนักแน่น” — [ตอบถูกครบทั้ง 5 ข้อ]"],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "ตอบถูก 4 ข้อจาก 5 ข้อ",
+          examples: [
+            "“หนักแน่น หนักแน่น หนักแน่น หนักแน่น ไม่หนักแน่น” — [ถูก 4 ข้อ: เข้าใจผิดว่าค่าร้อยละจากเครื่องมือเป็นข้อยืนยันเด็ดขาด ซึ่งเป็นความเข้าใจผิดที่พบบ่อย]",
+            "“หนักแน่น หนักแน่น หนักแน่น ไม่หนักแน่น หนักแน่น” — [ถูก 4 ข้อ: เข้าใจผิดว่าข้อสังเกตเรื่องเพจและยอดไลก์เป็นข้อพิสูจน์]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ตอบถูก 3 ข้อหรือน้อยกว่า หรือไม่ตอบ",
+          examples: [
+            "“ไม่หนักแน่น ไม่หนักแน่น หนักแน่น ไม่หนักแน่น ไม่หนักแน่น” — [ถูกเพียง 3 ข้อ: ไม่เห็นค่าของการตรวจสอบข้ามแหล่งและคำยืนยันจากผู้เกี่ยวข้อง]",
+            "“หนักแน่น หนักแน่น หนักแน่น หนักแน่น หนักแน่น” — [ตอบหนักแน่นทั้งหมด ถูกเพียง 3 ข้อ: ไม่แยกแยะน้ำหนักของหลักฐานแต่ละประเภท]",
+          ],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — ทำไมแค่ผลเครื่องมือตรวจจับไม่พอ?",
+      question: "คุณลุงอ่านผลจากเครื่องมือตรวจจับแล้วบอกว่า “ร้อยละ 72.3 ก็ยังไม่ถึงร้อย แสดงว่าอาจจะเป็นคลิปจริงก็ได้” จงอธิบายว่าเพราะเหตุใดการใช้ผลจากเครื่องมือตรวจจับเพียงอย่างเดียวจึงไม่เพียงพอในการตัดสินว่าเป็นคลิปจริงหรือปลอม และหลักฐานที่ต้นข้าวได้จากการค้นหาต้นตอของภาพให้ข้อสรุปที่หนักแน่นกว่าอย่างไร",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "อธิบายครบทั้งสองส่วน: (ก) เครื่องมือให้เพียงค่าความน่าจะเป็น/การคาดการณ์ ซึ่งอาจผิดพลาดได้ทั้งสองทาง จึงไม่ใช่ข้อยืนยันเด็ดขาด และ (ข) การพบภาพต้นฉบับจาก NHK World ปี 2556 ที่เป็นข่าวเรื่องอื่นโดยสิ้นเชิง เป็นหลักฐานเชิงประจักษ์ที่ยืนยันการปลอมได้โดยตรง ไม่ต้องอาศัยการคาดการณ์",
+          examples: [
+            "“เครื่องมือมันแค่เดาความเป็นไปได้ให้เราเป็นเปอร์เซ็นต์ ไม่ได้ฟันธง มันอาจเดาผิดก็ได้ แต่การที่ต้นข้าวไปเจอคลิปต้นฉบับของ NHK ปี 2556 ที่เป็นข่าวสร้างบ้านให้คนน้ำท่วม ไม่ใช่ข่าวลงทุนเลย อันนี้คือหลักฐานตรงๆ ว่าเขาเอาภาพเก่ามาใส่เสียงใหม่ โดยไม่ต้องเดา”",
+            "“ค่า 72.3% เป็นแค่การคาดการณ์ของโปรแกรม ไม่ใช่ข้อพิสูจน์ ส่วนการเจอว่าภาพเดียวกันมาจากข่าวน้ำท่วมของ NHK เมื่อ 13 ปีก่อน ซึ่งขัดกับที่คลิปอ้างว่าเป็นการสัมภาษณ์เรื่องลงทุน การขัดกันแบบนี้แปลว่าคลิปถูกทำขึ้นแน่นอน”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "อธิบายถูกต้องเพียงส่วนใดส่วนหนึ่ง (ก หรือ ข) ไม่ครบทั้งสองส่วน",
+          examples: [
+            "“เครื่องมือตรวจจับไม่ได้แม่นร้อยเปอร์เซ็นต์ มันแค่ประมาณให้ เลยเชื่อไม่ได้เต็มที่” — [ถูกเฉพาะส่วน (ก)]",
+            "“เพราะเจอว่าคลิปต้นฉบับเป็นข่าว NHK เรื่องน้ำท่วมปี 2556 ไม่เกี่ยวกับการลงทุน ก็รู้เลยว่าปลอม” — [ถูกเฉพาะส่วน (ข)]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ตอบโดยไม่มีองค์ประกอบทั้งสองส่วน หรือกล่าวเพียงว่าคลิปปลอมโดยไม่ให้เหตุผล หรือให้เหตุผลที่ไม่ถูกต้อง เช่น อ้างว่าค่าร้อยละต่ำกว่า 100% หมายความว่าคลิปอาจเป็นของจริง หรือสรุปจากยอดไลก์",
+          examples: [
+            "“คลิปปลอมแน่นอน ดูก็รู้ว่าปากไม่ตรงกับเสียง”",
+            "“เพราะ 72.3% ยังไม่ถึงครึ่งทางของความมั่นใจ ต้องรอให้ได้ 100% ก่อนถึงจะสรุปได้”",
+            "“ต้องเชื่อศูนย์ตรวจสอบข้อเท็จจริงเพราะเป็นหน่วยงานใหญ่”",
+          ],
+        },
+      ],
+    },
+    q3: {
+      title: "ข้อ 3 — ต้นข้าวควรพิมพ์ตอบในกลุ่มว่าอย่างไร?",
+      question: "ต้นข้าวตัดสินใจพิมพ์ข้อความตอบในกลุ่มไลน์ครอบครัว จงเขียนข้อความที่ต้นข้าวควรส่ง โดยข้อความของเธอต้อง (1) ยกหลักฐานที่หนักแน่นอย่างน้อย 1 อย่างมาอธิบายว่าเหตุใดคลิปนี้จึงเป็นของปลอม (2) ใช้ถ้อยคำที่ให้เกียรติผู้ใหญ่และไม่ทำให้คุณป้าเสียหน้าในกลุ่ม และ (3) เสนอสิ่งที่ควรทำต่อไปอย่างเป็นรูปธรรมอย่างน้อย 1 อย่าง",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (3 คะแนน)",
+          desc: "มีองค์ประกอบครบทั้ง 3 ข้อ: (1) หลักฐาน — อ้างหลักฐานหนักแน่นอย่างน้อย 1 อย่าง (ภาพต้นฉบับจาก NHK World ปี 2556 / ผู้ประกาศข่าวยืนยันเอง / ศูนย์ตรวจสอบข้อเท็จจริงยืนยันว่าปลอม — อ้างเพียงค่าร้อยละจากเครื่องมือหรือยอดไลก์ไม่นับ) (2) น้ำเสียง — สุภาพต่อผู้ใหญ่ ไม่ตำหนิ ไม่ประชด ไม่ทำให้คุณป้าดูโง่เขลาต่อหน้าคนอื่น (3) การปฏิบัติต่อไป — เสนอการกระทำที่เป็นรูปธรรมอย่างน้อย 1 อย่าง เช่น ยังไม่โอนเงิน/ไม่กดลิงก์ เก็บหลักฐานภาพหน้าจอ แจ้งสายด่วน 1441",
+          examples: [
+            "“ป้าครับ ขอบคุณที่ห่วงพวกเราแล้วเอามาบอกกันนะครับ ผมลองเช็กดูแล้วปรากฏว่าคลิปนี้เป็นของปลอมครับ ภาพในคลิปเป็นข่าวเก่าของช่อง NHK ตั้งแต่ปี 2556 เป็นข่าวเรื่องสร้างบ้านให้คนน้ำท่วม ไม่ใช่ข่าวลงทุนเลย เขาเอาภาพเก่ามาใส่เสียงไทยที่ AI ทำขึ้นครับ ป้าอย่าโอนเงินและอย่ากดลิงก์นะครับ ผมจะแคปหน้าจอกับลิงก์เก็บไว้แล้วโทรแจ้ง 1441 ให้นะครับ”",
+            "“ป้าคะ หนูก็เกือบเชื่อเหมือนกันค่ะเพราะทำมาเหมือนจริงมาก แต่หนูไปอ่านเจอว่าผู้ประกาศข่าวในคลิปออกมาบอกเอง ว่าเธอไม่เคยทำงานให้ช่องนั้นเลยค่ะ คนร้ายเอาหน้ากับเสียงเธอไปทำปลอม ป้าชะลอไว้ก่อนนะคะยังไม่ต้องลงเงิน แล้วหนูจะช่วยกดรายงานคลิปนี้ให้เฟซบุ๊กลบด้วยค่ะ”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1-2 คะแนน)",
+          desc: "ให้ 2 คะแนนเมื่อมีองค์ประกอบครบ 2 ข้อจาก 3 ข้อ และให้ 1 คะแนนเมื่อมีองค์ประกอบเพียง 1 ข้อ",
+          examples: [
+            "“ป้าครับ คลิปนี้ปลอมครับ ภาพมันเป็นข่าวเก่าของ NHK ปี 2556 เรื่องน้ำท่วม ไม่ใช่ข่าวลงทุน ป้าอย่าโอนเงินนะครับ” — [2 คะแนน: มีหลักฐานและการปฏิบัติต่อไป แต่น้ำเสียงห้วน]",
+            "“ป้าคะ ขอบคุณที่เอามาแบ่งกันนะคะ แต่หนูคิดว่าอันนี้น่าจะเป็นของปลอมค่ะ ป้ายังไม่ต้องโอนเงินก่อนนะคะ เดี๋ยวหนูหาข้อมูลมาให้ดูเพิ่มค่ะ” — [2 คะแนน: น้ำเสียงดีและมีการปฏิบัติต่อไป แต่ไม่ยกหลักฐานหนักแน่น]",
+            "“ป้าครับ ผมว่าคลิปนี้ปลอมนะครับ ผู้ประกาศข่าวเขาบอกเองว่าไม่เคยทำงานช่องนี้” — [1 คะแนน: มีเฉพาะหลักฐาน]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ไม่มีองค์ประกอบใดครบ หรือเขียนข้อความที่ตำหนิ ประชด ทำให้คุณป้าเสียหน้าต่อหน้าผู้อื่น หรือแนะนำให้ลงทุนต่อ หรือเพียงบอกว่าปลอมโดยไม่มีหลักฐานและไม่เสนอทางออก",
+          examples: [
+            "“ป้าอย่าโดนหลอกง่ายๆ สิ ใครเห็นก็รู้ว่าปลอม” — [ตำหนิและทำให้เสียหน้า ไม่มีหลักฐาน ไม่เสนอทางออก]",
+            "“ปลอมครับ” — [ไม่มีองค์ประกอบใดเลย]",
+            "“ป้าลองลงน้อยๆ ก่อนก็ได้ครับ ถ้าได้จริงค่อยลงเพิ่ม” — [แนะนำให้ลงทุนต่อ ขัดกับการปฏิบัติอย่างมีความรับผิดชอบ]",
+          ],
+        },
+      ],
+    },
   };
-  let q3Selected = null;
 
-  function renderQ3() {
-    const container = document.getElementById("q3List");
-    container.innerHTML = "";
-    Q3_OPTIONS.forEach((opt) => {
-      const label = document.createElement("label");
-      label.className = "mcq-option";
-      label.innerHTML = `<input type="radio" name="q3" value="${opt.id}" /> ${opt.text}`;
-      label.querySelector("input").addEventListener("change", () => {
-        q3Selected = opt.id;
-        container.querySelectorAll(".mcq-option").forEach((el) => el.classList.remove("selected"));
-        label.classList.add("selected");
-      });
-      container.appendChild(label);
-    });
-  }
-
-  function gradeQ3() {
-    const opt = Q3_OPTIONS.find((o) => o.id === q3Selected);
-    return { score: opt ? opt.score : 0, reasoning: Q3_REASONING[q3Selected] || "" };
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        <ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
   }
 
   // ---------- Modal ----------
@@ -407,7 +509,7 @@
   clipVideo.addEventListener("timeupdate", () => { videoWatchedSeconds = Math.max(videoWatchedSeconds, clipVideo.currentTime); });
 
   // ---------- ส่งผลไป Google Sheet ----------
-  // ส่งคำตอบไป Apps Script (บันทึกคะแนนปรนัย + คำตอบอัตนัย)
+  // ส่งคำตอบไป Apps Script แล้วรอผลตรวจกลับมา (ข้อ 2 ตรวจด้วย Gemini ฝั่งเซิร์ฟเวอร์ จึงต้องรอผลจริง)
   async function saveToSheet(payload) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null; // ยังไม่ตั้งค่า URL
     try {
@@ -424,62 +526,65 @@
   }
 
   // ---------- Submit ----------
+  // สถานการณ์นี้มีข้ออัตนัย 2 ข้อ (ข้อ 2 และข้อ 3) จึงเรียก Code.gs 2 รอบต่อเนื่องกัน:
+  // รอบแรกตรวจข้อ 2 แล้วนำคะแนนที่ได้ไปรวมเป็นส่วนหนึ่งของ non_ai_score ของรอบที่สอง (ตรวจข้อ 3)
+  // คะแนนรวมสุดท้ายจากรอบที่สองเป็นคะแนนที่ถูกต้อง และเป็นแถวที่มีรายละเอียดครบทุกข้อบันทึกไว้ในชีต
   async function handleSubmit() {
     const statusEl = document.getElementById("quizStatus");
     const submitBtn = document.getElementById("submitBtn");
     const q2_text = document.getElementById("q2Text").value.trim();
+    const q3_text = document.getElementById("q3Text").value.trim();
 
     if (q1State.includes(null)) { statusEl.textContent = "กรุณาตอบข้อ 1 ให้ครบทั้ง 5 ข้อ"; return; }
     if (!q2_text) { statusEl.textContent = "กรุณาตอบข้อ 2"; return; }
-    if (!q3Selected) { statusEl.textContent = "กรุณาเลือกคำตอบข้อ 3"; return; }
+    if (!q3_text) { statusEl.textContent = "กรุณาตอบข้อ 3"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
 
     const q1Result = gradeQ1();
-    const q3Result = gradeQ3();
-    const nonAiScore = q1Result.score + q3Result.score; // คะแนนจากข้อที่ตรวจด้วยกฎฝั่งหน้าเว็บ (ไม่ใช่ AI)
     const behaviorData = {
       time_spent_sec: Math.round((Date.now() - pageStartTime) / 1000),
       evidence_opened: Array.from(evidenceOpened),
       video_played: videoPlayed,
       video_watched_sec: Math.round(videoWatchedSeconds),
     };
+    const basePayload = {
+      studentKey: profile.studentKey, name: profile.name, grade: profile.grade, school: profile.school,
+      scenario_id: SCENARIO_ID, scenario_name: SCENARIO_NAME, max_score: MAX_SCORE,
+    };
 
-    const serverResult = await saveToSheet({
-      studentKey: profile.studentKey,
-      name: profile.name,
-      grade: profile.grade,
-      school: profile.school,
-      scenario_id: SCENARIO_ID,
-      scenario_name: SCENARIO_NAME,
-      score: nonAiScore,            // คะแนนส่วนปรนัย (ตรวจตามเกณฑ์/รูบริคฝั่งหน้าเว็บ)
-      max_score: MAX_SCORE,
-      objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX,
-      essay_status: "pending",   // อัตนัย: ไม่ตรวจโดยระบบ → รอการตรวจคะแนน
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — การจำแนกหลักฐาน", score: q1Result.score, max: 2 },
-        { q: "q2", label: "ข้อ 2 — ข้อจำกัดของเครื่องมือตรวจจับ", score: null, max: 2, status: "pending" },
-        { q: "q3", label: "ข้อ 3 — การตอบกลับในกลุ่ม", score: q3Result.score, max: 3 },
-      ],
-      details: {
-        q2: { text: q2_text, max: ESSAY_MAX, status: "pending" },
-        q1: q1Result, q3: { score: q3Result.score, selected: q3Selected },
-        behavior: behaviorData,
-      },
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
+    const r2 = await saveToSheet({
+      ...basePayload, non_ai_score: q1Result.score, essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
+      details: { q1: q1Result, behavior: behaviorData },
     });
-
-    if (!serverResult || serverResult.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+    if (!r2 || r2.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
+    const q2Result = r2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
 
-    const q2Result = { score: null, pending: true, max: ESSAY_MAX, reasoning: "รอการตรวจคะแนน" };
-    const total_score = nonAiScore; // ยังไม่รวมข้ออัตนัย
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
+    const r3 = await saveToSheet({
+      ...basePayload, non_ai_score: q1Result.score + q2Result.score, essay_question_key: "q3",
+      raw_answers: { essayText: q3_text },
+      details: {
+        q1: q1Result,
+        q2: { score: q2Result.score, text: q2_text, reasoning: q2Result.reasoning },
+        behavior: behaviorData,
+      },
+    });
+    if (!r3 || r3.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 3 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
+      submitBtn.disabled = false;
+      return;
+    }
+    const q3Result = r3.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = r3.total_score != null ? r3.total_score : q1Result.score + q2Result.score + q3Result.score;
 
-    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score, essay_pending: true, behavior: behaviorData });
+    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
@@ -524,24 +629,24 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    const pend = !!data.essay_pending;
-    document.getElementById("resultTotal").textContent = pend ? `${data.total_score} / ${OBJECTIVE_MAX}` : `${data.total_score} / ${MAX_SCORE}`;
-    document.getElementById("resultPercent").innerHTML = pend
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 1 — การจำแนกหลักฐาน</span><span>${data.q1.score} / 2</span></div>
         <div class="result__item-reason">ตอบถูก ${data.q1.correctCount} จาก 5 ข้อ</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — ข้อจำกัดของเครื่องมือตรวจจับ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว (เต็ม ${ESSAY_MAX} คะแนน) ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง</div>
+        <div class="result__item-head"><span>ข้อ 2 — ข้อจำกัดของเครื่องมือตรวจจับ</span><span>${data.q2.score} / 2</span></div>
+        <div class="result__item-reason">${data.q2.reasoning}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 3 — การตอบกลับในกลุ่ม</span><span>${data.q3.score} / 3</span></div>
         <div class="result__item-reason">${data.q3.reasoning}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q3')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }
@@ -550,7 +655,6 @@
 
   if (profile) {
     renderQ1();
-    renderQ3();
   }
 </script>
 </body>

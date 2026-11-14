@@ -96,10 +96,20 @@
   .result__item-reason { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f4f1ee; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -148,6 +158,15 @@
     <button class="btn btn--primary" id="openSearchBtn" type="button">🔍 ดูแหล่งข้อมูลที่เอิร์ธพบ</button>
   </div>
 
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
+
   <div class="modal" id="searchModal" hidden>
     <div class="modal__sheet">
       <button class="modal__close" data-close="searchModal" type="button">✕</button>
@@ -193,7 +212,7 @@
 
     <div class="quiz__card">
       <h2>ข้อ 3 — เอิร์ธควรพูดอะไรกับแนน?</h2>
-      <p class="quiz__desc">จงอธิบายว่าเอิร์ธควรพูดอะไรกับแนนบ้างเพื่อโน้มน้าวให้แนนตรวจสอบข้อมูลเพิ่มก่อนทำต่อ โดยต้องกล่าวถึง (1) ความน่าเชื่อถือของแหล่งที่แนนเชื่อเทียบกับหน่วยงานสาธารณสุข (2) ข้อมูลขัดแย้งจากกรมอนามัย (3) ความเสี่ยงต่อสุขภาพที่อาจเกิดขึ้นจริง</p>
+      <p class="quiz__desc">แนนเริ่มงดอาหารเช้าและดื่มน้ำมะนาวผสมเกลือทุกเช้าตามคลิปที่ดู ให้อธิบายว่าเอิร์ธควรพูดอะไรกับแนนบ้างเพื่อโน้มน้าวให้แนนตรวจสอบข้อมูลเพิ่มก่อนทำต่อ โดยคำตอบต้องกล่าวถึง (1) เหตุผลว่าทำไมแหล่งข้อมูลที่แนนเชื่อ (เว็บขายสินค้าหรือเพจที่ไม่ระบุผู้เขียน) มีความน่าเชื่อถือต่ำกว่าหน่วยงานสาธารณสุข (2) ข้อมูลขัดแย้งจากกรมอนามัยที่ควรนำมาพิจารณา และ (3) ความเสี่ยงต่อสุขภาพที่อาจเกิดขึ้นจริงจากพฤติกรรมนี้</p>
       <textarea id="q3Text" rows="5" placeholder="พิมพ์คำตอบของคุณที่นี่..."></textarea>
     </div>
 
@@ -226,8 +245,6 @@
   const SCENARIO_ID = "scenario-07";
   const SCENARIO_NAME = "คลิป TikTok สูตรน้ำมะนาวผสมเกลือดีทอกซ์";
   const MAX_SCORE = 6; // q1(2) + q2(2) + q3(2)
-  const ESSAY_MAX = 2;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -303,10 +320,10 @@
 
   // ---------- ข้อ 2: เรียงลำดับ lateral reading ----------
   const Q2_ITEMS = [
-    { key: "ค", text: "เปรียบเทียบข้อมูลจากทุกแหล่งที่พบว่าตรงกันหรือขัดแย้งกัน และแหล่งใดมีน้ำหนักน่าเชื่อถือกว่า", correctPos: 3 },
     { key: "ก", text: "ตรวจสอบว่าใครเป็นผู้สร้างคลิปนี้และมีความเชี่ยวชาญหรือผลประโยชน์แอบแฝงหรือไม่", correctPos: 1 },
-    { key: "ง", text: "ตัดสินใจว่าจะเชื่อ ทำตาม หรือแชร์ต่อ โดยอ้างอิงจากหลักฐานที่ประเมินแล้ว", correctPos: 4 },
     { key: "ข", text: "ค้นหาว่าหน่วยงานด้านสาธารณสุขที่น่าเชื่อถือมีข้อมูลเกี่ยวกับเรื่องนี้ว่าอย่างไร", correctPos: 2 },
+    { key: "ค", text: "เปรียบเทียบข้อมูลจากทุกแหล่งที่พบว่าตรงกันหรือขัดแย้งกัน และแหล่งใดมีน้ำหนักน่าเชื่อถือกว่า", correctPos: 3 },
+    { key: "ง", text: "ตัดสินใจว่าจะเชื่อ ทำตาม หรือแชร์ต่อ โดยอ้างอิงจากหลักฐานที่ประเมินแล้ว", correctPos: 4 },
   ];
   const q2Selected = {};
 
@@ -334,10 +351,24 @@
     const correctCount = Q2_ITEMS.filter((item) => q2Selected[item.key] === item.correctPos).length;
     // ถ้าเลือกขั้นตอน "ตัดสินใจ" (ง) เป็นลำดับแรก ถือว่าผิดหลักการสำคัญ ให้ 0 คะแนนทันที
     if (q2Selected["ง"] === 1) return { score: 0, correctCount };
-    let score = 0;
-    if (correctCount === 4) score = 2;
-    else if (correctCount >= 2) score = 1;
-    return { score, correctCount };
+    if (correctCount === 4) return { score: 2, correctCount };
+
+    // เกณฑ์: ได้คะแนนบางส่วนเฉพาะกรณีสลับตำแหน่งที่ติดกัน 1 คู่ (เช่น ข้อ 1 กับ 2 สลับกัน)
+    // แต่ลำดับโดยรวมยังคงหลักการทั่วไปไว้ — ผิด 2 ตำแหน่งขึ้นไปแบบอื่นถือว่าไม่ได้คะแนน
+    const correctOrder = ["ก", "ข", "ค", "ง"];
+    const posToKey = {};
+    Q2_ITEMS.forEach((item) => { posToKey[q2Selected[item.key]] = item.key; });
+    const studentOrder = [1, 2, 3, 4].map((p) => posToKey[p]);
+    const diffPositions = [];
+    for (let i = 0; i < 4; i++) {
+      if (studentOrder[i] !== correctOrder[i]) diffPositions.push(i);
+    }
+    const isAdjacentSwap = diffPositions.length === 2 &&
+      diffPositions[1] - diffPositions[0] === 1 &&
+      studentOrder[diffPositions[0]] === correctOrder[diffPositions[1]] &&
+      studentOrder[diffPositions[1]] === correctOrder[diffPositions[0]];
+
+    return { score: isAdjacentSwap ? 1 : 0, correctCount };
   }
   function q2IsComplete() { return Q2_ITEMS.every((item) => q2Selected[item.key] != null); }
   function q2HasDuplicates() {
@@ -345,7 +376,98 @@
     return new Set(vals).size !== vals.length;
   }
 
-  // ---------- ข้อ 3: อัตนัย — บันทึกข้อความลง Google Sheet ระบบไม่ตรวจ (รอการตรวจคะแนนโดยครู) ----------
+  // ---------- ข้อ 3: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
+
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้สำหรับแสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน (คะแนนจริงตรวจโดย Gemini ฝั่ง Code.gs ตามเกณฑ์เดียวกันนี้) ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — จับคู่แหล่งข้อมูลกับลักษณะความน่าเชื่อถือ",
+      question: "ให้จับคู่แหล่งข้อมูลแต่ละแหล่งที่เอิร์ธพบ (ก-ง) กับลักษณะความน่าเชื่อถือที่ตรงกับแหล่งนั้นที่สุด (1-4)",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "จับคู่ถูกทั้ง 4 คู่: ก (เว็บขายชุดผลิตภัณฑ์) – 1 (ผลประโยชน์ทางการค้าแอบแฝง) / ข (เพจไม่ระบุผู้เขียน) – 2 (ตรวจสอบตัวตน/ความเชี่ยวชาญไม่ได้) / ค (เว็บกรมอนามัย) – 3 (หน่วยงานราชการที่มีความเชี่ยวชาญเฉพาะทาง) / ง (คลิป TikTok ต้นทาง) – 4 (เนื้อหาโซเชียลที่ไม่มีการอ้างอิงหลักฐาน)",
+          examples: [],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "จับคู่ถูก 2-3 คู่",
+          examples: [],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "จับคู่ถูกน้อยกว่า 2 คู่ หรือไม่ตอบ",
+          examples: [],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — เรียงลำดับการตรวจสอบข้ามแหล่งข้อมูล",
+      question: "ให้เรียงลำดับขั้นตอนที่เหมาะสมที่สุดในการตรวจสอบข้อมูลข้ามแหล่ง (lateral reading) ก่อนตัดสินใจเชื่อคำกล่าวอ้างในคลิป TikTok นี้",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "เรียงลำดับถูกต้องครบ: (1) ตรวจสอบว่าใครเป็นผู้สร้างคลิปและมีความเชี่ยวชาญหรือผลประโยชน์แอบแฝงหรือไม่ → (2) ค้นหาว่าหน่วยงานด้านสาธารณสุขที่น่าเชื่อถือมีข้อมูลว่าอย่างไร → (3) เปรียบเทียบข้อมูลจากทุกแหล่งว่าตรงกันหรือขัดแย้งกัน และแหล่งใดน่าเชื่อถือกว่า → (4) ตัดสินใจว่าจะเชื่อ ทำตาม หรือแชร์ต่อ โดยอ้างอิงจากหลักฐานที่ประเมินแล้ว",
+          examples: [],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "สลับตำแหน่งที่ติดกัน 1 คู่ (เช่น ข้อ 'ค้นหาหน่วยงานสาธารณสุข' สลับมาก่อน 'ตรวจสอบผู้สร้างคลิป') แต่ยังคงหลักการทั่วไปไว้ (ไม่ได้เอาขั้นตอน 'ตัดสินใจ' มาไว้ก่อน)",
+          examples: [],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ผิดตั้งแต่ 2 ตำแหน่งขึ้นไป หรือเอาขั้นตอน 'ตัดสินใจ' มาไว้ก่อนขั้นตอนอื่น",
+          examples: [],
+        },
+      ],
+    },
+    q3: {
+      title: "ข้อ 3 — เอิร์ธควรพูดอะไรกับแนน?",
+      question: "แนนเริ่มงดอาหารเช้าและดื่มน้ำมะนาวผสมเกลือทุกเช้าตามคลิปที่ดู ให้อธิบายว่าเอิร์ธควรพูดอะไรกับแนนบ้างเพื่อโน้มน้าวให้แนนตรวจสอบข้อมูลเพิ่มก่อนทำต่อ โดยคำตอบต้องกล่าวถึง (1) เหตุผลว่าทำไมแหล่งข้อมูลที่แนนเชื่อ (เว็บขายสินค้าหรือเพจที่ไม่ระบุผู้เขียน) มีความน่าเชื่อถือต่ำกว่าหน่วยงานสาธารณสุข (2) ข้อมูลขัดแย้งจากกรมอนามัยที่ควรนำมาพิจารณา และ (3) ความเสี่ยงต่อสุขภาพที่อาจเกิดขึ้นจริงจากพฤติกรรมนี้",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "กล่าวถึงครบทั้ง 3 องค์ประกอบอย่างมีเหตุผลเชื่อมโยงกัน: เปรียบเทียบความน่าเชื่อถือของแหล่งข้อมูล + ข้อมูลขัดแย้งจากกรมอนามัย (เช่น ตับไตขับสารพิษได้เอง) + ความเสี่ยงต่อสุขภาพเป็นรูปธรรม (เช่น โซเดียมสูงหรือระคายเคืองกระเพาะ)",
+          examples: [
+            "“แนนอย่าเพิ่งเชื่อเลยนะ เว็บที่ขายชุดดีทอกซ์เค้าก็อยากขายของ ส่วนเพจสุขภาพดีทุกวันก็ไม่รู้ด้วยซ้ำว่าใครเขียน แต่เว็บกรมอนามัยบอกว่าตับไตเราขับสารพิษเองได้อยู่แล้ว ไม่มีหลักฐานว่าน้ำมะนาวเกลือช่วยอะไรเพิ่ม แถมกินแบบนี้ทุกวันอาจทำให้โซเดียมสูงหรือแสบท้องได้ด้วยนะ โดยเฉพาะแนนที่กระเพาะไม่ดีอยู่แล้ว”",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "กล่าวถึงเพียง 2 ใน 3 องค์ประกอบ",
+          examples: [
+            "“เว็บขายของกับเพจที่ไม่รู้ว่าใครเขียนมันเชื่อถือได้น้อยกว่ากรมอนามัยนะ ลองอ่านเว็บกรมอนามัยดูก่อนดีกว่า” — [ขาดความเสี่ยงสุขภาพ]",
+            "“งดอาหารเช้าแล้วดื่มน้ำเกลือทุกวันแบบนี้เดี๋ยวก็แสบท้องหรือความดันขึ้นได้นะ กระเพาะแนนก็ไม่ดีอยู่แล้วด้วย” — [ขาดการเปรียบเทียบแหล่งข้อมูล]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "เห็นด้วยกับพฤติกรรมเสี่ยงโดยไม่ตั้งคำถาม หรือใช้ความนิยมของคลิปเป็นเกณฑ์ตัดสิน",
+          examples: [
+            "“ลองก็ได้มั้ง เผื่อได้ผลจริง”",
+            "“คลิปนี้คนดูเยอะนะ น่าจะจริง”",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+
   async function saveToSheet(payload) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
     try {
@@ -372,7 +494,7 @@
     if (!q3_text) { statusEl.textContent = "กรุณาตอบข้อ 3"; return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 3... (อาจใช้เวลาสักครู่)";
 
     const q1Result = gradeQ1();
     const q2Result = gradeQ2();
@@ -390,33 +512,26 @@
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: nonAiScore,            // คะแนนส่วนปรนัย (ตรวจตามเกณฑ์/รูบริคฝั่งหน้าเว็บ)
       max_score: MAX_SCORE,
-      objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX,
-      essay_status: "pending",   // อัตนัย: ไม่ตรวจโดยระบบ → รอการตรวจคะแนน
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — จับคู่ความน่าเชื่อถือของแหล่ง", score: q1Result.score, max: 2 },
-        { q: "q2", label: "ข้อ 2 — เรียงลำดับการตรวจสอบข้ามแหล่ง", score: q2Result.score, max: 2 },
-        { q: "q3", label: "ข้อ 3 — โน้มน้าวให้ตรวจสอบข้อมูล", score: null, max: 2, status: "pending" },
-      ],
+      non_ai_score: nonAiScore,
+      essay_question_key: "q3",
+      raw_answers: { essayText: q3_text },
       details: {
-        q3: { text: q3_text, max: ESSAY_MAX, status: "pending" },
         q1: { ...q1Result, selected: q1Selected }, q2: { ...q2Result, selected: q2Selected },
         behavior: behaviorData,
       },
     });
 
     if (!serverResult || serverResult.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 3 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
 
-    const q3Result = { score: null, pending: true, max: ESSAY_MAX, reasoning: "รอการตรวจคะแนน" };
-    const total_score = nonAiScore; // ยังไม่รวมข้ออัตนัย
+    const q3Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q3Result.score;
 
-    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score, essay_pending: true, behavior: behaviorData });
+    showResult({ q1: q1Result, q2: q2Result, q3: q3Result, total_score, behavior: behaviorData });
   }
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
@@ -461,24 +576,24 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    const pend = !!data.essay_pending;
-    document.getElementById("resultTotal").textContent = pend ? `${data.total_score} / ${OBJECTIVE_MAX}` : `${data.total_score} / ${MAX_SCORE}`;
-    document.getElementById("resultPercent").innerHTML = pend
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 1 — จับคู่ความน่าเชื่อถือของแหล่ง</span><span>${data.q1.score} / 2</span></div>
         <div class="result__item-reason">จับคู่ถูก ${data.q1.correctCount} จาก 4 คู่</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
         <div class="result__item-head"><span>ข้อ 2 — เรียงลำดับการตรวจสอบข้ามแหล่ง</span><span>${data.q2.score} / 2</span></div>
         <div class="result__item-reason">เรียงลำดับถูกต้อง ${data.q2.correctCount} จาก 4 ตำแหน่ง</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 3 — โน้มน้าวให้ตรวจสอบข้อมูล</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว (เต็ม ${ESSAY_MAX} คะแนน) ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง</div>
+        <div class="result__item-head"><span>ข้อ 3 — โน้มน้าวให้ตรวจสอบข้อมูล</span><span>${data.q3.score} / 2</span></div>
+        <div class="result__item-reason">${data.q3.reasoning}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q3')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }

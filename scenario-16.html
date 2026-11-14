@@ -117,12 +117,27 @@
   .checks .yes { color: var(--ok); } .checks .no { color: var(--danger); }
   .answer-img svg { display: block; width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
   .back-btn { display: block; width: 100%; margin-top: 16px; background: transparent; border: 1px solid var(--th-deep); color: var(--th-deep); }
-  :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
 
-  /* ---- ข้ออัตนัย: รอการตรวจคะแนน ---- */
-  .pending-badge { display:inline-block; background:#fff4d6; color:#8a5a00; border:1px solid #f0d58a;
-    border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .pending-text { color:#8a5a00; }
+  /* ----- ปุ่ม/การ์ด hint (แนวทางการให้คะแนน) ----- */
+  .hint-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: var(--accent-soft); color: #5c3d17; border: 1px solid #e3c196; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hint-btn:hover { background: #ecd3af; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .modal__sheet { background: var(--paper); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 20px 18px 28px; max-height: 82vh; overflow-y: auto; position: relative; }
+  .modal__close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 16px; color: var(--ink-soft); cursor: pointer; }
+  .hint-modal__sheet { max-width: 600px; }
+  .hint-modal__sheet h3 { font-size: 16px; margin: 4px 0 2px; color: var(--th-deep); }
+  .hint-q { font-size: 12.5px; color: var(--ink-soft); background: #f1f4f8; border-radius: 10px; padding: 10px 12px; margin: 8px 0 16px; line-height: 1.55; }
+  .hint-level { border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--bubble-border); }
+  .hint-level--full { background: #eef6f0; border-color: #bfe0c6; }
+  .hint-level--partial { background: #fdf6e8; border-color: #e8d79a; }
+  .hint-level--none { background: #fbecec; border-color: #eab9b9; }
+  .hint-level h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+  .hint-level p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .hint-level ul { margin: 0; padding-left: 18px; }
+  .hint-level li { font-size: 12px; line-height: 1.6; margin-bottom: 6px; color: var(--ink-soft); }
+
+  :focus-visible { outline: 3px solid #2d7dd2; outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -135,6 +150,15 @@
 <div id="mainScreen">
 
   <a class="back-link" href="index.html">‹ กลับไปหน้าหลัก</a>
+
+  <div class="modal" id="hintModal" hidden>
+    <div class="modal__sheet hint-modal__sheet">
+      <button class="modal__close" data-close="hintModal" type="button">✕</button>
+      <h3 id="hintTitle"></h3>
+      <div class="hint-q" id="hintQuestion"></div>
+      <div id="hintLevels"></div>
+    </div>
+  </div>
 
   <div class="scenario-intro">
     <p>เช้าวันหนึ่ง ในกลุ่มไลน์ “บ้านเราเรื่องเดียวกัน” ที่เกดอยู่ด้วย มีคนส่งภาพตลาดริมคลองแห่งหนึ่งที่น้ำท่วมสูงถึงเข่า มีชายและหญิงคู่หนึ่งกำลังช่วยกันยกถุงของลงจากเรือ พร้อมข้อความเรียกขอความช่วยเหลือ ภายในสิบนาทีมีคนแชร์ต่อไปแล้วกว่ายี่สิบคน พร้อมข้อความเชิญชวนบริจาคของ ดูบทสนทนาในกลุ่มได้ด้านล่างนี้</p>
@@ -265,8 +289,6 @@
   const SCENARIO_ID = "scenario-16";
   const SCENARIO_NAME = "ข้อความเตือนภัยในกลุ่มไลน์พร้อมภาพตารางผลตรวจ";
   const MAX_SCORE = 5; // q1(3) + q2(2)
-  const ESSAY_MAX = 2;            // คะแนนเต็มข้ออัตนัย (ระบบไม่ตรวจ ครูตรวจใน Google Sheet)
-  const OBJECTIVE_MAX = MAX_SCORE - ESSAY_MAX;
 
   function loadProfile() {
     try { return JSON.parse(localStorage.getItem("pisaMailProfile") || "null"); }
@@ -565,6 +587,7 @@
     return { score, matched: [...matched], off, penalty, rows };
   }
 
+  // ---------- ข้อ 2: อัตนัย — ส่งข้อความดิบไปให้ Gemini ตรวจที่ Code.gs แทนการตรวจด้วย keyword ----------
 
   async function saveToSheet(payload) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("XXXXXXXX")) return null;
@@ -592,27 +615,23 @@
 
     submitBtn.disabled = true;
     statusEl.style.color = "#5c655f";
-    statusEl.textContent = "กำลังบันทึกคำตอบ...";
+    statusEl.textContent = "กำลังให้ AI ตรวจคำตอบข้อ 2... (อาจใช้เวลาสักครู่)";
 
-    const q1Result = gradePins(tool.pins);   // ข้อ 1 ปรนัย/ชี้จุด ตรวจตามเกณฑ์
+    const q1Result = gradePins(tool.pins);
+    const nonAiScore = q1Result.score;
     const behaviorData = collectBehavior();
 
-    const res = await saveToSheet({
+    const serverResult = await saveToSheet({
       studentKey: profile.studentKey,
       name: profile.name,
       grade: profile.grade,
       school: profile.school,
       scenario_id: SCENARIO_ID,
       scenario_name: SCENARIO_NAME,
-      score: q1Result.score,
       max_score: MAX_SCORE,
-      objective_max: OBJECTIVE_MAX,
-      essay_max: ESSAY_MAX,
-      essay_status: "pending",
-      rubric: [
-        { q: "q1", label: "ข้อ 1 — วางหมุดชี้ร่องรอยในภาพ", score: q1Result.score, max: 3 },
-        { q: "q2", label: "ข้อ 2 — การตรวจสอบก่อนแชร์ต่อ", score: null, max: 2, status: "pending" },
-      ],
+      non_ai_score: nonAiScore,
+      essay_question_key: "q2",
+      raw_answers: { essayText: q2_text },
       details: {
         behavior: behaviorData,
         q1: {
@@ -621,21 +640,104 @@
           replace_count: tool.replaceCount, remove_count: tool.removeCount,
           first_pin_ms: tool.firstPinMs, log: tool.log,
         },
-        q2: { text: q2_text, max: 2, status: "pending" },
       },
     });
-    if (!res || res.result !== "success") {
-      statusEl.textContent = "บันทึกคำตอบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดส่งคำตอบอีกครั้ง";
+
+    if (!serverResult || serverResult.result !== "success") {
+      statusEl.textContent = "ระบบตรวจคำตอบข้อ 2 ขัดข้อง กรุณาลองกดส่งคำตอบอีกครั้ง";
       submitBtn.disabled = false;
       return;
     }
 
-    showResult({ q1: q1Result, total_score: q1Result.score, essay_pending: true, behavior: behaviorData });
+    const q2Result = serverResult.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const total_score = serverResult.total_score != null ? serverResult.total_score : nonAiScore + q2Result.score;
+
+    showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
   }
 
   function checksHTML(parts) {
     return `<ul class="checks">${parts.map((p) => `<li class="${p.ok ? "yes" : "no"}">${p.ok ? "✓" : "✗"} ${p.label}</li>`).join("")}</ul>`;
   }
+
+  // ---------- ข้อมูลแนวทางการให้คะแนน (hint/rubric) สำหรับหน้ารายงานผล — ใช้แสดงให้ผู้เรียนดูเองเท่านั้น
+  // ไม่ได้ใช้ในการคำนวณคะแนน ----------
+  const HINTS = {
+    q1: {
+      title: "ข้อ 1 — วางหมุดชี้ร่องรอยว่าไม่ใช่ภาพถ่ายจากเหตุการณ์จริง",
+      question: "จากภาพตลาดริมคลองที่แชร์ในกลุ่มไลน์ ให้วางหมุดอย่างน้อย 2 จุด สูงสุด 4 จุด บนตำแหน่งที่คิดว่าเป็นร่องรอยว่าภาพนี้ไม่ใช่ภาพถ่ายจากเหตุการณ์จริง และเลือกเหตุผลกำกับทุกหมุด",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (3 คะแนน)",
+          desc: "ให้ 1 คะแนนต่อหมุดที่เข้าเงื่อนไขทั้งตำแหน่งและเหตุผล ไม่เกิน 3 คะแนน บริเวณที่ถือว่าถูกมี 3 บริเวณ คือ (1) มือขวาของชายที่ยืนด้านซ้ายของภาพ พร้อมเหตุผล 'สัดส่วนร่างกายผิดธรรมชาติ' (2) แนวเงาใต้เท้าบริเวณกลางถึงล่างของภาพที่เงาของสองคนทอดไปคนละทิศ พร้อมเหตุผล 'เงาหรือแสงไม่สอดคล้องกัน' (3) บริเวณป้ายร้านมุมซ้ายบนของภาพ พร้อมเหตุผล 'ตัวอักษรอ่านไม่ออก' วางหมุดถูกบริเวณและเลือกเหตุผลตรงครบทั้ง 3 จุด โดยมีหมุดที่ไม่ตรงบริเวณใดเลยไม่เกิน 1 หมุด จึงได้ 3 คะแนนเต็ม",
+          examples: [
+            "“หมุด 1 ที่มือชายด้านซ้าย เหตุผลสัดส่วนร่างกายผิดธรรมชาติ / หมุด 2 ที่แนวเงาใต้เท้า เหตุผลเงาหรือแสงไม่สอดคล้องกัน / หมุด 3 ที่ป้ายร้าน เหตุผลตัวอักษรอ่านไม่ออก” [ตรงทั้งตำแหน่งและเหตุผลครบ 3 จุด ได้ 3 คะแนนเต็ม]",
+            "“วาง 4 หมุด สามหมุดตรงบริเวณและเหตุผลถูกทั้งสามจุด ส่วนหมุดที่ 4 วางกลางท้องฟ้าแบบเผื่อเลือก” [มีหมุดผิดที่เพียง 1 หมุด ยังไม่ถึงเกณฑ์หักคะแนน จึงยังได้ 3 คะแนนเต็มจาก 3 จุดที่ตรง]",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1-2 คะแนน)",
+          desc: "วางหมุดถูกบริเวณและเหตุผลตรงเพียง 1-2 จุดจากทั้งหมด 3 จุด หมุดที่อยู่นอกบริเวณทั้งสามนี้ หรืออยู่ในบริเวณถูกแต่เลือกเหตุผลไม่ตรงกับจุดนั้น ไม่ได้คะแนนสำหรับหมุดนั้น และหากในบรรดาหมุดที่วางมีหมุดที่ไม่ตรงบริเวณใดเลยตั้งแต่ 2 หมุดขึ้นไป ถือว่าเป็นการชี้แบบเดาไปทั่วภาพ ให้หักคะแนนรวมของข้อนี้ 1 คะแนน แต่ไม่ต่ำกว่า 0",
+          examples: [
+            "“ชี้ถูกเฉพาะมือหกนิ้วกับป้ายร้าน แต่ไม่ได้ชี้จุดเงา” [ตรง 2 จุด ได้ 2 คะแนน]",
+            "“ชี้ถูกเฉพาะจุดเงาเพียงจุดเดียว จุดอื่นวางไม่ตรงบริเวณหรือเลือกเหตุผลผิด” [ตรง 1 จุด ได้ 1 คะแนน]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ไม่มีหมุดใดตรงทั้งบริเวณและเหตุผลที่กำหนดเลย หรือวางหมุดกระจายทั่วภาพแบบเดา",
+          examples: [
+            "“วางหมุด 4 จุดกระจายอยู่กลางท้องฟ้า พื้นน้ำ และตัวคนที่ไม่ใช่บริเวณเฉลย ทั้งหมดเลือกเหตุผลไม่ตรงจุด” [ไม่มีหมุดใดเข้าเงื่อนไข และมีหมุดผิดที่เกิน 1 หมุด ได้ 0 คะแนน]",
+          ],
+        },
+      ],
+    },
+    q2: {
+      title: "ข้อ 2 — การตรวจสอบก่อนแชร์ต่อ",
+      question: "ถ้าเกดยังไม่แน่ใจว่าภาพตลาดน้ำท่วมนี้เป็นภาพจริงหรือภาพที่ AI สร้างขึ้น ก่อนจะกดแชร์ต่อหรือชวนคนบริจาคของ เกดควรทำอย่างไรบ้าง อธิบายอย่างน้อย 2 วิธี พร้อมเหตุผลของแต่ละวิธี",
+      levels: [
+        {
+          key: "full", label: "คะแนนเต็ม (2 คะแนน)",
+          desc: "เสนอวิธีตรวจสอบก่อนเชื่อหรือแชร์ต่ออย่างน้อย 2 วิธีที่ปฏิบัติได้จริง พร้อมเหตุผลของแต่ละวิธี เช่น ค้นหาภาพย้อนกลับ สอบถามแหล่งข่าวที่น่าเชื่อถือในพื้นที่ หรือรอการยืนยันจากหน่วยงานราชการก่อน",
+          examples: [
+            "“ลองค้นภาพย้อนกลับดูว่ามีที่มาจากที่อื่นหรือไม่ และรอดูว่ามีสำนักข่าวหรือหน่วยงานท้องถิ่นยืนยันเหตุการณ์นี้หรือยัง ค่อยแชร์” [เสนอ 2 วิธีที่ปฏิบัติได้จริงพร้อมเหตุผลชัดเจน]",
+            "“ยังไม่แชร์ต่อทันที ลองถามคนในกลุ่มว่าใครเป็นคนถ่ายภาพนี้จริงๆ และดูว่าป้ายร้านหรือสถานที่ตรงกับจุดที่อ้างหรือไม่” [เสนอ 2 วิธีที่เชื่อมโยงกับการตรวจสอบแหล่งที่มา]",
+          ],
+        },
+        {
+          key: "partial", label: "ได้คะแนนบางส่วน (1 คะแนน)",
+          desc: "เสนอวิธีที่ปฏิบัติได้จริงเพียง 1 วิธี หรือเสนอ 2 วิธีแต่ไม่มีเหตุผลประกอบ",
+          examples: [
+            "“ลองค้นดูในอินเทอร์เน็ตก่อนว่าจริงไหม” [มีวิธีเดียวและไม่มีเหตุผลประกอบชัดเจน ได้ 1 คะแนน]",
+            "“ถามเพื่อนในกลุ่มและรอดูข่าว” [มี 2 แนวทางแต่ไม่อธิบายเหตุผลว่าทำไมวิธีนี้ช่วยตรวจสอบได้ ได้ 1 คะแนน]",
+          ],
+        },
+        {
+          key: "none", label: "ไม่ได้คะแนน (0 คะแนน)",
+          desc: "ตอบว่าแชร์ต่อได้เลยโดยไม่ตรวจสอบ หรือไม่ตอบตรงคำถาม",
+          examples: [
+            "“ถ้าไม่จริงคนคงไม่แชร์ต่อจำนวนมาก สามารถแชร์ต่อได้” [ไม่มีการตรวจสอบใดๆ ก่อนเชื่อและแชร์ ได้ 0 คะแนน]",
+          ],
+        },
+      ],
+    },
+  };
+
+  function openHint(key) {
+    const h = HINTS[key];
+    if (!h) return;
+    document.getElementById("hintTitle").textContent = "💡 แนวทางการให้คะแนน: " + h.title;
+    document.getElementById("hintQuestion").textContent = h.question;
+    document.getElementById("hintLevels").innerHTML = h.levels.map((lv) => `
+      <div class="hint-level hint-level--${lv.key}">
+        <h4>${lv.label}</h4>
+        <p>${lv.desc}</p>
+        ${lv.examples.length ? `<ul>${lv.examples.map((ex) => `<li>${ex}</li>`).join("")}</ul>` : ""}
+      </div>`).join("");
+    document.getElementById("hintModal").hidden = false;
+  }
+  document.querySelectorAll("[data-close]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById(btn.dataset.close).hidden = true;
+  }));
 
   // ---------- แสดงข้อมูลกระบวนการทำแบบทดสอบ (ใช้ร่วมกันทุกสถานการณ์) ----------
   function renderBehaviorHtml(b) {
@@ -680,10 +782,8 @@
     document.getElementById("quizSection").hidden = true;
     const resultSection = document.getElementById("resultSection");
     resultSection.hidden = false;
-    document.getElementById("resultTotal").textContent = OBJECTIVE_MAX > 0 ? `${data.total_score} / ${OBJECTIVE_MAX}` : "รอตรวจ";
-    document.getElementById("resultPercent").innerHTML = OBJECTIVE_MAX > 0
-      ? `คะแนนส่วนปรนัย · ข้ออัตนัย (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`
-      : `ข้ออัตนัยทั้งหมด (${ESSAY_MAX} คะแนน) <b class="pending-text">รอการตรวจคะแนน</b>`;
+    document.getElementById("resultTotal").textContent = `${data.total_score} / ${MAX_SCORE}`;
+    document.getElementById("resultPercent").innerHTML = `คิดเป็น <b>${Math.round((data.total_score / MAX_SCORE) * 100)}%</b> ของคะแนนเต็ม`;
     document.getElementById("behaviorRows").innerHTML = renderBehaviorHtml(data.behavior || {});
 
     const q1 = data.q1;
@@ -701,6 +801,7 @@
         : "ยังไม่มีหมุดใดตรงทั้งบริเวณและเหตุผลที่กำหนด";
     const penaltyNote = q1.penalty ? " และมีหมุดที่ไม่ตรงบริเวณใดเลยตั้งแต่ 2 หมุด จึงถูกหัก 1 คะแนนเพราะเป็นการชี้แบบเดาทั่วภาพ" : "";
 
+    const q2 = data.q2;
 
     document.getElementById("resultBreakdown").innerHTML = `
       <div class="result__item">
@@ -709,10 +810,12 @@
         ${checksHTML(pinRows)}
         ${checksHTML(regionRows)}
         <div class="answer-img">${marketSVG("ans", true)}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q1')">💡 ดูแนวทางการให้คะแนน</button>
       </div>
       <div class="result__item">
-        <div class="result__item-head"><span>ข้อ 2 — การตรวจสอบก่อนแชร์ต่อ</span><span class="pending-badge">รอการตรวจคะแนน</span></div>
-        <div class="result__item-reason">ระบบบันทึกคำตอบของคุณแล้ว ครูผู้สอนจะตรวจและแจ้งคะแนนภายหลัง (เต็ม 2 คะแนน)</div>
+        <div class="result__item-head"><span>ข้อ 2 — การตรวจสอบก่อนแชร์ต่อ</span><span>${q2.score} / 2</span></div>
+        <div class="result__item-reason">${q2.reasoning || ""}</div>
+        <button class="hint-btn" type="button" onclick="openHint('q2')">💡 ดูแนวทางการให้คะแนน</button>
       </div>`;
     resultSection.scrollIntoView({ behavior: "smooth" });
   }
