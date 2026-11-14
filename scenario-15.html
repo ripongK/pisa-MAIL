@@ -917,7 +917,7 @@
       submitBtn.disabled = false;
       return;
     }
-    const q2Result = result2.essay || { score: 0, reasoning: "ไม่พบผลตรวจจากระบบ" };
+    const q2Result = result2.essay || { score: 0, reasoning: "รอตรวจ"  };
     const total_score = result2.total_score != null ? result2.total_score : q1Result.score + q2Result.score;
 
     showResult({ q1: q1Result, q2: q2Result, total_score, behavior: behaviorData });
